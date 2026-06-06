@@ -11,11 +11,11 @@ public class Canvas : UIBase, IPointerInteractable
     private ContextMenu? contextMenu;
     public Action<Button, Drawable?> onContextBtnPressed;
 
-    public Canvas(Drawable? parent, Action<Button, Drawable?> onContextBtnPressed) : base(parent)
+    public Canvas(Drawable? parent, Action<Button, Drawable?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable) : base(parent)
     {
         this.onContextBtnPressed = onContextBtnPressed;
 
-        variablePanel = new VariablePanel(10, 20);
+        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable);
         inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20);
 
         Engine.OnAnyPointerDown += HandleGlobalClickAway;
@@ -116,13 +116,14 @@ public class Canvas : UIBase, IPointerInteractable
 
         if (InteractionManager.CurrentlyHit == null)
         {
-            ContextMenu cm = new(["Add Node"], (button) => OnCtxBtnPressed(button, null), null);
+            List<(string, object)> mis = Engine.CurrentlySelectedVarId == null ? [("Add Node", 0)] : [("Add Node", 0), ("Get Var", Engine.CurrentlySelectedVarId)];
+            ContextMenu cm = new(mis, (button) => OnCtxBtnPressed(button, null), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }
         else if (InteractionManager.CurrentlyHit is NodeVisual nui)
         {
-            ContextMenu cm = new(["Delete"], (button) => OnCtxBtnPressed(button, nui), null);
+            ContextMenu cm = new([("Delete", 0)], (button) => OnCtxBtnPressed(button, nui), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }

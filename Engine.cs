@@ -23,6 +23,9 @@ public class Engine
 
     private static Dictionary<int, NodeVisual?> nodeToNodeUIDict;
     private static Dictionary<int, PortVisual?> portToPortUIDict;
+    private static Dictionary<int, List<NodeVisual>> varToNodeUIsDict;
+
+    private static int? currentlySelectedVarId;
 
     public static int ScreenWidth { get => screenWidth; }
     public static int ScreenHeight { get => screenHeight; }
@@ -36,8 +39,16 @@ public class Engine
     public static ConnectionVisualManager ConnectionUIManager { get => connectionUIManager; }
     public static Dictionary<int, NodeVisual?> NodeToNodeUIDict { get => nodeToNodeUIDict; }
     public static Dictionary<int, PortVisual?> PortToPortUIDict { get => portToPortUIDict; }
+    public static int? CurrentlySelectedVarId { get => currentlySelectedVarId; }
 
     public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
+    public static event Action OnHandleInputComplete;
+
+    public static void NotifyAddVar(int varId)
+    {
+        varToNodeUIsDict.Add(varId, []);
+    }
+
 
     public static void NotifyAddNode(int nodeId)
     {
@@ -83,6 +94,11 @@ public class Engine
         portToPortUIDict.Remove(portId);
     }
 
+    public static void NotifyRemoveVar(int varId)
+    {
+        varToNodeUIsDict.Remove(varId);
+    }
+
     public static void NotifyRemoveConnection(int sourcePort, int targetPort)
     {
         PortVisual? sourceP = portToPortUIDict[sourcePort];
@@ -95,6 +111,15 @@ public class Engine
         }
 
         connectionUIManager.OnRemoveConnection(sourceP, targetP);
+    }
+
+    private static void RemoveNodeAndUI(NodeVisual nodeVis)
+    {
+        int nodeId = nodeVis.NodeId;
+        graph.RemoveNode(nodeId);
+
+        actors.Remove(nodeVis);
+        nodeVis.Delete();
     }
 
     public static void Start()
@@ -115,6 +140,7 @@ public class Engine
 
         nodeToNodeUIDict = [];
         portToPortUIDict = [];
+        varToNodeUIsDict = [];
 
         actors = [];
         uiElements = [];
@@ -131,27 +157,135 @@ public class Engine
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
-                Node n = graph.AddNode(2, 7);
-                List<int> inputPortIds = n.InputPortIds;
-                List<int> outputPortIds = n.OutputPortIds;
+                Node n = graph.AddNode(0, 0);
+                List<(int, string)> inputPortIds = n.InputPortIdNames;
+                List<(int, string)> outputPortIds = n.OutputPortIdNames;
 
-                actors.Add(new NodeVisual(n.Id, inputPortIds, outputPortIds, "Node", mp.X, mp.Y));
+                NodeVisual testNodeVis = new(n.Id, inputPortIds, outputPortIds,
+                    [(UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
+                    (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
+                    (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
+                    (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
+                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))],
+                    "Node", mp.X, mp.Y);
+
+                NodeVisual testNodeVis2 = new(n.Id, inputPortIds, outputPortIds,
+                    [(UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
+                    (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
+                    (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); }))],
+                    "Node 2", mp.X, mp.Y);
+
+                actors.Add(testNodeVis2);
+            }
+            else if (button.ButtonText == "Get Var")
+            {
+                int varId = (int)button.Payload;
+                Variable? v = graph.GetVariable(varId);
+
+                if (v == null)
+                {
+                    Console.WriteLine($"Error: Couldn't find variable of Id {varId} from the graph!");
+                    return;
+                }
+
+                Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
+
+                Node n = graph.AddNode(0, 1);
+
+                List<(int, string)> inputPortIds = n.InputPortIdNames;
+                List<(int, string)> outputPortIds = n.OutputPortIdNames;
+
+                NodeVisual varGetNodeVis = new(n.Id, inputPortIds, outputPortIds,
+                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))],
+                    "GetVar", mp.X, mp.Y);
+
+                actors.Add(varGetNodeVis);
+
+                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
+                    nodeVisList.Add(varGetNodeVis);
+                else varToNodeUIsDict.Add(varId, [varGetNodeVis]);
             }
             else if (button.ButtonText == "Delete")
             {
                 if (editorObj != null)
                 {
                     Actor ac = (Actor)editorObj;
-
                     NodeVisual? nui = (NodeVisual)ac;
-                    int? nodeId = nui?.NodeId;
 
-                    if (nodeId.HasValue) graph.RemoveNode(nodeId.Value);
+                    if (nui == null)
+                    {
+                        Console.WriteLine("Didn't receive a not on ctx menu graph delete!");
+                        return;
+                    }
+                    
+                    List<int> keys = [.. varToNodeUIsDict.Keys];
+                    (int key, int idx)? marked = null;
+                    for (int i = 0; i < keys.Count; i++)
+                    {
+                        List<NodeVisual> nodeViss = varToNodeUIsDict[keys[i]];
 
-                    actors.Remove(ac);
-                    ac.Delete();
+                        for (int j = 0; j < nodeViss.Count; j++)
+                        {
+                            if (nodeViss[j] == nui)
+                            {
+                                marked = (keys[i], j);
+                                break;
+                            }
+                        }
+
+                        if (marked.HasValue)
+                        {
+                            varToNodeUIsDict[marked.Value.key].RemoveAt(marked.Value.idx);
+                            break;
+                        }
+                    }
+
+                    RemoveNodeAndUI(nui);
                 }
             }
+        }, (varId) =>
+        {
+            // On Var select.
+            currentlySelectedVarId = varId;
+        },
+        () =>
+        {
+            // On add var.
+            graph.AddVariable("New Var", typeof(int), 0);
+        },
+        (varId) =>
+        {
+            // On remove var.
+
+            if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? varNodesVisList))
+            {
+                for (int i = 0; i < varNodesVisList.Count; i++)
+                    RemoveNodeAndUI(varNodesVisList[i]);
+            }
+            else Console.WriteLine("Error: Couldn't get var of id {varId} while removing from VarToNodeUIsDict!");
+
+            graph.RemoveVariable(varId);
+        },
+        (varId, newName) =>
+        {
+            if (graph.RenameVariable(varId, newName))
+            {
+                Variable? v = graph.GetVariable(varId);
+
+                if (v == null)
+                {
+                    Console.WriteLine("Error: THIS SHOULD NEVER HAPPEN!");
+                    return;
+                }
+
+                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
+                {
+                    for (int i = 0; i < nodeVisList.Count; i++)
+                        nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
+                }
+                else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
+            }
+            else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
         });
 
         uiElements.Add(canvas);
@@ -205,6 +339,7 @@ public class Engine
         InteractionManager.UpdateInputContext(inputContext);
 
         InteractionManager.HandleInput();
+        OnHandleInputComplete?.Invoke();
 
         for (int i = 0; i < editorObjects.Count; i++)
             editorObjects[i].Update();

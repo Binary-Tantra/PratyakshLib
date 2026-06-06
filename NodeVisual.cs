@@ -2,6 +2,7 @@
 
 using System.Numerics;
 using Raylib_cs;
+using RaylibNodeLibrary.UI;
 
 public class NodeVisual : Actor, IPointerInteractable, IDragable
 {
@@ -38,7 +39,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public int NodeId { get => nodeId; }
 
-    public NodeVisual(int nodeId, List<int> inputPortIds, List<int> outputPortIds, string title, float posX, float posY, Drawable? parent = null) : base(parent)
+    private NodeBodyLayout nodeBodyLayout;
+
+    public NodeVisual(int nodeId,
+                      List<(int id, string name)> inputPortIdNames,
+                      List<(int id, string name)> outputPortIdNames,
+                      List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
+                      string title, float posX, float posY, Drawable? parent = null) : base(parent)
     {
         this.nodeId = nodeId;
 
@@ -51,33 +58,83 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         relativePosition.X = posX;
         relativePosition.Y = posY;
         
-        float w = 200;
-        float h = 75;
+        float width = 200;
+        float height = 75;
 
-        float hw = w;
-        float hh = 15;
+        float headerWidth = width;
+        float headerHeight = 15;
 
-        int pInitialYOffset = 30;
-        int pPadding = 15;
-        int pSpacing = 35;
-        int portsMax = Math.Max(inputPortIds.Count, outputPortIds.Count);
+        int portsInitialYOffset = 30;
+        int portsPadding = 15;
+        int portsSpacing = 35;
+        int portsMax = Math.Max(inputPortIdNames.Count, outputPortIdNames.Count);
         
         if (portsMax > 2)
         {
-            h += (portsMax - 2) * pSpacing + pPadding;
+            height += (portsMax - 2) * portsSpacing + portsPadding;
         }
+
+        int uiElementsNeededHeight = portsInitialYOffset + bodyUIElements.Count * 25 + 10; // + 10 is extra space at end.
+
+        if (height < uiElementsNeededHeight)
+            height = uiElementsNeededHeight;
+
+        int uiElementsNeededWidth = -1;
+        for (int i = 0; i < bodyUIElements.Count; i++)
+        {
+            if (bodyUIElements[i].elemDesc is RectUIEDescription ruid)
+                uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.width ?? 150);
+            else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
+        }
+
+        int maxPortTSize = -1;
+
+        for (int i = 0; i < inputPortIdNames.Count; i++)
+            maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(inputPortIdNames[i].name));
+
+        for (int i = 0; i < outputPortIdNames.Count; i++)
+            maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(outputPortIdNames[i].name));
+
+        if (maxPortTSize == -1)
+            maxPortTSize = 10;
+
+        // The first + 10 is what the port adds while rendering. The second is extra padding. Where there is only one + 10, then in those cases it is just extra padding.
+        int bodyHPaddingInputSide = inputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
+        int bodyHPaddingOutputSize = outputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
+
+        int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSize; 
+
+        if (width - totalBodyHPadding < uiElementsNeededWidth)
+        {
+            width = uiElementsNeededWidth + totalBodyHPadding;
+            headerWidth = width;
+        }
+
+        int bodyWidth = (int)(width - totalBodyHPadding);
 
         inputPorts = [];
         outputPorts = [];
 
-        for (int i = 0; i < inputPortIds.Count; i++)
-            inputPorts.Add(new PortVisual(inputPortIds[i], DataModel.PortFlowType.Input, new Vector2(pPadding, pInitialYOffset + i * pSpacing), $"InPort {inputPortIds[i]}", this));
+        for (int i = 0; i < inputPortIdNames.Count; i++)
+        {
+            PortVisual pv = new(inputPortIdNames[i].id, DataModel.PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, this);
+            inputPorts.Add(pv);
+        }
 
-        for (int i = 0; i < outputPortIds.Count; i++)
-            outputPorts.Add(new PortVisual(outputPortIds[i], DataModel.PortFlowType.Output, new Vector2(w - pPadding, pInitialYOffset + i * pSpacing), $"OutPort {outputPortIds[i]}", this));
+        for (int i = 0; i < outputPortIdNames.Count; i++)
+        {
+            PortVisual pv = new(outputPortIdNames[i].id, DataModel.PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, this);
+            outputPorts.Add(pv);
+        }
 
-        rect = new Rectangle(relativePosition.X, relativePosition.Y, w, h);
-        headerRect = new Rectangle(relativePosition.X, relativePosition.Y, hw, hh);
+        rect = new Rectangle(relativePosition.X, relativePosition.Y, width, height);
+        headerRect = new Rectangle(relativePosition.X, relativePosition.Y, headerWidth, headerHeight);
+
+        nodeBodyLayout = new NodeBodyLayout(bodyUIElements,
+                                            bodyHPaddingInputSide,
+                                            portsInitialYOffset,
+                                            bodyWidth,
+                                            (int)height, this);
     }
 
     protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
@@ -94,7 +151,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             if (hit != null) return hit;
         }
 
-        return null;
+        return nodeBodyLayout.HitTest(mouseScreenPosition, mouseWorldPosition);
     }
 
     protected override Rectangle OnGetInteractionRect()
@@ -109,6 +166,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         for (int i = 0; i < outputPorts.Count; i++)
             outputPorts[i].Update();
+
+        nodeBodyLayout.Update();
 
         potConnectionWireUI?.Update();
     }
@@ -127,6 +186,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         Raylib.DrawText(title, (int)rect.X + 5, (int)rect.Y, 15, titleColor);
 
+        nodeBodyLayout.Render();
+
         for (int i = 0; i < inputPorts.Count; i++)
             inputPorts[i].Render();
 
@@ -138,6 +199,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     protected override void OnDelete()
     {
+        nodeBodyLayout.Delete();
+
         for (int i = 0; i < inputPorts.Count; i++)
             inputPorts[i].Delete();
 
@@ -228,5 +291,10 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         else UIConnectionCanceled(source);
 
         return success;
+    }
+
+    public void ChangeUIElement(int elementIdx, UIElementDescription desc)
+    {
+        nodeBodyLayout.ChangeUIElement(elementIdx, desc);
     }
 }

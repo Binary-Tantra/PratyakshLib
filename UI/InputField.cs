@@ -57,14 +57,20 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     protected override void OnDraw()
     {
         if (isFocused)
+        {
             Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, new Color((byte)0, (byte)0, (byte)200, (byte)255));
+            Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, width, height, new Color((byte)255, (byte)255, (byte)255, (byte)255));
+        }
         else
+        {
             Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, bgColor);
+            Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, width, height, new Color((byte)25, (byte)25, (byte)25, (byte)255));
+        }
         
         if (isFocused)
-            Raylib.DrawText(inputFieldText, (int)Position.X, (int)Position.Y, fontSize, new Color((byte)200, (byte)200, (byte)200, (byte)255));
+            Raylib.DrawText(inputFieldText, (int)Position.X + 5, (int)Position.Y + 5, fontSize, new Color((byte)200, (byte)200, (byte)200, (byte)255));
         else
-            Raylib.DrawText(inputFieldText, (int)Position.X, (int)Position.Y, fontSize, textColor);
+            Raylib.DrawText(inputFieldText, (int)Position.X + 5, (int)Position.Y + 5, fontSize, textColor);
     }
 
     protected override Rectangle OnGetInteractionRect()
@@ -100,9 +106,22 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         if (!isFocused)
             return false;
 
-        if ((int)kvt.Key >= 65 && (int)kvt.Key <= 90)
+        if ((kvt.Key >= KeyboardKey.A && kvt.Key <= KeyboardKey.Z) ||
+            (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine) ||
+             kvt.Key == KeyboardKey.Space)
         {
-            string newK = kvt.IsShiftDown ? kvt.Key.ToString().ToUpper() : kvt.Key.ToString().ToLower();
+            string newK;
+
+            if (kvt.Key == KeyboardKey.Space)
+                newK = " ";
+            
+            else if (kvt.Key >= KeyboardKey.Zero &&
+                kvt.Key <= KeyboardKey.Nine)
+                newK = ((int)kvt.Key - 48).ToString();
+            
+            else newK = kvt.IsShiftDown ?
+                 kvt.Key.ToString().ToUpper() :
+                 kvt.Key.ToString().ToLower();
 
             if (isShowingPlaceholder)
             {
@@ -117,10 +136,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
                 inputFieldText = inputFieldText[..^1];
             else inputFieldText = string.Empty;
         }
-        else if (kvt.Key == KeyboardKey.Enter)
-        {
-            EndFocus();
-        }
+        else if (kvt.Key == KeyboardKey.Enter) EndFocus();
         else return false;
 
         return true;

@@ -275,7 +275,7 @@ public class RlSimpleLayout
 
     private void DrawText_Internal(string text, int posX, int posY, Color fontColor, Vector2 offset)
     {
-        DrawTextEx(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), 24, 0.5f, fontColor);
+        DrawTextEx(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), 15, 0.5f, fontColor);
     }
 
     private void DrawPanel_Internal(int posX, int posY, int width, int height, Color panelColor)

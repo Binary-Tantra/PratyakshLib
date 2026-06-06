@@ -18,7 +18,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     private Rectangle portInteractionRelativeRect;
 
-    private int portTFontSize = 10;
+    private static int portTFontSize = 10;
 
     private int portTSize;
 
@@ -31,6 +31,12 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     public int ParentNodeId
     {
         get => parentNodeUI == null ? -1 : parentNodeUI.NodeId;
+    }
+    public int PortTSize { get => portTSize; }
+
+    public static int GetPortTSize(string name)
+    {
+        return Raylib.MeasureText(name, portTFontSize);
     }
 
     public PortVisual(int portId, PortFlowType portFlowType, Vector2 portRelativeLocation, string portName = "Port", Drawable? parent = null) : base(parent)
@@ -47,8 +53,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         
         this.portName = portName;
 
-        portTFontSize = 10;
-        portTSize = Raylib.MeasureText(portName, portTFontSize);
+        portTSize = GetPortTSize(portName);
 
         if (Parent != null)
             parentNodeUI = (NodeVisual)Parent;

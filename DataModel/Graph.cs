@@ -138,10 +138,12 @@ public class Graph
         return connection;
     }
 
-    public void AddVariable(string name)
+    public void AddVariable(string name, Type type, object value)
     {
-        Variable newV = new(name, (object)0);
+        Variable newV = new(name, type, value);
         graphVariables.Add(newV.Id, newV);
+
+        Engine.NotifyAddVar(newV.Id);
     }
 
     public void RemoveVariable(int id)
@@ -153,6 +155,7 @@ public class Graph
         }
 
         graphVariables.Remove(id);
+        Engine.NotifyRemoveVar(id);
     }
 
     public Variable? GetVariable(int varId)

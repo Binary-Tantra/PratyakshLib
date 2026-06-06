@@ -11,6 +11,9 @@ public class Node : DataObject
     public List<int> InputPortIds { get => [.. inputPorts.Select((p) => p.Key)]; }
     public List<int> OutputPortIds { get => [.. outputPorts.Select((p) => p.Key)]; }
 
+    public List<(int, string)> InputPortIdNames { get => [.. inputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
+    public List<(int, string)> OutputPortIdNames { get => [.. outputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
+
     public Node(int inputPortCount, int outputPortCount) : base()
     {
         Engine.NotifyAddNode(Id);
@@ -20,13 +23,13 @@ public class Node : DataObject
 
         for (int i = 0; i < inputPortCount; i++)
         {
-            Port p = new(PortFlowType.Input);
+            Port p = new($"Input ({Id})", PortFlowType.Input);
             inputPorts.Add(p.Id, p);
         }
 
         for (int i = 0; i < outputPortCount; i++)
         {
-            Port p = new(PortFlowType.Output);
+            Port p = new($"Output ({Id})", PortFlowType.Output);
             outputPorts.Add(p.Id, p);
         }
     }

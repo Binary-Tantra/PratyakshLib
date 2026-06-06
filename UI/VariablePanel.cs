@@ -9,46 +9,83 @@ public class VariablePanel : UILayout
     private Button addButton;
     private Button removeButton;
 
-    public VariablePanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 200, 300, parent)
+    private Action<int?> onSelectVariable;
+    private Action<int, string> onRenameVariable;
+
+    private bool sendSelectNull = false;
+
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Drawable? parent = null) : base(posX, posY, 200, 300, parent)
     {
+        this.onSelectVariable = onSelectVariable;
+        this.onRenameVariable = onRenameVariable;
+        
         addButton = new Button(50, 20, "Add", (addBtn) =>
         {
-            Engine.Graph.AddVariable("New Var");
-            currentSelected = null;
+            onAddNewVariable?.Invoke();
+            Deselect();
         }, 0);
 
         removeButton = new Button(50, 20, "Remove", (remBtn) =>
         {
             if (currentSelected != null)
             {
+                Deselect();
+
                 int id = (int)currentSelected.Payload;
-                
+                onRemoveVariable?.Invoke(id);
                 layout.RemoveLayoutSelectable(id);
-                Engine.Graph.RemoveVariable(id);
             }
-            currentSelected = null;
         }, 0);
 
-        Engine.OnAnyPointerDown += DeselectCurrent;
+        Engine.OnAnyPointerDown += OnAnyPointerInput;
+        Engine.OnHandleInputComplete += OnHandleInputComplete;
     }
 
-    private void DeselectCurrent(PointerInteractEventData evt, EditorObject? target)
+    private void Deselect()
     {
-        if (target != addButton && target != removeButton)
-            currentSelected = null;
+        currentSelected?.Deselect();
+        currentSelected?.OnTextEdited -= OnRenameSelectable;
+        currentSelected = null;
+    }
+
+    private void OnRenameSelectable(Selectable sel)
+    {
+        int varId = (int)sel.Payload;
+        onRenameVariable?.Invoke(varId, sel.SelectableText);
+    }
+
+    protected override void OnDelete()
+    {
+        Engine.OnAnyPointerDown -= OnAnyPointerInput;
+        Engine.OnHandleInputComplete -= OnHandleInputComplete;
+    }
+
+    private void OnAnyPointerInput(PointerInteractEventData evt, EditorObject? target)
+    {
+        if (evt.mouseButton == MouseButton.Left && target != addButton && target != removeButton && target is Button b && b.ButtonText == "")
+        {
+            Deselect();
+            sendSelectNull = true;
+        }
+    }
+
+    private void OnHandleInputComplete()
+    {
+        if (sendSelectNull)
+        {
+            onSelectVariable?.Invoke(null);
+            sendSelectNull = false;
+        }
     }
 
     private void OnVarUISelected(Selectable varSel)
     {
         if (currentSelected != varSel)
-            currentSelected?.Deselect();
+            Deselect();
 
         currentSelected = varSel;
-
-        /*Variable? targetVar = Engine.Graph.GetVariable((int)varSel.Payload);
-
-        if (targetVar != null)
-            Console.WriteLine("Var pressed: " + targetVar);*/
+        currentSelected.OnTextEdited += OnRenameSelectable;
+        onSelectVariable?.Invoke((int)varSel.Payload);
     }
 
     public override void OnDrawLayout()

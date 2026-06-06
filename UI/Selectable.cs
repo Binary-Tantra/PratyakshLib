@@ -59,6 +59,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         editIF.OnTextChanged += (inpField) => this.selectableText = inpField.InputFieldText;
         editIF.OnFocusEnd += (inpField) =>
         {
+            this.selectableText = inpField.InputFieldText;
             isBeingEdited = false;
             OnTextEdited?.Invoke(this);
         };
