@@ -94,6 +94,8 @@ public class DemoPanel : UILayout
                 }
                 layout.EndVertical(120); // End vertical container width
 
+                layout.AddSpace(20);
+
                 // Right Column: A simple panel displaying the selected color.
                 layout.Panel(200, 70, currentSelectedColor);
             }
