@@ -92,6 +92,11 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
+        return false;
+    }
+
+    public bool OnDragStart(PointerInteractEventData evt)
+    {
         if (evt.mouseButton != MouseButton.Left)
             return false;
 

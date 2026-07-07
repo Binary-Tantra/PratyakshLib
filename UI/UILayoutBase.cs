@@ -4,7 +4,7 @@ using RlSimpleLayoutEngine;
 
 namespace RaylibNodeLibrary.UI;
 
-public abstract class UILayout : UIBase, IPointerInteractable, IDragable
+public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
 {
     protected RlSimpleLayout layout;
 
@@ -14,10 +14,12 @@ public abstract class UILayout : UIBase, IPointerInteractable, IDragable
     private bool isDragging = false;
     private Vector2 dragOffset;
 
+    protected int mainVerticalSpacing = 0;
+
     public int LayoutWidth { get => layoutWidth; }
     public int LayoutHeight { get => layoutHeight; }
 
-    public UILayout(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent) : base(parent)
+    public UILayoutBase(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent) : base(parent)
     {
         selfInteractable = true;
         RelativePosition = new Vector2(posX, posY);
@@ -26,16 +28,22 @@ public abstract class UILayout : UIBase, IPointerInteractable, IDragable
         this.layoutHeight = layoutHeight;
 
         layout = new RlSimpleLayout();
-        layout.InitFont(Raylib.GetFontDefault());
+        layout.Init(Raylib.GetFontDefault(), this);
     }
 
     protected override void OnDraw()
     {
-        Raylib.BeginScissorMode((int)Position.X, (int)Position.Y, layoutWidth, layoutHeight);
+        bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
+        Rectangle finalRect = new(Position.X, Position.Y, layoutWidth, layoutHeight);
+
+        if (worldSpace)
+            finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
+
+        Raylib.BeginScissorMode((int)finalRect.X, (int)finalRect.Y, (int)finalRect.Width, (int)finalRect.Height);
         {
             layout.BeginHorizontalEx(0, (int)Position.X);
             {
-                layout.BeginVerticalEx(0, (int)Position.Y);
+                layout.BeginVerticalEx(mainVerticalSpacing, (int)Position.Y);
                 {
                     OnDrawLayout();
                 }
@@ -69,6 +77,11 @@ public abstract class UILayout : UIBase, IPointerInteractable, IDragable
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
+    {
+        return false;
+    }
+
+    public bool OnDragStart(PointerInteractEventData evt)
     {
         if (evt.mouseButton == MouseButton.Left)
         {

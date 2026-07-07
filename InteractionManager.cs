@@ -42,9 +42,14 @@ public class InputContext
     public bool isShiftDown = false;
 }
 
+// Down: Pointer Down.
+// Up: Both pointer up and drag end.
+// Double click: ...double click...
+// DragStart: When drag is started. Different from pointer up so that deferred detect if input was drag or click and we dont set pointer down to objects who have not subscribed to pointer down, rather, they need drag start.
+// Drag: .............drag...
 public enum PointerEventType
 {
-    Down, Up, DoubleClick, Drag
+    Down, Up, DoubleClick, DragStart, Drag
 }
 
 public static class InteractionManager
@@ -248,7 +253,12 @@ public static class InteractionManager
             
             if (!checkCompleted && clickedEO is IDragable dragHandler)
             {
-                if (pointerEventType == PointerEventType.Drag)
+                if (pointerEventType == PointerEventType.DragStart)
+                {
+                    if (dragHandler.OnDragStart(eventData))
+                        return true;
+                }
+                else if (pointerEventType == PointerEventType.Drag)
                 {
                     dragHandler.OnDrag(eventData);
                     return true;
@@ -260,7 +270,7 @@ public static class InteractionManager
             else clickedEO = null;
         }
 
-        if (bubble && clickedEO == null)
+        if (/*bubble && */clickedEO == null) // Always send as global event, even if not bubbled.
         {
             Engine.HandleGlobalPointerEvent(eventData, pointerEventType);
         }
@@ -301,8 +311,7 @@ public static class InteractionManager
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
                 WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = pressedButton,
-                IsDragRelated = false
+                mouseButton = pressedButton
             };
 
             DispatchPointer(currentTarget, dcEvt, PointerEventType.DoubleClick);
@@ -336,19 +345,17 @@ public static class InteractionManager
             if (distSq > DRAG_THRESHOLD_SQUARE)
             {
                 // Resolved as DRAG
-                PointerInteractEventData downEvt = new()
+                PointerInteractEventData dragStartEvt = new()
                 {
                     ScreenPosition = inputContext.mouseScreenPosition,
                     WorldPosition = inputContext.mouseWorldPosition,
                     ScreenDelta = inputContext.mouseScreenDelta,
                     WorldDelta = inputContext.mouseWorldDelta,
-                    mouseButton = pendingGesture.Button,
-                    IsDragRelated = true
+                    mouseButton = pendingGesture.Button
                 };
 
-                // Fire the delayed MouseDown since drag is confirmed
-                DispatchPointer(pendingGesture.Target, downEvt, PointerEventType.Down);
-
+                // Fire the delayed DragStart since drag is confirmed.
+                DispatchPointer(pendingGesture.Target, dragStartEvt, PointerEventType.DragStart, bubble: true); // Do not bubble the Drag start event. It can be needed in some cases, but we just dont allow it. It can be allowed with some additions if needed.
                 return true;
             }
         }
@@ -361,11 +368,9 @@ public static class InteractionManager
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
                 WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = pendingGesture.Button,
-                IsDragRelated = false
+                mouseButton = pendingGesture.Button
             };
 
-            DispatchPointer(pendingGesture.Target, evt, PointerEventType.Down);
             DispatchPointer(pendingGesture.Target, evt, PointerEventType.Up); // Should we use currently hovered for up? Because underlying object could have changed between down and up! But then pendingGesture.Target would not receive up!
 
             // Record this click to test for potential Double-Clicks in later frames
@@ -379,7 +384,57 @@ public static class InteractionManager
         return false;
     }
 
-    private static void HandleCurrentPointerHolder(bool wasPressedOrReleased, bool wasLMBPressed, bool wasRMBPressed, bool wasLMBReleased, bool wasRMBReleased, EditorObject pointerSelected, float mouseWheel)
+    private static void HandleVariousInput(EditorObject? targetObject, bool wasLMBPressed, bool wasLMBReleased, bool wasRMBPressed, bool wasRMBReleased, float mouseWheel)
+    {
+        PointerInteractEventData potentialPied = new()
+        {
+            ScreenPosition = inputContext.mouseScreenPosition,
+            WorldPosition = inputContext.mouseWorldPosition,
+            ScreenDelta = inputContext.mouseScreenDelta,
+            WorldDelta = inputContext.mouseWorldDelta
+        };
+
+        if (wasLMBPressed)
+        {
+            potentialPied.mouseButton = MouseButton.Left;
+            DispatchPointer(targetObject, potentialPied, PointerEventType.Down);
+        }
+
+        if (wasLMBReleased)
+        {
+            potentialPied.mouseButton = MouseButton.Left;
+            DispatchPointer(targetObject, potentialPied, PointerEventType.Up);
+        }
+
+        if (wasRMBPressed)
+        {
+            potentialPied.mouseButton = MouseButton.Right;
+            DispatchPointer(targetObject, potentialPied, PointerEventType.Down);
+        }
+
+        if (wasRMBReleased)
+        {
+            potentialPied.mouseButton = MouseButton.Right;
+            DispatchPointer(targetObject, potentialPied, PointerEventType.Up);
+        }
+
+        if (mouseWheel != 0)
+        {
+            ScrollEventData potentialSed = new()
+            {
+                ScreenPosition = inputContext.mouseScreenPosition,
+                WorldPosition = inputContext.mouseWorldPosition,
+                ScreenDelta = inputContext.mouseScreenDelta,
+                WorldDelta = inputContext.mouseWorldDelta,
+                mouseButton = MouseButton.Middle,
+                MouseWheel = new Vector2(0, mouseWheel)
+            };
+
+            DispatchPointer(targetObject, potentialSed, mouseWheel < 0 ? PointerEventType.Down : PointerEventType.Up);
+        }
+    }
+
+    private static void HandlePointerHolderDrag(EditorObject pointerSelected)
     {
         if (pointerSelected is IDragable && inputContext.isMouseMoving)
         {
@@ -388,128 +443,10 @@ public static class InteractionManager
                 ScreenPosition = inputContext.mouseScreenPosition,
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
-                WorldDelta = inputContext.mouseWorldDelta,
-                IsDragRelated = true
+                WorldDelta = inputContext.mouseWorldDelta
             };
 
             DispatchPointer(pointerSelected, dragPied, PointerEventType.Drag);
-        }
-
-        PointerInteractEventData potentialPied = new()
-        {
-            ScreenPosition = inputContext.mouseScreenPosition,
-            WorldPosition = inputContext.mouseWorldPosition,
-            ScreenDelta = inputContext.mouseScreenDelta,
-            WorldDelta = inputContext.mouseWorldDelta,
-            IsDragRelated = false
-        };
-
-        if (wasLMBPressed)
-        {
-            potentialPied.mouseButton = MouseButton.Left;
-            DispatchPointer(pointerSelected, potentialPied, PointerEventType.Down);
-        }
-
-        if (wasLMBReleased)
-        {
-            potentialPied.mouseButton = MouseButton.Left;
-            DispatchPointer(pointerSelected, potentialPied, PointerEventType.Up);
-        }
-
-        if (wasRMBPressed)
-        {
-            potentialPied.mouseButton = MouseButton.Right;
-            DispatchPointer(pointerSelected, potentialPied, PointerEventType.Down);
-        }
-
-        if (wasRMBReleased)
-        {
-            potentialPied.mouseButton = MouseButton.Right;
-            DispatchPointer(pointerSelected, potentialPied, PointerEventType.Up);
-        }
-
-        if (mouseWheel != 0)
-        {
-            ScrollEventData potentialSed = new()
-            {
-                ScreenPosition = inputContext.mouseScreenPosition,
-                WorldPosition = inputContext.mouseWorldPosition,
-                ScreenDelta = inputContext.mouseScreenDelta,
-                WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = MouseButton.Middle,
-                IsDragRelated = false,
-                MouseWheel = new Vector2(0, mouseWheel)
-            };
-
-            DispatchPointer(currentlyHovered, potentialSed, mouseWheel < 0 ? PointerEventType.Down : PointerEventType.Up);
-        }
-    }
-
-    private static void HandleUnambiguousInput(EditorObject? currentlyHovered, bool wasLMBPressed, bool wasLMBReleased, bool wasRMBPressed, bool wasRMBReleased, float mouseWheel)
-    {
-        PointerInteractEventData potentialPied;
-
-        if (currentlyHovered != null)
-        {
-            potentialPied = new()
-            {
-                ScreenPosition = inputContext.mouseScreenPosition,
-                WorldPosition = inputContext.mouseWorldPosition,
-                ScreenDelta = inputContext.mouseScreenDelta,
-                WorldDelta = inputContext.mouseWorldDelta,
-                IsDragRelated = false
-            };
-        }
-        else
-        {
-            potentialPied = new()
-            {
-                ScreenPosition = inputContext.mouseScreenPosition,
-                WorldPosition = inputContext.mouseWorldPosition,
-                ScreenDelta = inputContext.mouseScreenDelta,
-                WorldDelta = inputContext.mouseWorldDelta,
-                IsDragRelated = false
-            };
-        }
-
-        if (wasLMBPressed)
-        {
-            potentialPied.mouseButton = MouseButton.Left;
-            DispatchPointer(currentlyHovered, potentialPied, PointerEventType.Down);
-        }
-
-        if (wasLMBReleased)
-        {
-            potentialPied.mouseButton = MouseButton.Left;
-            DispatchPointer(currentlyHovered, potentialPied, PointerEventType.Up);
-        }
-
-        if (wasRMBPressed)
-        {
-            potentialPied.mouseButton = MouseButton.Right;
-            DispatchPointer(currentlyHovered, potentialPied, PointerEventType.Down);
-        }
-
-        if (wasRMBReleased)
-        {
-            potentialPied.mouseButton = MouseButton.Right;
-            DispatchPointer(currentlyHovered, potentialPied, PointerEventType.Up);
-        }
-
-        if (mouseWheel != 0)
-        {
-            ScrollEventData potentialSed = new()
-            {
-                ScreenPosition = inputContext.mouseScreenPosition,
-                WorldPosition = inputContext.mouseWorldPosition,
-                ScreenDelta = inputContext.mouseScreenDelta,
-                WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = MouseButton.Middle,
-                IsDragRelated = false,
-                MouseWheel = new Vector2(0, mouseWheel)
-            };
-
-            DispatchPointer(currentlyHovered, potentialSed, mouseWheel < 0 ? PointerEventType.Down : PointerEventType.Up);
         }
     }
 
@@ -561,19 +498,27 @@ public static class InteractionManager
                 {
                     ScreenPosition = inputContext.mouseScreenPosition,
                     WorldPosition = inputContext.mouseWorldPosition,
-                    mouseButton = mousePressed.Value,
-                    IsDragRelated = false // Drag will always be false for global pointer down event.
+                    mouseButton = mousePressed.Value
                 };
 
                 Engine.NotifyAnyPointerDown(globalDownEvt, currentlyHit);
 
-                // If not double click, create new ambiguous gesture.
+                // If not double click, create new ambiguous gesture. Ambiguous because we don't know if it will be drag or click in the future.
                 ambiguousGestureCache = new PendingMouseGesture
                 {
                     Button = mousePressed.Value,
                     StartPosition = inputContext.mouseScreenPosition,
                     Target = currentlyHit
                 };
+
+                PointerInteractEventData downEvt = new()
+                {
+                    ScreenPosition = inputContext.mouseScreenPosition,
+                    WorldPosition = inputContext.mouseWorldPosition,
+                    mouseButton = mousePressed.Value
+                };
+
+                DispatchPointer(ambiguousGestureCache.Target, downEvt, PointerEventType.Down);
             }
 
             return;
@@ -591,10 +536,10 @@ public static class InteractionManager
         if (ambiguousGestureCache == null)
         {
             if (currentPointerHolder != null)
-            {
-                HandleCurrentPointerHolder(wasPressedOrReleased, wasLMBPressed, wasRMBPressed, wasLMBReleased, wasRMBReleased, currentPointerHolder, mouseWheel);
-            }
-            else HandleUnambiguousInput(currentlyHovered, wasLMBPressed, wasLMBReleased, wasRMBPressed, wasRMBReleased, mouseWheel);
+                HandlePointerHolderDrag(currentPointerHolder);
+
+            EditorObject? variousInputTargetObj = currentPointerHolder ?? currentlyHovered;
+            HandleVariousInput(variousInputTargetObj, wasLMBPressed, wasLMBReleased, wasRMBPressed, wasRMBReleased, mouseWheel);
         }
     }
 }

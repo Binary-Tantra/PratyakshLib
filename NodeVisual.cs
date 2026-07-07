@@ -1,8 +1,9 @@
 ﻿namespace RaylibNodeLibrary;
 
-using System.Numerics;
 using Raylib_cs;
+using RaylibNodeLibrary.DataModel;
 using RaylibNodeLibrary.UI;
+using System.Numerics;
 
 public class NodeVisual : Actor, IPointerInteractable, IDragable
 {
@@ -39,11 +40,14 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public int NodeId { get => nodeId; }
 
-    private NodeBodyLayout nodeBodyLayout;
+    private ChildLayout nodeBodyLayout;
+
+    private List<(int id, string name)> inputPortIdNames;
+    private List<(int id, string name)> outputPortIdNames;
+
+    private List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements;
 
     public NodeVisual(int nodeId,
-                      List<(int id, string name)> inputPortIdNames,
-                      List<(int id, string name)> outputPortIdNames,
                       List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
                       string title, float posX, float posY, Drawable? parent = null) : base(parent)
     {
@@ -58,6 +62,24 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         relativePosition.X = posX;
         relativePosition.Y = posY;
         
+        this.bodyUIElements = bodyUIElements;
+
+        UpdateNodeVisual();
+    }
+
+    public void UpdateNodeVisual()
+    {
+        Node? n = Engine.Graph.GetNode(nodeId);
+
+        if (n == null)
+        {
+            Console.WriteLine($"Error: While trying to update node visual, the connected node (id: {nodeId}) was not valid!");
+            return;
+        }
+
+        inputPortIdNames = n.InputPortIdNames;
+        outputPortIdNames = n.OutputPortIdNames;
+
         float width = 200;
         float height = 75;
 
@@ -68,13 +90,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         int portsPadding = 15;
         int portsSpacing = 35;
         int portsMax = Math.Max(inputPortIdNames.Count, outputPortIdNames.Count);
-        
+
         if (portsMax > 2)
         {
             height += (portsMax - 2) * portsSpacing + portsPadding;
         }
 
-        int uiElementsNeededHeight = portsInitialYOffset + bodyUIElements.Count * 25 + 10; // + 10 is extra space at end.
+        int uiElementsNeededHeight = portsInitialYOffset + (bodyUIElements.Count * 25) + ((bodyUIElements.Count - 1) * 5) + 10; // + 10 is extra space at end.
 
         if (height < uiElementsNeededHeight)
             height = uiElementsNeededHeight;
@@ -83,7 +105,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         for (int i = 0; i < bodyUIElements.Count; i++)
         {
             if (bodyUIElements[i].elemDesc is RectUIEDescription ruid)
-                uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.width ?? 150);
+            {
+                if (ruid.width == null && ruid is HorizontalGroupDesc gDesc)
+                {
+                    uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, (150 * gDesc.uiElements.Count) + (gDesc.uiElements.Count - 1) * gDesc.spacing);
+                }
+                else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.width ?? 150);
+            }
             else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
         }
 
@@ -102,7 +130,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         int bodyHPaddingInputSide = inputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
         int bodyHPaddingOutputSize = outputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
 
-        int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSize; 
+        int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSize;
 
         if (width - totalBodyHPadding < uiElementsNeededWidth)
         {
@@ -130,7 +158,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         rect = new Rectangle(relativePosition.X, relativePosition.Y, width, height);
         headerRect = new Rectangle(relativePosition.X, relativePosition.Y, headerWidth, headerHeight);
 
-        nodeBodyLayout = new NodeBodyLayout(bodyUIElements,
+        nodeBodyLayout = new ChildLayout(bodyUIElements,
                                             bodyHPaddingInputSide,
                                             portsInitialYOffset,
                                             bodyWidth,
@@ -213,6 +241,11 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
+    {
+        return false;
+    }
+
+    public bool OnDragStart(PointerInteractEventData evt)
     {
         if (evt.mouseButton != MouseButton.Left)
             return false;

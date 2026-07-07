@@ -2,7 +2,7 @@
 
 namespace RaylibNodeLibrary.UI;
 
-public class InspectorPanel : UILayout
+public class InspectorPanel : UILayoutBase
 {
     public InspectorPanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 200, 300, parent)
     {

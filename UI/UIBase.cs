@@ -4,7 +4,7 @@ namespace RaylibNodeLibrary.UI;
 
 public enum UIElementType
 {
-    Text, Button, InputField, Selectable
+    Text, Button, InputField, Selectable, Toggle, Dropdown, Group
 }
 
 public abstract class UIElementDescription
@@ -69,6 +69,44 @@ public class SelectableDesc : RectUIEDescription
     }
 }
 
+public class ToggleDesc : RectUIEDescription
+{
+    public bool startingState;
+    public Action<Toggle> onToggle;
+
+    public ToggleDesc(string text, bool startingState, int? width, int? height, Action<Toggle> onToggle) : base(text, width, height)
+    {
+        this.startingState = startingState;
+        this.onToggle = onToggle;
+    }
+}
+
+public class DropdownDesc : RectUIEDescription
+{
+    public string[] options;
+    public int selectedIndex;
+    public Action<Dropdown, int> onSelectionChanged;
+
+    public DropdownDesc(string[] options, int selectedIndex, int? width, int? height, Action<Dropdown, int> onSelectionChanged) : base("", width, height)
+    {
+        this.options = options;
+        this.selectedIndex = selectedIndex;
+        this.onSelectionChanged = onSelectionChanged;
+    }
+}
+
+public class HorizontalGroupDesc : RectUIEDescription
+{
+    public int spacing;
+    public List<(UIElementType elemType, UIElementDescription elemDesc)> uiElements;
+
+    public HorizontalGroupDesc(string layoutName, int spacing, List<(UIElementType, UIElementDescription)> uiElements, int? width, int? height) : base(layoutName, width, height)
+    {
+        this.spacing = spacing;
+        this.uiElements = uiElements;
+    }
+}
+
 public abstract class UIBase : EditorObject, IPointerVisitable
 {
     protected bool hovered;
@@ -78,7 +116,7 @@ public abstract class UIBase : EditorObject, IPointerVisitable
         hovered = false;
     }
 
-    protected override bool InteractionUseWorldPos()
+    public override bool InteractionUseWorldPos()
     {
         return false;
     }

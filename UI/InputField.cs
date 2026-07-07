@@ -12,9 +12,6 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     private int fontSize;
 
-    private Color bgColor;
-    private Color textColor;
-
     private bool isShowingPlaceholder = false;
     private bool isFocused = false;
 
@@ -23,7 +20,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public string InputFieldText { get => inputFieldText; }
 
-    public InputField(string placeholderText, string startingText, int posX, int posY, int width, int height, int fontSize = 15, Color? bgColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
+    public InputField(string placeholderText, string startingText, int posX, int posY, int width, int height, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -49,28 +46,51 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         this.height = height;
 
         this.fontSize = fontSize;
-
-        this.bgColor = bgColor ?? Color.LightGray;
-        this.textColor = textColor ?? Color.Black;
     }
 
     protected override void OnDraw()
     {
-        if (isFocused)
-        {
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, new Color((byte)0, (byte)0, (byte)200, (byte)255));
-            Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, width, height, new Color((byte)255, (byte)255, (byte)255, (byte)255));
-        }
-        else
-        {
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, bgColor);
-            Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, width, height, new Color((byte)25, (byte)25, (byte)25, (byte)255));
-        }
+        // Palette
+        Color fillColor = new((byte)38, (byte)38, (byte)38, (byte)255);
+        Color borderNormal = new((byte)85, (byte)85, (byte)85, (byte)255);
+        Color borderFocused = new((byte)65, (byte)120, (byte)200, (byte)255);
+        Color inputTextCol = new((byte)215, (byte)215, (byte)215, (byte)255);
+        Color placeholderCol = new((byte)105, (byte)105, (byte)105, (byte)255);
+        Color cursorCol = new((byte)190, (byte)190, (byte)190, (byte)255);
+
+        const int textPadX = 6;
+        int textY = (int)(Position.Y + (height - fontSize) / 2f);   // vertically center the text
+
+        // BG
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, fillColor);
+
+        // Border
+        Rectangle borderRect = new(Position.X, Position.Y, width, height);
         
         if (isFocused)
-            Raylib.DrawText(inputFieldText, (int)Position.X + 5, (int)Position.Y + 5, fontSize, new Color((byte)200, (byte)200, (byte)200, (byte)255));
+            Raylib.DrawRectangleLinesEx(borderRect, 2f, borderFocused);
         else
-            Raylib.DrawText(inputFieldText, (int)Position.X + 5, (int)Position.Y + 5, fontSize, textColor);
+            Raylib.DrawRectangleLinesEx(borderRect, 1f, borderNormal);
+
+        // Placeholder Text or Normal Text
+        if (isShowingPlaceholder)
+            Raylib.DrawText(placeholderText, (int)Position.X + textPadX, textY, fontSize, placeholderCol);
+        else
+            Raylib.DrawText(inputFieldText, (int)Position.X + textPadX, textY, fontSize, inputTextCol);
+
+        // Blinking Cursor
+        if (isFocused)
+        {
+            bool showCursorTime = (Raylib.GetTime() % 1.0 < 0.5);
+
+            if (showCursorTime)
+            {
+                int textW = isShowingPlaceholder ? 0 : Raylib.MeasureText(inputFieldText, fontSize);
+                int cursorX = (int)Position.X + textPadX + textW + 1;
+
+                Raylib.DrawLine(cursorX, (int)Position.Y + 3, cursorX, (int)Position.Y + height - 3, cursorCol);
+            }
+        }
     }
 
     protected override Rectangle OnGetInteractionRect()
@@ -80,6 +100,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
         SetFocus();
         return true;
     }
@@ -92,7 +115,10 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        return false;
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
+        return true;
     }
 
     private void SetIFText(string updated)
@@ -144,7 +170,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool OnKeyUp(KeyInteractEventData kvt)
     {
-        return false;
+        return true;
     }
 
     private void EndFocus()

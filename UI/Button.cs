@@ -6,14 +6,11 @@ public class Button : UIBase, IPointerInteractable
 {
     private System.Numerics.Vector2 dimensions;
     private string buttonText;
-
-    private Color buttonColor;
-    private Color textColor;
-
-    private Color hoverColor;
     
     private int fontSize;
     private bool hasBorder;
+
+    private bool pressed;
 
     private object payload;
 
@@ -25,7 +22,7 @@ public class Button : UIBase, IPointerInteractable
     public float Width { get => dimensions.X; }
     public float Height { get => dimensions.Y; }
 
-    public Button(float width, float height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Color? buttonColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
+    public Button(float width, float height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -39,14 +36,8 @@ public class Button : UIBase, IPointerInteractable
         this.payload = payload;
 
         this.buttonText = buttonText;
-        this.buttonColor = buttonColor ?? Color.LightGray;
-        this.textColor = textColor ?? Color.Black;
         this.fontSize = fontSize;
         this.hasBorder = hasBorder;
-
-        if (buttonColor == null)
-            hoverColor = Color.RayWhite;
-        else hoverColor = new Color(Raymath.Clamp(buttonColor.Value.R + 20, 0, 255), Raymath.Clamp(buttonColor.Value.G + 20, 0, 255), Raymath.Clamp(buttonColor.Value.B + 20, 0, 255), buttonColor.Value.A);
     }
 
     protected override Rectangle OnGetInteractionRect()
@@ -56,11 +47,32 @@ public class Button : UIBase, IPointerInteractable
 
     protected override void OnDraw()
     {
-        if (hovered) Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, hoverColor);
-        else Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, buttonColor);
+        // Palette
+        Color fillNormal = new((byte)48, (byte)48, (byte)48, (byte)255);
+        Color fillHover = new((byte)64, (byte)64, (byte)64, (byte)255);
+        Color fillPressed = new((byte)30, (byte)30, (byte)30, (byte)255);
+        Color borderNorm = new((byte)75, (byte)75, (byte)75, (byte)255);
+        Color borderHover = new((byte)108, (byte)108, (byte)108, (byte)255);
+        Color labelColor = new((byte)200, (byte)200, (byte)200, (byte)255);
 
-        if (hasBorder) Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, Color.RayWhite);
-        Raylib.DrawText(buttonText, (int)Position.X, (int)Position.Y + fontSize / 2, fontSize - 1, textColor);
+        // Fill
+        Color fillColor = pressed ? fillPressed : (hovered ? fillHover : fillNormal);
+        //if (hovered) Console.WriteLine(fillColor);
+        Color borderColor = hovered ? borderHover : borderNorm;
+
+        // BG
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, fillColor);
+
+        // Border
+        if (hasBorder)
+            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, dimensions.X, dimensions.Y), 1f, borderColor);
+
+        // Text (centered)
+        int textW = Raylib.MeasureText(buttonText, fontSize);
+        int textX = (int)(Position.X + (dimensions.X - textW) / 2f);
+        int textY = (int)(Position.Y + (dimensions.Y - fontSize) / 2f);
+
+        Raylib.DrawText(buttonText, textX, textY, fontSize, labelColor);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -68,12 +80,17 @@ public class Button : UIBase, IPointerInteractable
         if (evt.mouseButton != MouseButton.Left)
             return false;
 
-        onButtonPressed?.Invoke(this);
+        pressed = true;
         return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        return false;
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
+        onButtonPressed?.Invoke(this);
+        pressed = false;
+        return true;
     }
 }

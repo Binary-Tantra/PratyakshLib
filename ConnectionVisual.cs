@@ -18,7 +18,7 @@ public class ConnectionVisual : EditorObject
         connectionWireUI.Show();
     }
 
-    protected override bool InteractionUseWorldPos()
+    public override bool InteractionUseWorldPos()
     {
         return true;
     }

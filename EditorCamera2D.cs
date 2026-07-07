@@ -61,12 +61,17 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
         return new Rectangle(0, 0, 0, 0);
     }
 
-    protected override bool InteractionUseWorldPos()
+    public override bool InteractionUseWorldPos()
     {
         return false;
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
+    {
+        return false;
+    }
+
+    public bool OnDragStart(PointerInteractEventData evt)
     {
         if (evt.mouseButton != MouseButton.Right)
             return false;
@@ -97,5 +102,20 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
     {
         UpdateZoom(evt.ScreenPosition, evt.WorldPosition, evt.MouseWheel.Y);
         return true;
+    }
+
+    public Rectangle GetWorldToScreenRect(Rectangle target)
+    {
+        return GetWorldToScreenRect(new Vector2(target.X, target.Y), new Vector2(target.Width, target.Height));
+    }
+
+    public Rectangle GetWorldToScreenRect(Vector2 screenPos, Vector2 size)
+    {
+        Vector2 otherCornerPos = screenPos + size;
+
+        Vector2 worldPos = Raylib.GetWorldToScreen2D(screenPos, rCam2D);
+        Vector2 worldOtherCorner = Raylib.GetWorldToScreen2D(otherCornerPos, rCam2D);
+
+        return new Rectangle(worldPos.X, worldPos.Y, worldOtherCorner.X - worldPos.X, worldOtherCorner.Y - worldPos.Y);
     }
 }

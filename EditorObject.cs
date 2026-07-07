@@ -61,10 +61,39 @@ public abstract class EditorObject : Drawable, IInteractable
 
     protected virtual void OnDelete() { }
 
-    protected abstract bool InteractionUseWorldPos();
+    public abstract bool InteractionUseWorldPos();
+
+    protected bool CheckAncestorsForInteractWorldPos()
+    {
+        bool worldSpace = false;
+        Drawable? par = Parent;
+
+        // Ooof...TODO: This should not be needed...but currently it works.
+        while (par != null)
+        {
+            if (par is EditorObject ob && ob.InteractionUseWorldPos())
+            {
+                worldSpace = true;
+                break;
+            }
+            else par = par.Parent;
+        }
+
+        return worldSpace;
+    }
 
     public Rectangle GetInteractableRect()
     {
-        return OnGetInteractionRect();
+        Rectangle finalRect = OnGetInteractionRect();
+
+        if (!InteractionUseWorldPos()) // Only check if self doesn't use world space. If self does use world space...dont check in that case, as that would be wrong.
+        {
+            bool worldSpace = CheckAncestorsForInteractWorldPos(); // Just check ancestors if they are in world space...don't need to check self in world space, as that happens in the HitTest function already.
+
+            if (worldSpace)
+                finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
+        }
+
+        return finalRect;
     }
 }

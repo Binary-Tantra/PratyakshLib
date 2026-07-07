@@ -10,6 +10,8 @@ public class Engine
     private static int screenWidth;
     private static int screenHeight;
 
+    public static float DeltaTime => Raylib.GetFrameTime();
+
     private static EditorCamera2D camera;
     private static Canvas canvas;
 
@@ -49,10 +51,19 @@ public class Engine
         varToNodeUIsDict.Add(varId, []);
     }
 
-
     public static void NotifyAddNode(int nodeId)
     {
         nodeToNodeUIDict.Add(nodeId, null);
+    }
+
+    public static void NotifyUpdateNode(int nodeId)
+    {
+        if (nodeToNodeUIDict.TryGetValue(nodeId, out NodeVisual? nodeVis))
+        {
+            if (nodeVis != null)
+                nodeVis.UpdateNodeVisual();
+            else Console.WriteLine($"Error: While notify update node, connected node vis to Node id {nodeId} was not valid!");
+        }
     }
 
     public static void NotifyAddPort(int portId)
@@ -158,24 +169,35 @@ public class Engine
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
                 Node n = graph.AddNode(0, 0);
-                List<(int, string)> inputPortIds = n.InputPortIdNames;
-                List<(int, string)> outputPortIds = n.OutputPortIdNames;
 
-                NodeVisual testNodeVis = new(n.Id, inputPortIds, outputPortIds,
+                NodeVisual testNodeVis2 = new(n.Id,
+                    [(UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
+                    (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
+                    (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
+                    (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))],
+                    "Node 2", mp.X, mp.Y);
+
+                actors.Add(testNodeVis2);
+            }
+            else if (button.ButtonText == "Add Class Node")
+            {
+                Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
+
+                Node n = graph.AddNode(0, 1);
+
+                NodeVisual testNodeVis = new(n.Id,
                     [(UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
                     (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
                     (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
                     (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
-                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))],
+                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => n.AddOutputPort())),
+                    (UIElementType.Group, new HorizontalGroupDesc("", 50,
+                        [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
+                        (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
+                    (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))],
                     "Node", mp.X, mp.Y);
 
-                NodeVisual testNodeVis2 = new(n.Id, inputPortIds, outputPortIds,
-                    [(UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
-                    (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
-                    (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); }))],
-                    "Node 2", mp.X, mp.Y);
-
-                actors.Add(testNodeVis2);
+                actors.Add(testNodeVis);
             }
             else if (button.ButtonText == "Get Var")
             {
@@ -191,11 +213,7 @@ public class Engine
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
                 Node n = graph.AddNode(0, 1);
-
-                List<(int, string)> inputPortIds = n.InputPortIdNames;
-                List<(int, string)> outputPortIds = n.OutputPortIdNames;
-
-                NodeVisual varGetNodeVis = new(n.Id, inputPortIds, outputPortIds,
+                NodeVisual varGetNodeVis = new(n.Id,
                     [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))],
                     "GetVar", mp.X, mp.Y);
 
@@ -356,6 +374,7 @@ public class Engine
         RenderWorld();
         RenderUI();
         RenderEditorObjects();
+        RenderDeferred();
     }
 
     private static void RenderWorld()
@@ -382,6 +401,28 @@ public class Engine
             editorObjects[i].Render();
     }
 
+    private static void RenderDeferred()
+    {
+        for (int i = 0; i < deferredRects.Count; i++)
+            Raylib.DrawRectangle(
+                                (int)deferredRects[i].rect.X,
+                                (int)deferredRects[i].rect.Y,
+                                (int)deferredRects[i].rect.Width,
+                                (int)deferredRects[i].rect.Height,
+                                deferredRects[i].color
+                                );
+
+        // Clear after draw to wait for next frame.
+        deferredRects.Clear();
+    }
+
+    private static List<(Rectangle rect, Color color)> deferredRects = new();
+
+    public static void DrawDeferredWorldSpaceRect(Rectangle rect, Color color)
+    {
+        deferredRects.Add((rect, color));
+    }
+
     public static void Cleanup()
     {
         Raylib.CloseWindow();
@@ -389,13 +430,13 @@ public class Engine
 
     public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet)
     {
-        if (!evt.IsDragRelated && pet == PointerEventType.Up && (evt.mouseButton == MouseButton.Right || evt.mouseButton == MouseButton.Left))
+        if (pet == PointerEventType.Up && (evt.mouseButton == MouseButton.Right || evt.mouseButton == MouseButton.Left))
             canvas.OnMouseUp(evt);
 
-        if (evt.IsDragRelated && pet == PointerEventType.Down && evt.mouseButton == MouseButton.Right)
-            camera.OnMouseDown(evt);
+        if (pet == PointerEventType.DragStart && evt.mouseButton == MouseButton.Right)
+            camera.OnDragStart(evt);
 
-        if (!evt.IsDragRelated && (pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.mouseButton == MouseButton.Middle && evt is ScrollEventData sed)
+        if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.mouseButton == MouseButton.Middle && evt is ScrollEventData sed)
             camera.OnScroll(sed);
     }
 

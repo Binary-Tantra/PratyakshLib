@@ -60,4 +60,11 @@ public class Node : DataObject
                 Engine.NotifyRemovePort(keys[i]);
         }
     }
+
+    public void AddOutputPort()
+    {
+        Port newO = new($"Output ({Id})", PortFlowType.Output);
+        outputPorts.Add(newO.Id, newO);
+        Engine.NotifyUpdateNode(Id);
+    }
 }

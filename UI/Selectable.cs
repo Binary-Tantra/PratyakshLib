@@ -73,12 +73,34 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     protected override void OnDraw()
     {
-        if (isBeingEdited) editIF.Render();
-        else
+        if (isBeingEdited)
         {
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, isSelected ? bgSelectionColor : bgColor);
-            Raylib.DrawText(selectableText, (int)Position.X, (int)Position.Y, fontSize, textColor);
+            editIF.Render();
+            return;
         }
+
+        // Palette
+        Color fillNormal = new((byte)38, (byte)38, (byte)38, (byte)255);
+        Color fillHover = new((byte)55, (byte)55, (byte)55, (byte)255);
+        Color fillSelected = new((byte)28, (byte)50, (byte)88, (byte)255);
+        Color accentBar = new((byte)65, (byte)120, (byte)200, (byte)255);
+        Color textNormal = new((byte)200, (byte)200, (byte)200, (byte)255);
+        Color textSelected = new((byte)220, (byte)228, (byte)255, (byte)255);
+
+        const int accentW = 3;
+        const int textPadX = 9;
+
+        // BG fill according to selection.
+        Color fill = isSelected ? fillSelected : (hovered ? fillHover : fillNormal);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, fill);
+
+        // Left accent bar (when selected)
+        if (isSelected)
+            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, height, accentBar);
+
+        // Text
+        int textY = (int)(Position.Y + (height - fontSize) / 2f);
+        Raylib.DrawText(selectableText, (int)Position.X + textPadX, textY, fontSize, isSelected ? textSelected : textNormal);
     }
 
     protected override void OnUpdate()
@@ -113,6 +135,9 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
         isSelected = true;
         onSelectableSelect?.Invoke(this);
 
@@ -121,11 +146,17 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        return false;
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
+        return true;
     }
 
     public bool OnDoubleClick(PointerInteractEventData eventData)
     {
+        if (eventData.mouseButton != MouseButton.Left)
+            return false;
+
         isBeingEdited = true;
         editIF.SetFocus();
 

@@ -20,14 +20,6 @@ public struct LayoutOperation
     public int PosModifiedCount { get; set; }
 }
 
-public struct RaylibScrollData
-{
-    public Rectangle PanelRec { get; set; }
-    public Rectangle PanelContentRec { get; set; }
-    public Rectangle PanelView { get; set; }
-    public Vector2 PanelScroll { get; set; }
-}
-
 public class RlSimpleLayout
 {
     private LayoutOperation[] layoutOps = new LayoutOperation[10];
@@ -44,10 +36,19 @@ public class RlSimpleLayout
     private Dictionary<int, Button> layoutButtons = [];
     private Dictionary<int, Selectable> layoutSelectables = [];
     private Dictionary<int, InputField> layoutInputFields = [];
+    private Dictionary<int, Toggle> layoutToggles = [];
+    private Dictionary<int, ScrollView> layoutScrollViews = [];
+    private Dictionary<int, Dropdown> layoutDropdowns = [];
 
-    public void InitFont(Font font)
+    private Stack<EditorObject?> parentStack = new();
+    private Stack<int> activeScrollViews = new();
+
+    EditorObject? defaultParent = null;
+
+    public void Init(Font font, EditorObject? defaultParent)
     {
         textFont = font;
+        this.defaultParent = defaultParent;
     }
 
     public void ResetLayout()
@@ -56,12 +57,14 @@ public class RlSimpleLayout
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
 
+
         List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
         
         for (int i = 0; i < lbs.Count; i++)
             lbs[i].Delete();
 
         layoutButtons.Clear();
+
 
         List<Selectable> lss = [.. layoutSelectables.Select((kvp) => kvp.Value)];
 
@@ -70,12 +73,37 @@ public class RlSimpleLayout
 
         layoutSelectables.Clear();
 
+
         List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
 
         for (int i = 0; i < lifs.Count; i++)
             lifs[i].Delete();
 
         layoutInputFields.Clear();
+
+
+        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
+        
+        for (int i = 0; i < lts.Count; i++)
+            lts[i].Delete();
+        
+        layoutToggles.Clear();
+
+
+        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
+        
+        for (int i = 0; i < lsvs.Count; i++)
+            lsvs[i].Delete();
+        
+        layoutScrollViews.Clear();
+
+
+        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
+        
+        for (int i = 0; i < ldd.Count; i++)
+            ldd[i].Delete();
+        
+        layoutDropdowns.Clear();
     }
 
     public void UpdateLayoutElements()
@@ -91,6 +119,18 @@ public class RlSimpleLayout
         List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
         for (int i = 0; i < lifs.Count; i++)
             lifs[i].Update();
+
+        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lts.Count; i++)
+            lts[i].Update();
+
+        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lsvs.Count; i++)
+            lsvs[i].Update();
+
+        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < ldd.Count; i++)
+            ldd[i].Update();
     }
 
     public void RemoveLayoutButton(int id)
@@ -108,8 +148,20 @@ public class RlSimpleLayout
         _ = layoutInputFields.Remove(id);
     }
 
+    public void RemoveLayoutToggle(int id)
+    {
+        _ = layoutToggles.Remove(id);
+    }
+
     public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
+        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
+        for (int i = ldd.Count - 1; i >= 0; i--)
+        {
+            var hit = ldd[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
         List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
         for (int i = lbs.Count - 1; i >= 0; i--)
         {
@@ -128,6 +180,20 @@ public class RlSimpleLayout
         for (int i = lifs.Count - 1; i >= 0; i--)
         {
             var hit = lifs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
+        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
+        for (int i = lts.Count - 1; i >= 0; i--)
+        {
+            var hit = lts[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
+        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
+        for (int i = lsvs.Count - 1; i >= 0; i--)
+        {
+            var hit = lsvs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
@@ -170,14 +236,22 @@ public class RlSimpleLayout
             return LYOGetPos(lastVerticalIdx);
     }
 
-    public int GetScrollH(RaylibScrollData scrollData)
+    public int CurrentWidth()
     {
-        return (int)scrollData.PanelContentRec.Width;
-    }
+        int idx = -1;
+        for (int i = 0; i < layoutOps.Length; i++)
+        {
+            if (layoutOps[i].OpType == LayoutOpType.Horizontal)
+            {
+                idx = i;
+                break;
+            }
+        }
 
-    public int GetScrollV(RaylibScrollData scrollData)
-    {
-        return (int)scrollData.PanelContentRec.Height;
+        if (idx == -1)
+            return 0;
+
+        return PosX() - LYOGetPos(idx);
     }
 
     public int PosX_Dynamic()
@@ -313,11 +387,11 @@ public class RlSimpleLayout
         cachedButton.Render();
     }
 
-    private void DrawButton_Internal(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color buttonColor, Color textColor)
+    private void DrawButton_Internal(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder)
     {
         if (!layoutButtons.TryGetValue(id, out Button? cachedButton))
         {
-            cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, buttonColor, textColor, null);
+            cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, defaultParent);
             layoutButtons.Add(id, cachedButton);
         }
 
@@ -341,7 +415,7 @@ public class RlSimpleLayout
     {
         if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
         {
-            cachedSelectable = new Selectable(selectableText, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, null);
+            cachedSelectable = new Selectable(selectableText, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
             layoutSelectables.Add(id, cachedSelectable);
         }
 
@@ -351,16 +425,44 @@ public class RlSimpleLayout
         return cachedSelectable;
     }
 
-    private void DrawInputField_Internal(int id, string placeholderText, string startingText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, int fontSize, Color bgColor, Color textColor)
+    private void DrawInputField_Internal(int id, string placeholderText, string startingText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, int fontSize)
     {
         if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
         {
-            cachedInputField = new InputField(placeholderText, startingText, posX, posY, inputFieldWidth, inputFieldHeight, fontSize, bgColor, textColor);
+            cachedInputField = new InputField(placeholderText, startingText, posX, posY, inputFieldWidth, inputFieldHeight, fontSize, defaultParent);
             layoutInputFields.Add(id, cachedInputField);
         }
 
         cachedInputField.RelativePosition = new Vector2(posX, posY);
         cachedInputField.Render();
+    }
+
+    private void DrawToggle_Internal(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle> onToggleChanged, object payload)
+    {
+        if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
+        {
+            cachedToggle = new Toggle(startingValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+            layoutToggles.Add(id, cachedToggle);
+        }
+
+        cachedToggle.RelativePosition = new Vector2(posX, posY);
+        cachedToggle.Render();
+    }
+
+    private void DrawDropdown_Internal(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, int fontSize)
+    {
+        if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
+        {
+            cachedDropdown = new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
+            layoutDropdowns.Add(id, cachedDropdown);
+        }
+
+        // If the list size changed significantly over time, rebuild.
+        if (cachedDropdown.Options.Length != options.Length)
+            cachedDropdown.SetOptions(options, selectedIndex);
+
+        cachedDropdown.RelativePosition = new Vector2(posX, posY);
+        cachedDropdown.Render();
     }
 
     public void Text(string text, Color fontColor, bool updateLayout = true)
@@ -416,25 +518,45 @@ public class RlSimpleLayout
 
     public void Button(Button button, bool updateLayout = true)
     {
-        DrawButton_Internal(button, PosX_Dynamic(), PosY_Dynamic());
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawButton_Internal(button, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny((int)button.Width, (int)button.Height);
     }
 
     public void Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, bool updateLayout = true)
     {
-        DrawButton_Internal(id, buttonText, PosX_Dynamic(), PosY_Dynamic(), buttonWidth, buttonHeight, onButtonPressed, payload, 15, true, Color.LightGray, Color.DarkGray);
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawButton_Internal(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true);
         if (updateLayout) DrawAny(buttonWidth, buttonHeight);
     }
 
     public void Selectable(Selectable selectable, bool updateLayout = true)
     {
-        DrawSelectable_Internal(selectable, PosX_Dynamic(), PosY_Dynamic());
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawSelectable_Internal(selectable, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny(selectable.Width, selectable.Height);
     }
 
     public Selectable Selectable(int id, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object payload, bool updateLayout = true)
     {
-        Selectable selectable = DrawSelectable_Internal(id, selectableText, PosX_Dynamic(), PosY_Dynamic(), selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+        
+        Selectable selectable = DrawSelectable_Internal(id, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
         if (updateLayout) DrawAny(selectableWidth, selectableHeight);
 
         return selectable;
@@ -442,8 +564,40 @@ public class RlSimpleLayout
 
     public void InputField(int id, string placeholderText, string startingText, int inputFieldWidth, int inputFieldHeight, bool updateLayout = true)
     {
-        DrawInputField_Internal(id, placeholderText, startingText, PosX_Dynamic(), PosY_Dynamic(), inputFieldWidth, inputFieldHeight, 15, Color.LightGray, Color.Black);
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawInputField_Internal(id, placeholderText, startingText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, 15);
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
+    }
+
+    public void Toggle(int id, bool startingValue, string label, int toggleWidth, int toggleHeight, Action<Toggle> onToggleChanged, object payload, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawToggle_Internal(id, startingValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        if (updateLayout) DrawAny(toggleWidth, toggleHeight);
+    }
+
+    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null)
+            pos -= defaultParent.Position;
+
+        DrawDropdown_Internal(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, 15);
+
+        Dropdown cached = layoutDropdowns[id];
+
+        // Core accordion logic: layout relies on the Dropdown reporting its expanded height.
+        if (updateLayout) DrawAny(width, cached.Height);
+        return cached;
     }
 
     public void BeginHorizontal(int spacingDist)
@@ -478,42 +632,93 @@ public class RlSimpleLayout
         DrawAny(endWidth, 0);
     }
 
-    public Rectangle GetRectFromScrollView(RaylibScrollData scrollData)
+    // Add the spacing parameter to the method signature
+    public void BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
     {
-        return new Rectangle(scrollData.PanelRec.X + scrollData.PanelScroll.X, scrollData.PanelRec.Y + scrollData.PanelScroll.Y, scrollData.PanelContentRec.Width, scrollData.PanelContentRec.Height);
+        if (!layoutScrollViews.TryGetValue(id, out ScrollView? svc))
+        {
+            svc = new ScrollView(viewWidth, viewHeight, defaultParent);
+            layoutScrollViews.Add(id, svc);
+        }
+
+        svc.SetViewSize(new Vector2(viewWidth, viewHeight));
+        svc.RelativePosition = new Vector2(PosX_Dynamic(), PosY_Dynamic() + startYOffset);
+
+        if (defaultParent != null)
+            svc.RelativePosition -= defaultParent.Position;
+
+        Rectangle scissorRect = svc.GetScissorRect();
+
+        float scissorEndX = scissorRect.X + scissorRect.Width;
+        float scissorEndY = scissorRect.Y + scissorRect.Height;
+
+        // Now we cut the scroll scissor according to current parent's scissor if current parent scissor is smaller than required scroll scissor XD
+        float defaultParentEndX;
+        float defaultParentEndY;
+
+        if (defaultParent != null)
+        {
+            // TODO: Using interactable rect's width/height instead of visual's! For now it works.
+            defaultParentEndX = defaultParent.Position.X + defaultParent.GetInteractableRect().Width;
+            defaultParentEndY = defaultParent.Position.Y + defaultParent.GetInteractableRect().Height;
+        }
+        else defaultParentEndX = defaultParentEndY = float.PositiveInfinity;
+
+        int scissorWidth;
+        int scissorHeight;
+
+        if (defaultParentEndX < scissorEndX)
+            scissorWidth = (int)(scissorRect.Width - (scissorEndX - defaultParentEndX));
+        else
+            scissorWidth = (int)scissorRect.Width;
+
+        if (defaultParentEndY < scissorEndY)
+            scissorHeight = (int)(scissorRect.Height - (scissorEndY - defaultParentEndY));
+        else
+            scissorHeight = (int)scissorRect.Height;
+
+        Raylib.BeginScissorMode((int)scissorRect.X, (int)scissorRect.Y, scissorWidth, scissorHeight);
+
+        int startX = (int)svc.Position.X;
+        int startY = (int)svc.Position.Y;
+
+        // Pass the spacing to the internal vertical layout!
+        BeginHorizontalEx(0, startX + (int)svc.ScrollOffset.X);
+        BeginVerticalEx(spacing, startY + (int)svc.ScrollOffset.Y);
+
+        parentStack.Push(defaultParent);
+        defaultParent = svc;
+        activeScrollViews.Push(id);
     }
 
-    public void BeginScrollView(ref RaylibScrollData scrollData, int width, int height, Vector2 panelContentSize, out Vector2 panelScrollOut)
+    public void EndScrollView()
     {
-        int xx = PosX();
-        int yy = PosY();
+        if (activeScrollViews.Count == 0) return;
 
-        scrollData.PanelRec = new Rectangle(xx, yy, width, height);
-        scrollData.PanelContentRec = new Rectangle(xx, yy, panelContentSize.X, panelContentSize.Y);
+        int svId = activeScrollViews.Pop();
+        ScrollView svc = layoutScrollViews[svId];
 
-        //GuiScrollPanel(scrollData.PanelRec, null, scrollData.PanelContentRec, &scrollData.PanelScroll, &scrollData.PanelView);
-        panelScrollOut = scrollData.PanelScroll;
+        int contentWidth = PosX() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
+        int contentHeight = PosY() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
 
-        BeginScissorMode((int)scrollData.PanelView.X, (int)scrollData.PanelView.Y, (int)scrollData.PanelView.Width, (int)scrollData.PanelView.Height);
+        svc.SetContentSize(new Vector2(Math.Max(svc.ViewSize.X, contentWidth), Math.Max(svc.ViewSize.Y, contentHeight)));
 
-        Rectangle r = GetRectFromScrollView(scrollData);
+        EndVertical(contentWidth);
+        EndHorizontal(contentHeight);
 
-        BeginHorizontalEx(0, (int)r.X);
-        BeginVerticalEx(0, (int)r.Y);
+        Raylib.EndScissorMode();
 
-        scrollWidthCache = (int)r.Width;
-        scrollHeightCache = (int)r.Height;
-    }
+        defaultParent = parentStack.Pop();
 
-    public void EndScrollView(int finalSize)
-    {
-        EndVertical(scrollHeightCache);
-        EndHorizontal(scrollWidthCache);
+        // Re-apply the parent's scissor rect to prevent leaking out of bounds
+        if (defaultParent != null)
+        {
+            Rectangle pRect = defaultParent.GetInteractableRect();
+            Raylib.BeginScissorMode((int)pRect.X, (int)pRect.Y, (int)pRect.Width, (int)pRect.Height);
+        }
 
-        scrollHeightCache = scrollWidthCache = -1;
-
-        EndScissorMode();
-        DrawAny(finalSize, finalSize);
+        svc.Render();
+        DrawAny((int)svc.ViewSize.X, (int)svc.ViewSize.Y);
     }
 
     public void AddSpace(int space)
@@ -524,5 +729,10 @@ public class RlSimpleLayout
     public void NotifyDraw(int width, int height)
     {
         DrawAny(width, height);
+    }
+
+    public void RemoveLayoutDropdown(int id)
+    {
+        _ = layoutDropdowns.Remove(id);
     }
 }

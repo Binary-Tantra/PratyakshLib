@@ -27,7 +27,6 @@ public class PointerInteractEventData : InputEventData
     public Vector2 WorldPosition { get; internal set; }
     public Vector2 ScreenDelta { get; internal set; }
     public Vector2 WorldDelta { get; internal set; }
-    public bool IsDragRelated { get; internal set; }
 }
 
 public interface IPointerInteractable
@@ -53,6 +52,7 @@ public interface IDoubleClickable
 
 public interface IDragable
 {
+    public bool OnDragStart(PointerInteractEventData evt);
     public void OnDrag(PointerInteractEventData evt);
 }
 

@@ -7,6 +7,7 @@ public class Canvas : UIBase, IPointerInteractable
 {
     private VariablePanel variablePanel;
     private InspectorPanel inspectorPanel;
+    private DemoPanel demoPanel;
     
     private ContextMenu? contextMenu;
     public Action<Button, Drawable?> onContextBtnPressed;
@@ -17,6 +18,7 @@ public class Canvas : UIBase, IPointerInteractable
 
         variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable);
         inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20);
+        demoPanel = new DemoPanel(60, 70);
 
         Engine.OnAnyPointerDown += HandleGlobalClickAway;
     }
@@ -26,6 +28,7 @@ public class Canvas : UIBase, IPointerInteractable
         contextMenu?.Update();
         variablePanel.Update();
         inspectorPanel.Update();
+        demoPanel.Update();
     }
 
     protected override void OnDraw()
@@ -33,6 +36,7 @@ public class Canvas : UIBase, IPointerInteractable
         variablePanel.Render();
         inspectorPanel.Render();
         contextMenu?.Render();
+        demoPanel.Render();
     }
 
     protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
@@ -46,6 +50,9 @@ public class Canvas : UIBase, IPointerInteractable
         hit = variablePanel.HitTest(mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
+        hit = demoPanel.HitTest(mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
+
         return null;
     }
 
@@ -54,7 +61,7 @@ public class Canvas : UIBase, IPointerInteractable
         return new Rectangle(0, 0, 0, 0);
     }
 
-    protected override bool InteractionUseWorldPos()
+    public override bool InteractionUseWorldPos()
     {
         return false;
     }
@@ -82,7 +89,7 @@ public class Canvas : UIBase, IPointerInteractable
             current = current.Parent as EditorObject;
         }
 
-        if (!clickedInsideMenu && evt.mouseButton == MouseButton.Left)
+        if (!clickedInsideMenu && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
             RemoveCtxMenu();
     }
 
@@ -114,16 +121,21 @@ public class Canvas : UIBase, IPointerInteractable
 
         RemoveCtxMenu();
 
+        string addNodeStr = "Add Node";
+        string addClsNdStr = "Add Class Node";
+        string getVarStr = "Get Var";
+        string deleteStr = "Delete";
+
         if (InteractionManager.CurrentlyHit == null)
         {
-            List<(string, object)> mis = Engine.CurrentlySelectedVarId == null ? [("Add Node", 0)] : [("Add Node", 0), ("Get Var", Engine.CurrentlySelectedVarId)];
+            List<(string, object)> mis = Engine.CurrentlySelectedVarId == null ? [(addNodeStr, 0), (addClsNdStr, 1)] : [(addNodeStr, 0), (addClsNdStr, 1), (getVarStr, Engine.CurrentlySelectedVarId)];
             ContextMenu cm = new(mis, (button) => OnCtxBtnPressed(button, null), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }
         else if (InteractionManager.CurrentlyHit is NodeVisual nui)
         {
-            ContextMenu cm = new([("Delete", 0)], (button) => OnCtxBtnPressed(button, nui), null);
+            ContextMenu cm = new([(deleteStr, 0)], (button) => OnCtxBtnPressed(button, nui), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }

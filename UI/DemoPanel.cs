@@ -3,20 +3,26 @@ using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
 
-public class DemoPanel : UILayout
+public class DemoPanel : UILayoutBase
 {
     private int selectedSpace = 15;
     private Color currentSelectedColor = Color.Black;
 
+    private int scrollViewId;
     private int[] buttonIds;
     private int inputFieldId;
     private int[] selectableIds;
+    private int scrollView2Id;
+    private int dropdownId;
 
-    public DemoPanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 400, 350, parent)
+    public DemoPanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 400, 410, parent)
     {
+        scrollViewId = IdGen.GetNewID();
         buttonIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
         inputFieldId = IdGen.GetNewID();
-        selectableIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
+        selectableIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
+        scrollView2Id = IdGen.GetNewID();
+        dropdownId = IdGen.GetNewID();
     }
 
     // Callbacks for our interactive elements
@@ -39,34 +45,28 @@ public class DemoPanel : UILayout
             Raylib.Fade(Color.DarkBlue, 0.7f),
             Raylib.Fade(Color.Gray, 0.65f),
             Color.White, 0.1f, false);
-
+        
         // Calculate the starting Y position just below the header (header is 10% of 350 = 35px)
         int startY = (int)Position.Y + 40;
 
-        // 2. Start the main vertical flow for the panel contents
-        layout.BeginVerticalEx(10, startY);
+        layout.BeginScrollView(scrollViewId, layoutWidth, 370, 40, 10);
         {
             layout.AddSpace(5);
-
+            
             // --- A simple text element ---
             layout.Text("Welcome to the Demo Panel!", Color.Gold);
-
+            
             layout.AddSpace(5);
 
-            // --- Horizontal Row 1: Action Buttons ---
-            layout.BeginHorizontal(15);
+            // We add a little margin on the left
+            layout.BeginHorizontalEx(10, (int)Position.X + 10);
             {
-                // We add a little margin on the left
-                layout.BeginHorizontalEx(10, (int)Position.X + 10);
-                {
-                    layout.Button(buttonIds[0], "Space = 15", 90, 25, OnDemoButtonPressed, 15);
-                    layout.Button(buttonIds[1], "Space = 30", 90, 25, OnDemoButtonPressed, 30);
-                    layout.Button(buttonIds[2], "Space = 45", 90, 25, OnDemoButtonPressed, 45);
-                }
-                layout.EndHorizontal(90 * 3 + 30);
+                layout.Button(buttonIds[0], "Space = 15", 90, 25, OnDemoButtonPressed, 15);
+                layout.Button(buttonIds[1], "Space = 30", 90, 25, OnDemoButtonPressed, 30);
+                layout.Button(buttonIds[2], "Space = 45", 90, 25, OnDemoButtonPressed, 45);
             }
             layout.EndHorizontal(25);
-
+            
             layout.AddSpace(10);
 
             // --- Horizontal Row 2: Form Input ---
@@ -83,24 +83,42 @@ public class DemoPanel : UILayout
             // --- Horizontal Row 3: Nested Layouts & Panels ---
             layout.TextPanelPro("Nested Selectables & Colored Panel", layoutWidth - 20, 25, Color.DarkGreen, Color.White);
 
+            layout.AddSpace(15);
+
+            int height = 0;
+            layout.BeginHorizontalEx(10, (int)Position.X + 10);
+            {
+                layout.Text("Resolution: ", Color.White);
+                layout.AddSpace(50);
+                height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], 0, 150, 25, (dd, idx) =>
+                {
+                    Console.WriteLine($"Dropdown updated -> Index: {idx} | Value: {dd.SelectedOption}");
+                }, dropdownId).Height;
+            }
+            layout.EndHorizontal(height);
+
+            layout.AddSpace(15);
+
             layout.BeginHorizontalEx(15, (int)Position.X + 10);
             {
-                // Left Column: A vertical list of selectables
-                layout.BeginVertical(5);
+                layout.BeginScrollView(scrollView2Id, 135, 120, 0, 5);
                 {
                     layout.Selectable(selectableIds[0], "Red", 120, 20, OnDemoSelectablePressed, Color.Red);
                     layout.Selectable(selectableIds[1], "Sky Blue", 120, 20, OnDemoSelectablePressed, Color.SkyBlue);
                     layout.Selectable(selectableIds[2], "Orange", 120, 20, OnDemoSelectablePressed, Color.Orange);
+                    layout.Selectable(selectableIds[3], "Green", 120, 20, OnDemoSelectablePressed, Color.Green);
+                    layout.Selectable(selectableIds[4], "Magenta", 120, 20, OnDemoSelectablePressed, Color.Magenta);
+                    layout.Selectable(selectableIds[5], "Yellow", 120, 20, OnDemoSelectablePressed, Color.Yellow);
                 }
-                layout.EndVertical(120); // End vertical container width
+                layout.EndScrollView();
 
                 layout.AddSpace(20);
 
                 // Right Column: A simple panel displaying the selected color.
-                layout.Panel(200, 70, currentSelectedColor);
+                layout.Panel(175, 70, currentSelectedColor);
             }
-            layout.EndHorizontal(70); // End horizontal container height
+            layout.EndHorizontal(120);
         }
-        layout.EndVertical(layoutWidth);
+        layout.EndScrollView();
     }
 }

@@ -3,7 +3,7 @@ using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
 
-public class VariablePanel : UILayout
+public class VariablePanel : UILayoutBase
 {
     private Selectable? currentSelected = null;
     private Button addButton;
@@ -14,28 +14,36 @@ public class VariablePanel : UILayout
 
     private bool sendSelectNull = false;
 
-    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Drawable? parent = null) : base(posX, posY, 200, 300, parent)
+    private int scrollId;
+
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
     {
         this.onSelectVariable = onSelectVariable;
         this.onRenameVariable = onRenameVariable;
-        
+
+        scrollId = IdGen.GetNewID();
+
         addButton = new Button(50, 20, "Add", (addBtn) =>
         {
             onAddNewVariable?.Invoke();
             Deselect();
-        }, 0);
+        }, 0, parent: this);
 
         removeButton = new Button(50, 20, "Remove", (remBtn) =>
         {
             if (currentSelected != null)
             {
+                Selectable selectionCache = currentSelected;
                 Deselect();
 
-                int id = (int)currentSelected.Payload;
-                onRemoveVariable?.Invoke(id);
-                layout.RemoveLayoutSelectable(id);
+                if (selectionCache.Payload != null)
+                {
+                    int id = (int)selectionCache.Payload;
+                    onRemoveVariable?.Invoke(id);
+                    layout.RemoveLayoutSelectable(id);
+                }
             }
-        }, 0);
+        }, 0, parent: this);
 
         Engine.OnAnyPointerDown += OnAnyPointerInput;
         Engine.OnHandleInputComplete += OnHandleInputComplete;
@@ -99,7 +107,7 @@ public class VariablePanel : UILayout
         {
             layout.AddSpace(10);
 
-            layout.BeginVerticalEx(5, (int)Position.Y + 40);
+            layout.BeginScrollView(scrollId, layoutWidth - 10, layoutHeight - 50 - 40, 40, 5);
             {
                 for (int i = 0; i < varIds.Count; i++)
                 {
@@ -108,7 +116,7 @@ public class VariablePanel : UILayout
                         Variable v = variables[varIds[i]];
                         string selectableText = v.VarName;
 
-                        layout.Selectable(v.Id, selectableText, 150, 20, OnVarUISelected, v.Id).OnTextEdited += (sel) =>
+                        layout.Selectable(v.Id, selectableText, layoutWidth - 30, 24, OnVarUISelected, v.Id).OnTextEdited += (sel) =>
                         {
                             if (!Engine.Graph.RenameVariable((int)sel.Payload, sel.SelectableText))
                                 sel.SetText(v.VarName);
@@ -117,7 +125,7 @@ public class VariablePanel : UILayout
                     layout.EndHorizontal(20);
                 }
             }
-            layout.EndVertical(layoutWidth);
+            layout.EndScrollView();
         }
         layout.EndHorizontal(layoutHeight - 50);
 
