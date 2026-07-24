@@ -17,6 +17,13 @@ public class Variable : DataObject
         this.varValue = varValue;
     }
 
+    public Variable(int id, string varName, DataType varType, object varValue) : base(id)
+    {
+        this.varName = varName;
+        this.varType = varType;
+        this.varValue = varValue;
+    }
+
     public void SetName_Graph(string newName)
     {
         varName = newName;

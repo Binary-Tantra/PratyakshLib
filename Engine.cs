@@ -522,6 +522,106 @@ public class Engine
         Raylib.CloseWindow();
     }
 
+    public static void ClearWorkspace()
+    {
+        graph.Clear();
+
+        currentlySelectedObjectId = null;
+
+        // Collect node visual actors to delete
+        List<NodeVisual> nodesToDelete = new();
+        foreach (var nui in nodeToNodeUIDict.Values)
+        {
+            if (nui != null) nodesToDelete.Add(nui);
+        }
+
+        foreach (var nui in nodesToDelete)
+        {
+            actors.Remove(nui);
+            nui.Delete();
+        }
+
+        nodeToNodeUIDict.Clear();
+        portToPortUIDict.Clear();
+        varToNodeUIsDict.Clear();
+    }
+
+    public static void ReconstructGraph(RaylibNodeLibrary.DataModel.Serialization.GraphSaveData data)
+    {
+        ClearWorkspace();
+
+        RaylibNodeLibrary.DataModel.IdGen.SetCurrentId(data.MaxId);
+
+        foreach (var vData in data.Variables)
+        {
+            DataType? varType = graph.Types.GetType(vData.TypeName);
+            if (varType == null) continue;
+
+            object value = null;
+            if (varType.CSharpType == typeof(int)) value = vData.Value.GetInt32();
+            else if (varType.CSharpType == typeof(float)) value = vData.Value.GetSingle();
+            else if (varType.CSharpType == typeof(string)) value = vData.Value.GetString();
+            else if (varType.CSharpType == typeof(bool)) value = vData.Value.GetBoolean();
+            
+            Variable v = new Variable(vData.Id, vData.Name, varType, value ?? 0);
+            graph.AddVariableExplicit(v);
+        }
+
+        foreach (var nd in data.Nodes)
+        {
+            NodeTemplate? template = NodeRegistry.GetTemplate(nd.TemplateName);
+            if (template == null) continue;
+
+            Node n = new Node(nd.Id, nd.TemplateName);
+
+            foreach (var pData in nd.InputPorts)
+            {
+                DataType? t = graph.Types.GetType(pData.DataTypeName);
+                if (t != null)
+                {
+                    Port p = new Port(pData.Id, pData.Name, PortFlowType.Input, t);
+                    n.AddInputPortExplicit(p);
+                }
+            }
+
+            foreach (var pData in nd.OutputPorts)
+            {
+                DataType? t = graph.Types.GetType(pData.DataTypeName);
+                if (t != null)
+                {
+                    Port p = new Port(pData.Id, pData.Name, PortFlowType.Output, t);
+                    n.AddOutputPortExplicit(p);
+                }
+            }
+
+            graph.AddNodeExplicit(n);
+
+            NodeVisual nodeVis = new NodeVisual(n.Id, template.UIElements, template.Name, nd.PositionX, nd.PositionY);
+            actors.Add(nodeVis);
+
+            if (template.Payload is int varId)
+            {
+                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? list))
+                    list.Add(nodeVis);
+                else varToNodeUIsDict.Add(varId, [nodeVis]);
+            }
+        }
+
+        foreach (var cData in data.Connections)
+        {
+            Connection c = new Connection(cData.Id, cData.SourcePortId, cData.TargetPortId);
+            graph.AddConnectionExplicit(c);
+
+            PortVisual? sourcePUI = portToPortUIDict[cData.SourcePortId];
+            PortVisual? targetPUI = portToPortUIDict[cData.TargetPortId];
+
+            if (sourcePUI != null && targetPUI != null)
+            {
+                connectionUIManager.OnAddNewConnection(sourcePUI, targetPUI);
+            }
+        }
+    }
+
     public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet)
     {
         if (pet == PointerEventType.Up && (evt.mouseButton == MouseButton.Right || evt.mouseButton == MouseButton.Left))
@@ -538,6 +638,25 @@ public class Engine
     {
         // No object is focused. Handle global Editor Hotkeys here.
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
+        if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
+        {
+            string json = RaylibNodeLibrary.DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, RaylibNodeLibrary.DataModel.IdGen.CurrentId);
+            System.IO.File.WriteAllText("save.json", json);
+            Console.WriteLine("Saved graph to save.json");
+        }
+        else if (keyEvent.Key == KeyboardKey.L && InteractionManager.InputContext.isCtrlDown)
+        {
+            if (System.IO.File.Exists("save.json"))
+            {
+                string json = System.IO.File.ReadAllText("save.json");
+                var data = RaylibNodeLibrary.DataModel.Serialization.GraphSerializer.Deserialize(json);
+                if (data != null)
+                {
+                    ReconstructGraph(data);
+                    Console.WriteLine("Loaded graph from save.json");
+                }
+            }
+        }
     }
 
     public static void NotifyAnyPointerDown(PointerInteractEventData evt, EditorObject? target)

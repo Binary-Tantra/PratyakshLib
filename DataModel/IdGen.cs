@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public static class IdGen
 {
@@ -9,4 +9,11 @@ public static class IdGen
         id++;
         return id;
     }
+
+    public static void SetCurrentId(int maxId)
+    {
+        id = maxId;
+    }
+
+    public static int CurrentId => id;
 }

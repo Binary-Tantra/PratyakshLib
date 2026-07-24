@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public class Connection : DataObject
 {
@@ -9,6 +9,12 @@ public class Connection : DataObject
     public int TargetPortId { get => targetPortId; }
 
     public Connection(int sourcePortId, int targetPortId) : base()
+    {
+        this.sourcePortId = sourcePortId;
+        this.targetPortId = targetPortId;
+    }
+
+    public Connection(int id, int sourcePortId, int targetPortId) : base(id)
     {
         this.sourcePortId = sourcePortId;
         this.targetPortId = targetPortId;

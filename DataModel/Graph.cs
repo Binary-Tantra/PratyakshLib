@@ -10,6 +10,7 @@ public class Graph
 
     public Dictionary<int, Variable> Variables { get => graphVariables; }
     public Dictionary<(int, int), Connection> Connections { get => graphConnections; }
+    public Dictionary<int, Node> Nodes { get => graphNodes; }
 
     public Graph()
     {
@@ -19,12 +20,48 @@ public class Graph
         graphVariables = [];
     }
 
-    public Node AddNode(List<DataType> inputPortTypes, List<DataType> outputPortTypes)
+    public void Clear()
     {
-        Node n = new(inputPortTypes, outputPortTypes);
+        graphNodes.Clear();
+        graphConnections.Clear();
+        graphVariables.Clear();
+    }
+
+    public Node AddNode(string templateName, List<DataType> inputPortTypes, List<DataType> outputPortTypes)
+    {
+        Node n = new(templateName, inputPortTypes, outputPortTypes);
         graphNodes.Add(n.Id, n);
 
         return n;
+    }
+
+    public void AddNodeExplicit(Node n)
+    {
+        graphNodes.Add(n.Id, n);
+    }
+
+    public void AddConnectionExplicit(Connection c)
+    {
+        graphConnections.Add((c.SourcePortId, c.TargetPortId), c);
+        
+        Port? sourcePort = null;
+        Port? targetPort = null;
+        
+        foreach (Node n in graphNodes.Values)
+        {
+            if (n.HasOutputPort(c.SourcePortId)) sourcePort = n.OutputPorts[c.SourcePortId];
+            if (n.HasInputPort(c.TargetPortId)) targetPort = n.InputPorts[c.TargetPortId];
+            if (sourcePort != null && targetPort != null) break;
+        }
+
+        if (sourcePort != null) sourcePort.IsConnected = true;
+        if (targetPort != null) targetPort.IsConnected = true;
+    }
+
+    public void AddVariableExplicit(Variable v)
+    {
+        graphVariables.Add(v.Id, v);
+        Engine.NotifyAddVar(v.Id);
     }
 
     public void RemoveNode(int id)

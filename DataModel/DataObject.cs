@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public class DataObject
 {
@@ -9,5 +9,10 @@ public class DataObject
     public DataObject()
     {
         id = IdGen.GetNewID();
+    }
+
+    protected DataObject(int id)
+    {
+        this.id = id;
     }
 }

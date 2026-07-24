@@ -24,4 +24,13 @@ public class Port : DataObject
         this.portFlowType = portFlowType;
         this.dataType = dataType;
     }
+
+    public Port(int id, string portName, PortFlowType portFlowType, DataType dataType) : base(id)
+    {
+        Engine.NotifyAddPort(Id);
+
+        this.portName = portName;
+        this.portFlowType = portFlowType;
+        this.dataType = dataType;
+    }
 }

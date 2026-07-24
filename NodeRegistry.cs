@@ -86,7 +86,7 @@ public class NodeRegistry
             if (t != null) outPorts.Add(t);
         }
 
-        Node n = graph.AddNode(inPorts, outPorts);
+        Node n = graph.AddNode(template.Name, inPorts, outPorts);
         
         NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, position.X, position.Y);
         return nodeVis;

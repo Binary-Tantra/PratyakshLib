@@ -14,8 +14,11 @@ public class Node : DataObject
     public List<(int, string)> InputPortIdNames { get => [.. inputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
     public List<(int, string)> OutputPortIdNames { get => [.. outputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
 
-    public Node(List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
+    public string TemplateName { get; set; } = string.Empty;
+
+    public Node(string templateName, List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
     {
+        TemplateName = templateName;
         Engine.NotifyAddNode(Id);
 
         inputPorts = [];
@@ -32,6 +35,25 @@ public class Node : DataObject
             Port p = new(outputPortTypes[i].Name, PortFlowType.Output, outputPortTypes[i]);
             outputPorts.Add(p.Id, p);
         }
+    }
+
+    public Node(int id, string templateName) : base(id)
+    {
+        TemplateName = templateName;
+        Engine.NotifyAddNode(Id);
+
+        inputPorts = [];
+        outputPorts = [];
+    }
+
+    public void AddInputPortExplicit(Port port)
+    {
+        inputPorts.Add(port.Id, port);
+    }
+
+    public void AddOutputPortExplicit(Port port)
+    {
+        outputPorts.Add(port.Id, port);
     }
 
     public bool HasInputPort(int inputPortId)
