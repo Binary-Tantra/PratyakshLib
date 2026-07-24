@@ -122,14 +122,16 @@ public class Canvas : UIBase, IPointerInteractable
 
         RemoveCtxMenu();
 
-        string addNodeStr = "Add Node";
-        string addClsNdStr = "Add Class Node";
-        string getVarStr = "Get Var";
         string deleteStr = "Delete";
 
         if (InteractionManager.CurrentlyHit == null)
         {
-            List<(string, object)> mis = Engine.CurrentlySelectedObjectId == null ? [(addNodeStr, 0), (addClsNdStr, 1)] : [(addNodeStr, 0), (addClsNdStr, 1), (getVarStr, Engine.CurrentlySelectedObjectId)];
+            List<(string, object)> mis = [];
+            foreach (var template in Engine.NodeRegistry.AllTemplates)
+            {
+                mis.Add((template.Name, template));
+            }
+            
             ContextMenu cm = new(mis, (button) => OnCtxBtnPressed(button, null), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;

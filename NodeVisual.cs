@@ -67,6 +67,11 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         UpdateNodeVisual();
     }
 
+    public void UpdateTitle(string newTitle)
+    {
+        title = newTitle;
+    }
+
     public void UpdateNodeVisual()
     {
         Node? n = Engine.Graph.GetNode(nodeId);

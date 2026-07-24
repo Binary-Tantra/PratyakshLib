@@ -43,6 +43,7 @@ public class Engine
     public static Dictionary<int, PortVisual?> PortToPortUIDict { get => portToPortUIDict; }
     public static int? CurrentlySelectedObjectId { get => currentlySelectedObjectId; }
     public static Dictionary<int, Color> DataTypeColors { get; private set; }
+    public static NodeRegistry NodeRegistry { get; private set; }
 
     public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
     public static event Action OnHandleInputComplete;
@@ -51,6 +52,17 @@ public class Engine
     public static void NotifyAddVar(int varId)
     {
         varToNodeUIsDict.Add(varId, []);
+        
+        if (graph != null)
+        {
+            Variable? v = graph.GetVariable(varId);
+            if (v != null)
+            {
+                NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
+                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
+                NodeRegistry.RegisterNode(t);
+            }
+        }
     }
 
     public static void NotifyAddNode(int nodeId)
@@ -110,6 +122,7 @@ public class Engine
     public static void NotifyRemoveVar(int varId)
     {
         varToNodeUIsDict.Remove(varId);
+        NodeRegistry?.UnregisterNodeByPayload(varId);
     }
 
     public static void NotifyRemoveConnection(int sourcePort, int targetPort)
@@ -179,85 +192,76 @@ public class Engine
 
         connectionUIManager = new(null);
 
+        NodeRegistry = new NodeRegistry();
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Empty Node", "Basic", [], [], [
+            (UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
+            (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
+            (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
+        ]));
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
+            ["Execution", "String", "Int", "Number"], 
+            ["Execution", "Int", "String"], [
+            (UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
+            (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
+            (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
+            (UIElementType.Group, new HorizontalGroupDesc("", 50,
+                [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
+                (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
+            (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))
+        ]));
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Math Add", "Math",
+            ["Float", "Float"], ["Float"], [
+            (UIElementType.Text, new TextDesc("A + B", Color.White))
+        ]));
+
+        NodeRegistry = new NodeRegistry();
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Empty Node", "Basic", [], [], [
+            (UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
+            (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
+            (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
+        ]));
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
+            ["Execution", "String", "Int", "Number"], 
+            ["Execution", "Int", "String"], [
+            (UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
+            (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
+            (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
+            (UIElementType.Group, new HorizontalGroupDesc("", 50,
+                [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
+                (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
+            (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))
+        ]));
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Math Add", "Math",
+            ["Float", "Float"], ["Float"], [
+            (UIElementType.Text, new TextDesc("A + B", Color.White))
+        ]));
+
         canvas = new Canvas(null, (button, editorObj) =>
         {
-            if (button.ButtonText == "Add Node")
+            if (button.Payload is NodeTemplate template)
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
-
-                Node n = graph.AddNode([], []);
-
-                NodeVisual testNodeVis2 = new(n.Id,
-                    [(UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
-                    (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
-                    (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
-                    (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))],
-                    "Node 2", mp.X, mp.Y);
-
-                actors.Add(testNodeVis2);
-            }
-            else if (button.ButtonText == "Add Class Node")
-            {
-                Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
-
-                DataType? execT = graph.Types.GetType("Execution");
-                DataType? strT = graph.Types.GetType("String");
-                DataType? intT = graph.Types.GetType("Int");
-                DataType? numT = graph.Types.GetType("Number");
-
-                List<DataType> inPorts = [];
-                if (execT != null) inPorts.Add(execT);
-                if (strT != null) inPorts.Add(strT);
-                if (intT != null) inPorts.Add(intT);
-                if (numT != null) inPorts.Add(numT);
-
-                List<DataType> outPorts = [];
-                if (execT != null) outPorts.Add(execT);
-                if (intT != null) outPorts.Add(intT);
-                if (strT != null) outPorts.Add(strT);
-
-                Node n = graph.AddNode(inPorts, outPorts);
-
-                NodeVisual testNodeVis = new(n.Id,
-                    [(UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
-                    (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
-                    (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
-                    (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
-                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => { DataType? ft = graph.Types.GetType("Float"); if (ft != null) n.AddOutputPort(ft); })),
-                    (UIElementType.Group, new HorizontalGroupDesc("", 50,
-                        [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
-                        (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
-                    (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))],
-                    "Node", mp.X, mp.Y);
-
-                actors.Add(testNodeVis);
-            }
-            else if (button.ButtonText == "Get Var")
-            {
-                int varId = (int)button.Payload;
-                Variable? v = graph.GetVariable(varId);
-
-                if (v == null)
+                NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Name, mp);
+                if (visual != null)
                 {
-                    Console.WriteLine($"Error: Couldn't find variable of Id {varId} from the graph!");
-                    return;
+                    actors.Add(visual);
+                    if (template.Payload is int varId)
+                    {
+                        if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? list))
+                            list.Add(visual);
+                        else varToNodeUIsDict.Add(varId, [visual]);
+                    }
                 }
-
-                Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
-
-                List<DataType> outPorts = [];
-                if (v != null) outPorts.Add(v.VarType);
-
-                Node n = graph.AddNode([], outPorts);
-                NodeVisual varGetNodeVis = new(n.Id,
-                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))],
-                    "GetVar", mp.X, mp.Y);
-
-                actors.Add(varGetNodeVis);
-
-                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
-                    nodeVisList.Add(varGetNodeVis);
-                else varToNodeUIsDict.Add(varId, [varGetNodeVis]);
             }
             else if (button.ButtonText == "Delete")
             {
@@ -334,10 +338,18 @@ public class Engine
                     return;
                 }
 
+                NodeRegistry.UnregisterNodeByPayload(varId);
+                NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
+                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
+                NodeRegistry.RegisterNode(t);
+
                 if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
                 {
                     for (int i = 0; i < nodeVisList.Count; i++)
+                    {
                         nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
+                        nodeVisList[i].UpdateTitle($"Get {v.VarName}");
+                    }
                 }
                 else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
             }
@@ -349,6 +361,11 @@ public class Engine
 
             Variable? v = graph.GetVariable(varId);
             if (v == null) return;
+
+            NodeRegistry.UnregisterNodeByPayload(varId);
+            NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
+                [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
+            NodeRegistry.RegisterNode(t);
 
             if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
             {
