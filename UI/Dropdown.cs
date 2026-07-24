@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
@@ -72,6 +72,12 @@ public class Dropdown : UIBase, IPointerInteractable
         onSelectionChanged?.Invoke(this, index);
     }
 
+    public int Selection
+    {
+        get => selectedIndex;
+        set => selectedIndex = value;
+    }
+
     private void OnClickOff(PointerInteractEventData evt, EditorObject? target)
     {
         if (isOpen && evt.mouseButton == MouseButton.Left)
@@ -112,16 +118,6 @@ public class Dropdown : UIBase, IPointerInteractable
         {
             Raylib.DrawLine(iconX, textY + 2, iconX + 4, textY + 8, textCol);
             Raylib.DrawLine(iconX + 4, textY + 8, iconX + 8, textY + 2, textCol);
-        }
-
-        if (isOpen)
-        {
-            for (int i = 0; i < optionSelectables.Count; i++)
-            {
-                optionSelectables[i].RelativePosition = new Vector2(0, itemHeight + (i * itemHeight));
-                optionSelectables[i].Render();
-            }
-            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y + itemHeight, width, optionSelectables.Count * itemHeight), 1f, borderNorm);
         }
     }
 
@@ -168,5 +164,25 @@ public class Dropdown : UIBase, IPointerInteractable
     public bool OnMouseUp(PointerInteractEventData evt)
     {
         return evt.mouseButton == MouseButton.Left;
+    }
+
+    public void SetOnSelectionChanged(Action<Dropdown, int> onSelectionChanged)
+    {
+        this.onSelectionChanged = onSelectionChanged;
+    }
+
+    public void DrawOverlay()
+    {
+        if (isOpen)
+        {
+            Color borderNorm = new((byte)85, (byte)85, (byte)85, (byte)255);
+
+            for (int i = 0; i < optionSelectables.Count; i++)
+            {
+                optionSelectables[i].RelativePosition = new Vector2(0, itemHeight + (i * itemHeight));
+                optionSelectables[i].Render();
+            }
+            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y + itemHeight, width, optionSelectables.Count * itemHeight), 1f, borderNorm);
+        }
     }
 }

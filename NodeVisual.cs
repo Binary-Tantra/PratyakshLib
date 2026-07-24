@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary;
+namespace RaylibNodeLibrary;
 
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
@@ -145,13 +145,15 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         for (int i = 0; i < inputPortIdNames.Count; i++)
         {
-            PortVisual pv = new(inputPortIdNames[i].id, DataModel.PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, this);
+            Port p = n.InputPorts[inputPortIdNames[i].id];
+            PortVisual pv = new(inputPortIdNames[i].id, DataModel.PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
             inputPorts.Add(pv);
         }
 
         for (int i = 0; i < outputPortIdNames.Count; i++)
         {
-            PortVisual pv = new(outputPortIdNames[i].id, DataModel.PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, this);
+            Port p = n.OutputPorts[outputPortIdNames[i].id];
+            PortVisual pv = new(outputPortIdNames[i].id, DataModel.PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
             outputPorts.Add(pv);
         }
 
@@ -289,6 +291,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     {
         potConnectionStartPortUI = source;
         potConnectionWireUI = new WireVisual(source);
+        potConnectionWireUI.SetColor(source.PortColor);
+        potConnectionWireUI.SetThickness(source.IsExecution ? 3.0f : 1.5f);
 
         potConnectionWireUI.SetStartPos(source.Position);
         potConnectionWireUI.SetEndPos(source.Position);

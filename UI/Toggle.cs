@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -12,12 +12,22 @@ public class Toggle : UIBase, IPointerInteractable
     private int fontSize;
     private object payload;
 
-    private Action<Toggle> onToggleChanged;
+    private Action<Toggle>? onToggleChanged;
 
     public bool IsOn => isOn;
     public object Payload => payload;
 
-    public Toggle(bool startingValue, string label, int trackWidth, int trackHeight, Action<Toggle> onToggleChanged, object payload, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public bool Value
+    {
+        get => isOn;
+        set
+        {
+            isOn = value;
+            knobT = value ? 1f : 0f;
+        }
+    }
+
+    public Toggle(bool startingValue, string label, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -124,5 +134,10 @@ public class Toggle : UIBase, IPointerInteractable
     public void SetValue(bool value)
     {
         isOn = value;
+    }
+
+    public void SetOnToggleChanged(Action<Toggle>? onToggleChanged)
+    {
+        this.onToggleChanged = onToggleChanged;
     }
 }

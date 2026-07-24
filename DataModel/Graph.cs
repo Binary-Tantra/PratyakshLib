@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public class Graph
 {
@@ -6,19 +6,22 @@ public class Graph
     private Dictionary<(int, int), Connection> graphConnections; // (sourcePortId, targetPortId), Connection ref
     private Dictionary<int, Variable> graphVariables; // id, Variable ref
 
+    public TypeManager Types { get; private set; }
+
     public Dictionary<int, Variable> Variables { get => graphVariables; }
     public Dictionary<(int, int), Connection> Connections { get => graphConnections; }
 
     public Graph()
     {
+        Types = new TypeManager();
         graphNodes = [];
         graphConnections = [];
         graphVariables = [];
     }
 
-    public Node AddNode(int inputPortCount, int outputPortCount)
+    public Node AddNode(List<DataType> inputPortTypes, List<DataType> outputPortTypes)
     {
-        Node n = new(inputPortCount, outputPortCount);
+        Node n = new(inputPortTypes, outputPortTypes);
         graphNodes.Add(n.Id, n);
 
         return n;
@@ -66,9 +69,8 @@ public class Graph
 
         for (int i = 0; i < kvpIdxsToRemove.Count; i++)
         {
-            (int sourcePort, int targetPort) kvpI = kvp[kvpIdxsToRemove[i]];
-            graphConnections.Remove(kvpI);
-            Engine.NotifyRemoveConnection(kvpI.sourcePort, kvpI.targetPort);
+            (int sourcePort, int targetPort) = kvp[kvpIdxsToRemove[i]];
+            RemoveConnection(sourcePort, targetPort);
         }
 
         graphNodes[id].RemovePorts();
@@ -110,8 +112,17 @@ public class Graph
         if (!targetNode.HasInputPort(targetPortId))
             return false;
 
+        Port sourcePort = sourceNode.OutputPorts[sourcePortId];
+        Port targetPort = targetNode.InputPorts[targetPortId];
+
+        if (!sourcePort.DataType.CanAssignTo(targetPort.DataType))
+            return false;
+
         Connection c = new(sourcePortId, targetPortId);
         graphConnections.Add((sourcePortId, targetPortId), c);
+
+        sourcePort.IsConnected = true;
+        targetPort.IsConnected = true;
 
         return true;
     }
@@ -125,6 +136,21 @@ public class Graph
         }
 
         graphConnections.Remove((sourcePortId, targetPortId));
+
+        Port? sourcePort = null;
+        Port? targetPort = null;
+        
+        foreach (Node n in graphNodes.Values)
+        {
+            if (n.HasOutputPort(sourcePortId)) sourcePort = n.OutputPorts[sourcePortId];
+            if (n.HasInputPort(targetPortId)) targetPort = n.InputPorts[targetPortId];
+            if (sourcePort != null && targetPort != null) break;
+        }
+
+        sourcePort?.IsConnected = graphConnections.Keys.Any(k => k.Item1 == sourcePortId);
+        targetPort?.IsConnected = graphConnections.Keys.Any(k => k.Item2 == targetPortId);
+
+        Engine.NotifyRemoveConnection(sourcePortId, targetPortId);
     }
 
     public Connection? GetConnection(int sourcePortId, int targetPortId)
@@ -138,7 +164,7 @@ public class Graph
         return connection;
     }
 
-    public void AddVariable(string name, Type type, object value)
+    public void AddVariable(string name, DataType type, object value)
     {
         Variable newV = new(name, type, value);
         graphVariables.Add(newV.Id, newV);
@@ -175,5 +201,53 @@ public class Graph
         var?.SetName_Graph(newName);
 
         return var != null;
+    }
+
+    public void ChangeVariableType(int varId, DataType newType)
+    {
+        Variable? var = GetVariable(varId);
+        if (var != null)
+        {
+            object defaultValue = 0;
+            if (newType.CSharpType == typeof(float)) defaultValue = 0f;
+            else if (newType.CSharpType == typeof(string)) defaultValue = "";
+            else if (newType.CSharpType == typeof(bool)) defaultValue = false;
+
+            var.ChangeType(newType, defaultValue);
+        }
+    }
+
+    public void DisconnectIncompatibleConnections(int portId)
+    {
+        List<(int sourcePort, int targetPort)> connectionsToRemove = [];
+
+        foreach (var kvp in graphConnections)
+        {
+            int sourceP = kvp.Key.Item1;
+            int targetP = kvp.Key.Item2;
+
+            if (sourceP == portId || targetP == portId)
+            {
+                Port? sp = null;
+                Port? tp = null;
+
+                foreach (Node n in graphNodes.Values)
+                {
+                    if (n.HasOutputPort(sourceP)) sp = n.OutputPorts[sourceP];
+                    if (n.HasInputPort(targetP)) tp = n.InputPorts[targetP];
+                    if (sp != null && tp != null) break;
+                }
+
+                if (sp != null && tp != null && !sp.DataType.CanAssignTo(tp.DataType))
+                {
+                    connectionsToRemove.Add((sourceP, targetP));
+                }
+            }
+        }
+
+        for (int i = 0; i < connectionsToRemove.Count; i++)
+        {
+            RemoveConnection(connectionsToRemove[i].sourcePort, connectionsToRemove[i].targetPort);
+        }
     }
 }

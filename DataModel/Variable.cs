@@ -1,16 +1,16 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public class Variable : DataObject
 {
     private string varName;
-    private Type varType;
+    private DataType varType;
     private object varValue;
 
     public string VarName { get => varName; }
-    public Type VarType { get => varType; }
-    public object VarValue { get => varValue; }
+    public DataType VarType { get => varType; }
+    public object VarValue { get => varValue; set => varValue = value; }
 
-    public Variable(string varName, Type varType, object varValue) : base()
+    public Variable(string varName, DataType varType, object varValue) : base()
     {
         this.varName = varName;
         this.varType = varType;
@@ -20,6 +20,12 @@ public class Variable : DataObject
     public void SetName_Graph(string newName)
     {
         varName = newName;
+    }
+
+    public void ChangeType(DataType newType, object newDefaultValue)
+    {
+        varType = newType;
+        varValue = newDefaultValue;
     }
 
     public override string ToString()

@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary.DataModel;
+namespace RaylibNodeLibrary.DataModel;
 
 public class Node : DataObject
 {
@@ -14,22 +14,22 @@ public class Node : DataObject
     public List<(int, string)> InputPortIdNames { get => [.. inputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
     public List<(int, string)> OutputPortIdNames { get => [.. outputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
 
-    public Node(int inputPortCount, int outputPortCount) : base()
+    public Node(List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
     {
         Engine.NotifyAddNode(Id);
 
         inputPorts = [];
         outputPorts = [];
 
-        for (int i = 0; i < inputPortCount; i++)
+        for (int i = 0; i < inputPortTypes.Count; i++)
         {
-            Port p = new($"Input ({Id})", PortFlowType.Input);
+            Port p = new(inputPortTypes[i].Name, PortFlowType.Input, inputPortTypes[i]);
             inputPorts.Add(p.Id, p);
         }
 
-        for (int i = 0; i < outputPortCount; i++)
+        for (int i = 0; i < outputPortTypes.Count; i++)
         {
-            Port p = new($"Output ({Id})", PortFlowType.Output);
+            Port p = new(outputPortTypes[i].Name, PortFlowType.Output, outputPortTypes[i]);
             outputPorts.Add(p.Id, p);
         }
     }
@@ -61,9 +61,16 @@ public class Node : DataObject
         }
     }
 
-    public void AddOutputPort()
+    public void AddInputPort(DataType dataType)
     {
-        Port newO = new($"Output ({Id})", PortFlowType.Output);
+        Port newI = new(dataType.Name, PortFlowType.Input, dataType);
+        inputPorts.Add(newI.Id, newI);
+        Engine.NotifyUpdateNode(Id);
+    }
+
+    public void AddOutputPort(DataType dataType)
+    {
+        Port newO = new(dataType.Name, PortFlowType.Output, dataType);
         outputPorts.Add(newO.Id, newO);
         Engine.NotifyUpdateNode(Id);
     }

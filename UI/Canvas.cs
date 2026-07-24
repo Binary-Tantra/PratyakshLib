@@ -1,5 +1,6 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
+using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -12,12 +13,12 @@ public class Canvas : UIBase, IPointerInteractable
     private ContextMenu? contextMenu;
     public Action<Button, Drawable?> onContextBtnPressed;
 
-    public Canvas(Drawable? parent, Action<Button, Drawable?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable) : base(parent)
+    public Canvas(Drawable? parent, Action<Button, Drawable?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue) : base(parent)
     {
         this.onContextBtnPressed = onContextBtnPressed;
 
-        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable);
-        inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20);
+        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable, onChangeVariableType);
+        inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20, onRenameVariable, onChangeVariableType, onChangeVariableValue);
         demoPanel = new DemoPanel(60, 70);
 
         Engine.OnAnyPointerDown += HandleGlobalClickAway;
@@ -128,7 +129,7 @@ public class Canvas : UIBase, IPointerInteractable
 
         if (InteractionManager.CurrentlyHit == null)
         {
-            List<(string, object)> mis = Engine.CurrentlySelectedVarId == null ? [(addNodeStr, 0), (addClsNdStr, 1)] : [(addNodeStr, 0), (addClsNdStr, 1), (getVarStr, Engine.CurrentlySelectedVarId)];
+            List<(string, object)> mis = Engine.CurrentlySelectedObjectId == null ? [(addNodeStr, 0), (addClsNdStr, 1)] : [(addNodeStr, 0), (addClsNdStr, 1), (getVarStr, Engine.CurrentlySelectedObjectId)];
             ContextMenu cm = new(mis, (button) => OnCtxBtnPressed(button, null), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;

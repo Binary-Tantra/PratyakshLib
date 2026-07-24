@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
@@ -11,15 +11,17 @@ public class VariablePanel : UILayoutBase
 
     private Action<int?> onSelectVariable;
     private Action<int, string> onRenameVariable;
+    private Action<int, DataType> onChangeVariableType;
 
     private bool sendSelectNull = false;
 
     private int scrollId;
 
-    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
     {
         this.onSelectVariable = onSelectVariable;
         this.onRenameVariable = onRenameVariable;
+        this.onChangeVariableType = onChangeVariableType;
 
         scrollId = IdGen.GetNewID();
 
@@ -52,7 +54,8 @@ public class VariablePanel : UILayoutBase
     private void Deselect()
     {
         currentSelected?.Deselect();
-        currentSelected?.OnTextEdited -= OnRenameSelectable;
+        if (currentSelected != null)
+            currentSelected.OnTextEdited = null;
         currentSelected = null;
     }
 
@@ -92,7 +95,7 @@ public class VariablePanel : UILayoutBase
             Deselect();
 
         currentSelected = varSel;
-        currentSelected.OnTextEdited += OnRenameSelectable;
+        currentSelected.OnTextEdited = OnRenameSelectable;
         onSelectVariable?.Invoke((int)varSel.Payload);
     }
 
@@ -109,6 +112,9 @@ public class VariablePanel : UILayoutBase
 
             layout.BeginScrollView(scrollId, layoutWidth - 10, layoutHeight - 50 - 40, 40, 5);
             {
+                List<DataType> dataTypes = Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
+                string[] dataTypeNames = dataTypes.Select(t => t.Name).ToArray();
+
                 for (int i = 0; i < varIds.Count; i++)
                 {
                     layout.BeginHorizontal(0);
@@ -116,13 +122,17 @@ public class VariablePanel : UILayoutBase
                         Variable v = variables[varIds[i]];
                         string selectableText = v.VarName;
 
-                        layout.Selectable(v.Id, selectableText, layoutWidth - 30, 24, OnVarUISelected, v.Id).OnTextEdited += (sel) =>
+                        layout.Selectable(v.Id, selectableText, layoutWidth - 120, 24, OnVarUISelected, v.Id);
+
+                        int currentTypeIndex = dataTypes.FindIndex(t => t.Id == v.VarType.Id);
+                        if (currentTypeIndex == -1) currentTypeIndex = 0;
+
+                        layout.Dropdown(v.Id + 1000000, dataTypeNames, currentTypeIndex, 80, 24, (dd, newIndex) =>
                         {
-                            if (!Engine.Graph.RenameVariable((int)sel.Payload, sel.SelectableText))
-                                sel.SetText(v.VarName);
-                        };
+                            onChangeVariableType?.Invoke(v.Id, dataTypes[newIndex]);
+                        }, v.Id);
                     }
-                    layout.EndHorizontal(20);
+                    layout.EndHorizontal(24);
                 }
             }
             layout.EndScrollView();

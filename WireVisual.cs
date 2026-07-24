@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary;
@@ -40,6 +40,16 @@ public class WireVisual : Actor
     private float wireThickness = 1.5f;
 
     private Color wireColor = Color.White;
+
+    public void SetColor(Color color)
+    {
+        wireColor = color;
+    }
+
+    public void SetThickness(float thickness)
+    {
+        wireThickness = thickness;
+    }
 
     public Vector2 WireStart { get => wireStart.GetPos(); }
     public Vector2 WireEnd { get => wireEnd.GetPos(); }

@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 using System.Numerics;
 
 namespace RaylibNodeLibrary.UI;
@@ -54,7 +54,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         Engine.OnAnyPointerDown += OnClickOff;
 
-        editIF = new InputField("", selectableText, 0, 0, width, height, parent: this);
+        editIF = new InputField("", selectableText, 0, 0, width, height, null, null, parent: this);
 
         editIF.OnTextChanged += (inpField) => this.selectableText = inpField.InputFieldText;
         editIF.OnFocusEnd += (inpField) =>
@@ -167,5 +167,14 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
     {
         selectableText = newText;
         editIF.SetText(newText);
+    }
+
+    public string Text
+    {
+        get => selectableText;
+        set
+        {
+            if (!isBeingEdited) SetText(value);
+        }
     }
 }

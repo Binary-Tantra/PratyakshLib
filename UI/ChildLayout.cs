@@ -1,4 +1,4 @@
-﻿using RaylibNodeLibrary.DataModel;
+using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -49,7 +49,7 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.InputField:
                     InputFieldDesc ifDesc = (InputFieldDesc)desc;
-                    layout.InputField(id, ifDesc.placeholderText, ifDesc.text, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25);
+                    layout.InputField(id, ifDesc.placeholderText, ifDesc.text, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, null, null);
                     break;
                 case UIElementType.Selectable:
                     SelectableDesc selDesc = (SelectableDesc)desc;

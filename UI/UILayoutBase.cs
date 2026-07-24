@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 using RlSimpleLayoutEngine;
 
@@ -52,6 +52,8 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
             layout.EndHorizontal(layoutHeight);
         }
         Raylib.EndScissorMode();
+
+        layout.DrawOverlays();
     }
 
     protected override void OnUpdate()

@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary;
+namespace RaylibNodeLibrary;
 
 public class ConnectionVisual : EditorObject
 {
@@ -13,6 +13,8 @@ public class ConnectionVisual : EditorObject
         this.endRef = endRef;
 
         connectionWireUI = new WireVisual(this);
+        connectionWireUI.SetColor(startRef.PortColor);
+        connectionWireUI.SetThickness(startRef.IsExecution ? 3.0f : 1.5f);
         connectionWireUI.SetStartPos(startRef);
         connectionWireUI.SetEndPos(endRef);
         connectionWireUI.Show();

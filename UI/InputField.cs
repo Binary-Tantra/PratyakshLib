@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -15,14 +15,17 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     private bool isShowingPlaceholder = false;
     private bool isFocused = false;
 
-    public Action<InputField> OnTextChanged;
-    public Action<InputField> OnFocusEnd;
+    public Action<InputField>? OnTextChanged;
+    public Action<InputField>? OnFocusEnd;
 
     public string InputFieldText { get => inputFieldText; }
 
-    public InputField(string placeholderText, string startingText, int posX, int posY, int width, int height, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public InputField(string placeholderText, string startingText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
+
+        OnTextChanged = onTextEdited;
+        OnFocusEnd = onFocusEnd;
 
         if (string.IsNullOrEmpty(placeholderText))
             placeholderText = "Enter text";
@@ -188,5 +191,14 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     {
         inputFieldText = newText;
         isShowingPlaceholder = false;
+    }
+
+    public string Text
+    {
+        get => inputFieldText;
+        set
+        {
+            if (!isFocused) SetText(value);
+        }
     }
 }

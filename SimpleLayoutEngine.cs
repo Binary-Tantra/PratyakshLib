@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
@@ -411,12 +411,16 @@ public class RlSimpleLayout
         cachedSelectable.Render();
     }
 
-    private Selectable DrawSelectable_Internal(int id, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object payload, Color bgColor, Color bgSelectionColor, Color textColor)
+    private Selectable DrawSelectable_Internal(int id, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
     {
         if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
         {
             cachedSelectable = new Selectable(selectableText, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
             layoutSelectables.Add(id, cachedSelectable);
+        }
+        else
+        {
+            cachedSelectable.Text = selectableText;
         }
 
         cachedSelectable.RelativePosition = new Vector2(posX, posY);
@@ -425,41 +429,58 @@ public class RlSimpleLayout
         return cachedSelectable;
     }
 
-    private void DrawInputField_Internal(int id, string placeholderText, string startingText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, int fontSize)
+    private void DrawInputField_Internal(int id, string placeholderText, string startingText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize)
     {
         if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
         {
-            cachedInputField = new InputField(placeholderText, startingText, posX, posY, inputFieldWidth, inputFieldHeight, fontSize, defaultParent);
+            cachedInputField = new InputField(placeholderText, startingText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, defaultParent);
             layoutInputFields.Add(id, cachedInputField);
+        }
+        else
+        {
+            cachedInputField.Text = startingText;
+            cachedInputField.OnTextChanged = onTextEdited;
+            cachedInputField.OnFocusEnd = onFocusEnd;
         }
 
         cachedInputField.RelativePosition = new Vector2(posX, posY);
         cachedInputField.Render();
     }
 
-    private void DrawToggle_Internal(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle> onToggleChanged, object payload)
+    private void DrawToggle_Internal(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
         if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
         {
             cachedToggle = new Toggle(startingValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
             layoutToggles.Add(id, cachedToggle);
         }
+        else
+        {
+            cachedToggle.Value = startingValue;
+            cachedToggle.SetOnToggleChanged(onToggleChanged);
+        }
 
         cachedToggle.RelativePosition = new Vector2(posX, posY);
         cachedToggle.Render();
     }
 
-    private void DrawDropdown_Internal(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, int fontSize)
+    private void DrawDropdown_Internal(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, int fontSize)
     {
         if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
         {
             cachedDropdown = new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
             layoutDropdowns.Add(id, cachedDropdown);
         }
-
-        // If the list size changed significantly over time, rebuild.
-        if (cachedDropdown.Options.Length != options.Length)
-            cachedDropdown.SetOptions(options, selectedIndex);
+        else
+        {
+            if (cachedDropdown.Options.Length != options.Length)
+                cachedDropdown.SetOptions(options, selectedIndex);
+            else
+            {
+                cachedDropdown.Selection = selectedIndex;
+                cachedDropdown.SetOnSelectionChanged(onSelectionChanged);
+            }
+        }
 
         cachedDropdown.RelativePosition = new Vector2(posX, posY);
         cachedDropdown.Render();
@@ -549,7 +570,7 @@ public class RlSimpleLayout
         if (updateLayout) DrawAny(selectable.Width, selectable.Height);
     }
 
-    public Selectable Selectable(int id, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object payload, bool updateLayout = true)
+    public Selectable Selectable(int id, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         
@@ -562,18 +583,18 @@ public class RlSimpleLayout
         return selectable;
     }
 
-    public void InputField(int id, string placeholderText, string startingText, int inputFieldWidth, int inputFieldHeight, bool updateLayout = true)
+    public void InputField(int id, string placeholderText, string startingText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawInputField_Internal(id, placeholderText, startingText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, 15);
+        DrawInputField_Internal(id, placeholderText, startingText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15);
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
     }
 
-    public void Toggle(int id, bool startingValue, string label, int toggleWidth, int toggleHeight, Action<Toggle> onToggleChanged, object payload, bool updateLayout = true)
+    public void Toggle(int id, bool startingValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
@@ -584,7 +605,7 @@ public class RlSimpleLayout
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
     }
 
-    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, bool updateLayout = true)
+    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
@@ -734,5 +755,14 @@ public class RlSimpleLayout
     public void RemoveLayoutDropdown(int id)
     {
         _ = layoutDropdowns.Remove(id);
+    }
+
+    public void DrawOverlays()
+    {
+        List<Dropdown> ldd = [.. layoutDropdowns.Values];
+        for (int i = 0; i < ldd.Count; i++)
+        {
+            ldd[i].DrawOverlay();
+        }
     }
 }

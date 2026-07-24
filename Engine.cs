@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary;
+namespace RaylibNodeLibrary;
 
 using System.Numerics;
 using Raylib_cs;
@@ -27,7 +27,7 @@ public class Engine
     private static Dictionary<int, PortVisual?> portToPortUIDict;
     private static Dictionary<int, List<NodeVisual>> varToNodeUIsDict;
 
-    private static int? currentlySelectedVarId;
+    private static int? currentlySelectedObjectId;
 
     public static int ScreenWidth { get => screenWidth; }
     public static int ScreenHeight { get => screenHeight; }
@@ -41,10 +41,12 @@ public class Engine
     public static ConnectionVisualManager ConnectionUIManager { get => connectionUIManager; }
     public static Dictionary<int, NodeVisual?> NodeToNodeUIDict { get => nodeToNodeUIDict; }
     public static Dictionary<int, PortVisual?> PortToPortUIDict { get => portToPortUIDict; }
-    public static int? CurrentlySelectedVarId { get => currentlySelectedVarId; }
+    public static int? CurrentlySelectedObjectId { get => currentlySelectedObjectId; }
+    public static Dictionary<int, Color> DataTypeColors { get; private set; }
 
     public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
     public static event Action OnHandleInputComplete;
+    public static event Action<int?> OnGlobalSelectionChanged;
 
     public static void NotifyAddVar(int varId)
     {
@@ -143,6 +145,21 @@ public class Engine
     private static void Setup()
     {
         graph = new Graph();
+        graph.Types.RegisterDefaultTypes();
+
+        DataTypeColors = new Dictionary<int, Color>();
+        DataType? execType = graph.Types.GetType("Execution");
+        if (execType != null) DataTypeColors.Add(execType.Id, Raylib.Fade(Color.White, 0.55f));
+        DataType? intType = graph.Types.GetType("Int");
+        if (intType != null) DataTypeColors.Add(intType.Id, Color.Green);
+        DataType? floatType = graph.Types.GetType("Float");
+        if (floatType != null) DataTypeColors.Add(floatType.Id, Color.DarkGreen);
+        DataType? numType = graph.Types.GetType("Number");
+        if (numType != null) DataTypeColors.Add(numType.Id, Color.DarkGreen);
+        DataType? strType = graph.Types.GetType("String");
+        if (strType != null) DataTypeColors.Add(strType.Id, Color.Pink);
+        DataType? boolType = graph.Types.GetType("Bool");
+        if (boolType != null) DataTypeColors.Add(boolType.Id, Color.Red);
 
         screenWidth = 1024;
         screenHeight = 576;
@@ -168,7 +185,7 @@ public class Engine
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
-                Node n = graph.AddNode(0, 0);
+                Node n = graph.AddNode([], []);
 
                 NodeVisual testNodeVis2 = new(n.Id,
                     [(UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
@@ -183,14 +200,30 @@ public class Engine
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
-                Node n = graph.AddNode(0, 1);
+                DataType? execT = graph.Types.GetType("Execution");
+                DataType? strT = graph.Types.GetType("String");
+                DataType? intT = graph.Types.GetType("Int");
+                DataType? numT = graph.Types.GetType("Number");
+
+                List<DataType> inPorts = [];
+                if (execT != null) inPorts.Add(execT);
+                if (strT != null) inPorts.Add(strT);
+                if (intT != null) inPorts.Add(intT);
+                if (numT != null) inPorts.Add(numT);
+
+                List<DataType> outPorts = [];
+                if (execT != null) outPorts.Add(execT);
+                if (intT != null) outPorts.Add(intT);
+                if (strT != null) outPorts.Add(strT);
+
+                Node n = graph.AddNode(inPorts, outPorts);
 
                 NodeVisual testNodeVis = new(n.Id,
                     [(UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
                     (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
                     (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
                     (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
-                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => n.AddOutputPort())),
+                    (UIElementType.Button, new ButtonDesc("Add Output Port", 150, 25, (b) => { DataType? ft = graph.Types.GetType("Float"); if (ft != null) n.AddOutputPort(ft); })),
                     (UIElementType.Group, new HorizontalGroupDesc("", 50,
                         [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
                         (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
@@ -212,7 +245,10 @@ public class Engine
 
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
 
-                Node n = graph.AddNode(0, 1);
+                List<DataType> outPorts = [];
+                if (v != null) outPorts.Add(v.VarType);
+
+                Node n = graph.AddNode([], outPorts);
                 NodeVisual varGetNodeVis = new(n.Id,
                     [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))],
                     "GetVar", mp.X, mp.Y);
@@ -264,12 +300,14 @@ public class Engine
         }, (varId) =>
         {
             // On Var select.
-            currentlySelectedVarId = varId;
+            currentlySelectedObjectId = varId;
+            OnGlobalSelectionChanged?.Invoke(varId);
         },
         () =>
         {
             // On add var.
-            graph.AddVariable("New Var", typeof(int), 0);
+            DataType? intT = graph.Types.GetType("Int");
+            if (intT != null) graph.AddVariable("New Var", intT, 0);
         },
         (varId) =>
         {
@@ -304,6 +342,45 @@ public class Engine
                 else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
             }
             else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
+        },
+        (varId, newType) =>
+        {
+            graph.ChangeVariableType(varId, newType);
+
+            Variable? v = graph.GetVariable(varId);
+            if (v == null) return;
+
+            if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
+            {
+                for (int i = 0; i < nodeVisList.Count; i++)
+                {
+                    NodeVisual nui = nodeVisList[i];
+                    nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
+
+                    Node? n = graph.GetNode(nui.NodeId);
+                    if (n != null && n.OutputPorts.Count > 0)
+                    {
+                        int portId = n.OutputPortIds[0];
+                        Port p = n.OutputPorts[portId];
+                        
+                        p.DataType = newType;
+                        p.PortName = newType.Name;
+
+                        if (portToPortUIDict.TryGetValue(portId, out PortVisual? pui) && pui != null)
+                            pui.UpdateDataType(newType.Id, newType.Name);
+
+                        graph.DisconnectIncompatibleConnections(portId);
+                    }
+                }
+            }
+        },
+        (varId, newValue) =>
+        {
+            Variable? v = graph.GetVariable(varId);
+            if (v != null)
+            {
+                v.VarValue = newValue;
+            }
         });
 
         uiElements.Add(canvas);
