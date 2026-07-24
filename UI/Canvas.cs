@@ -11,14 +11,15 @@ public class Canvas : UIBase, IPointerInteractable
     private DemoPanel demoPanel;
     
     private ContextMenu? contextMenu;
-    public Action<Button, Drawable?> onContextBtnPressed;
+    private SearchMenu? searchMenu;
+    public Action<object, EditorObject?> onContextBtnPressed;
 
-    public Canvas(Drawable? parent, Action<Button, Drawable?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue) : base(parent)
+    public Canvas(Drawable? parent, Action<object, EditorObject?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue) : base(parent)
     {
         this.onContextBtnPressed = onContextBtnPressed;
 
-        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable, onChangeVariableType);
-        inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20, onRenameVariable, onChangeVariableType, onChangeVariableValue);
+        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable, onChangeVariableType, OpenSearchMenu);
+        inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20, onRenameVariable, onChangeVariableType, onChangeVariableValue, OpenSearchMenu);
         demoPanel = new DemoPanel(60, 70);
 
         Engine.OnAnyPointerDown += HandleGlobalClickAway;
@@ -27,6 +28,7 @@ public class Canvas : UIBase, IPointerInteractable
     protected override void OnUpdate()
     {
         contextMenu?.Update();
+        searchMenu?.Update();
         variablePanel.Update();
         inspectorPanel.Update();
         demoPanel.Update();
@@ -37,12 +39,16 @@ public class Canvas : UIBase, IPointerInteractable
         variablePanel.Render();
         inspectorPanel.Render();
         contextMenu?.Render();
+        searchMenu?.Render();
         demoPanel.Render();
     }
 
     protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         var hit = contextMenu?.HitTest(mouseScreenPosition, mouseWorldPosition) ?? null;
+        if (hit != null) return hit;
+
+        hit = searchMenu?.HitTest(mouseScreenPosition, mouseWorldPosition) ?? null;
         if (hit != null) return hit;
 
         hit = inspectorPanel.HitTest(mouseScreenPosition, mouseWorldPosition);
@@ -74,24 +80,23 @@ public class Canvas : UIBase, IPointerInteractable
 
     private void HandleGlobalClickAway(PointerInteractEventData evt, EditorObject? target)
     {
-        if (contextMenu == null) return;
-
-        bool clickedInsideMenu = false;
+        bool clickedInsideCtx = false;
+        bool clickedInsideSearch = false;
 
         EditorObject? current = target;
         while (current != null && current is UIBase)
         {
-            if (current == contextMenu)
-            {
-                clickedInsideMenu = true;
-                break;
-            }
+            if (contextMenu != null && current == contextMenu) clickedInsideCtx = true;
+            if (searchMenu != null && current == searchMenu) clickedInsideSearch = true;
 
             current = current.Parent as EditorObject;
         }
 
-        if (!clickedInsideMenu && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
+        if (contextMenu != null && !clickedInsideCtx && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
             RemoveCtxMenu();
+
+        if (searchMenu != null && !clickedInsideSearch && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
+            RemoveSearchMenu();
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -109,9 +114,32 @@ public class Canvas : UIBase, IPointerInteractable
         }
     }
 
-    private void OnCtxBtnPressed(Button button, Drawable? drawable)
+    public void RemoveSearchMenu()
     {
-        onContextBtnPressed?.Invoke(button, drawable);
+        if (searchMenu != null)
+        {
+            searchMenu.Delete();
+            Engine.UIElements.Remove(searchMenu);
+            searchMenu = null;
+        }
+    }
+
+    public void OpenSearchMenu(int x, int y, List<(string name, object payload)> items, Action<object> onItemSelected)
+    {
+        RemoveSearchMenu();
+        
+        SearchMenu sm = new(x, y, 200, 300, items, (payload) => {
+            onItemSelected(payload);
+            RemoveSearchMenu();
+        }, null);
+
+        Engine.UIElements.Add(sm);
+        searchMenu = sm;
+    }
+
+    private void OnCtxBtnPressed(object payload, EditorObject? drawable)
+    {
+        onContextBtnPressed?.Invoke(payload, drawable);
         RemoveCtxMenu();
     }
 
@@ -131,14 +159,13 @@ public class Canvas : UIBase, IPointerInteractable
             {
                 mis.Add((template.Name, template));
             }
-            
-            ContextMenu cm = new(mis, (button) => OnCtxBtnPressed(button, null), null);
-            Engine.UIElements.Add(cm);
-            contextMenu = cm;
+            OpenSearchMenu((int)evt.ScreenPosition.X, (int)evt.ScreenPosition.Y, mis, (payload) => {
+                OnCtxBtnPressed(payload, null);
+            });
         }
         else if (InteractionManager.CurrentlyHit is NodeVisual nui)
         {
-            ContextMenu cm = new([(deleteStr, 0)], (button) => OnCtxBtnPressed(button, nui), null);
+            ContextMenu cm = new([(deleteStr, 0)], (button) => OnCtxBtnPressed(deleteStr, nui), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }

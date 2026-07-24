@@ -22,7 +22,7 @@ public struct LayoutOperation
 
 public class RlSimpleLayout
 {
-    private LayoutOperation[] layoutOps = new LayoutOperation[10];
+    private LayoutOperation[] layoutOps = new LayoutOperation[20];
 
     private int layoutOpsIdx = -1;
     private int lastHorizontalIdx = -1;
@@ -146,6 +146,12 @@ public class RlSimpleLayout
     public void RemoveLayoutInputField(int id)
     {
         _ = layoutInputFields.Remove(id);
+    }
+
+    public InputField? GetInputField(int id)
+    {
+        layoutInputFields.TryGetValue(id, out InputField? inputField);
+        return inputField;
     }
 
     public void RemoveLayoutToggle(int id)
@@ -393,6 +399,10 @@ public class RlSimpleLayout
         {
             cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, defaultParent);
             layoutButtons.Add(id, cachedButton);
+        }
+        else
+        {
+            cachedButton.ButtonText = buttonText;
         }
 
         cachedButton.RelativePosition = new Vector2(posX, posY);

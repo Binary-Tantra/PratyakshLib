@@ -12,16 +12,18 @@ public class VariablePanel : UILayoutBase
     private Action<int?> onSelectVariable;
     private Action<int, string> onRenameVariable;
     private Action<int, DataType> onChangeVariableType;
+    private Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu;
 
     private bool sendSelectNull = false;
 
     private int scrollId;
 
-    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
     {
         this.onSelectVariable = onSelectVariable;
         this.onRenameVariable = onRenameVariable;
         this.onChangeVariableType = onChangeVariableType;
+        this.requestSearchMenu = requestSearchMenu;
 
         scrollId = IdGen.GetNewID();
 
@@ -124,12 +126,16 @@ public class VariablePanel : UILayoutBase
 
                         layout.Selectable(v.Id, selectableText, layoutWidth - 120, 24, OnVarUISelected, v.Id);
 
-                        int currentTypeIndex = dataTypes.FindIndex(t => t.Id == v.VarType.Id);
-                        if (currentTypeIndex == -1) currentTypeIndex = 0;
-
-                        layout.Dropdown(v.Id + 1000000, dataTypeNames, currentTypeIndex, 80, 24, (dd, newIndex) =>
+                        layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                         {
-                            onChangeVariableType?.Invoke(v.Id, dataTypes[newIndex]);
+                            System.Numerics.Vector2 mp = Raylib.GetMousePosition();
+                            List<(string name, object payload)> typeItems = dataTypes.Select(dt => (dt.Name, (object)dt)).ToList();
+
+                            requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
+                            {
+                                onChangeVariableType?.Invoke(v.Id, (DataType)payload);
+                            });
+
                         }, v.Id);
                     }
                     layout.EndHorizontal(24);

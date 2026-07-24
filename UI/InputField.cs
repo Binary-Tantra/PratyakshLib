@@ -162,8 +162,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         else if (kvt.Key == KeyboardKey.Backspace)
         {
             if (inputFieldText.Length > 0)
-                inputFieldText = inputFieldText[..^1];
-            else inputFieldText = string.Empty;
+                SetIFText(inputFieldText[..^1]);
+            else 
+                SetIFText(string.Empty);
         }
         else if (kvt.Key == KeyboardKey.Enter) EndFocus();
         else return false;

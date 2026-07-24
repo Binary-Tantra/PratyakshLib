@@ -1,4 +1,4 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -16,7 +16,11 @@ public class Button : UIBase, IPointerInteractable
 
     private Action<Button> onButtonPressed;
 
-    public string ButtonText { get => buttonText; }
+    public string ButtonText 
+    { 
+        get => buttonText; 
+        set => buttonText = value; 
+    }
     public object Payload { get => payload; }
 
     public float Width { get => dimensions.X; }

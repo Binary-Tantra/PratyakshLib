@@ -246,9 +246,9 @@ public class Engine
             (UIElementType.Text, new TextDesc("A + B", Color.White))
         ]));
 
-        canvas = new Canvas(null, (button, editorObj) =>
+        canvas = new Canvas(null, (payload, editorObj) =>
         {
-            if (button.Payload is NodeTemplate template)
+            if (payload is NodeTemplate template)
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
                 NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Name, mp);
@@ -263,7 +263,7 @@ public class Engine
                     }
                 }
             }
-            else if (button.ButtonText == "Delete")
+            else if (payload is string payloadStr && payloadStr == "Delete")
             {
                 if (editorObj != null)
                 {
