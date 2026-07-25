@@ -14,7 +14,7 @@ public class DemoPanel : UILayoutBase
     private int inputFieldId;
     private string fieldText;
 
-    private int[] selectableIds;
+    private (int id, bool isSelected, Color color)[] selectableIds;
     private int scrollView2Id;
 
     private int dropdownId;
@@ -28,7 +28,15 @@ public class DemoPanel : UILayoutBase
         inputFieldId = IdGen.GetNewID();
         fieldText = "";
         
-        selectableIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
+        selectableIds = [
+                         (IdGen.GetNewID(), false, Color.Red),
+                         (IdGen.GetNewID(), false, Color.SkyBlue),
+                         (IdGen.GetNewID(), false, Color.Orange),
+                         (IdGen.GetNewID(), false, Color.Green),
+                         (IdGen.GetNewID(), false, Color.Magenta),
+                         (IdGen.GetNewID(), false, Color.Yellow)
+                        ];
+        
         scrollView2Id = IdGen.GetNewID();
         
         dropdownId = IdGen.GetNewID();
@@ -44,7 +52,11 @@ public class DemoPanel : UILayoutBase
 
     private void OnDemoSelectablePressed(Selectable sel)
     {
-        currentSelectedColor = (Color)sel.Payload;
+        (int id, _, Color color) = selectableIds[(int)sel.Payload];
+        
+        selectableIds[(int)sel.Payload] = (id, sel.IsSelected, color);
+        currentSelectedColor = color;
+        
         Console.WriteLine($"[DemoPanel] Selectable Chosen: {sel.SelectableText} | Payload: {sel.Payload}");
     }
 
@@ -117,12 +129,12 @@ public class DemoPanel : UILayoutBase
             {
                 layout.BeginScrollView(scrollView2Id, 135, 120, 0, 5);
                 {
-                    layout.Selectable(selectableIds[0], "Red", 120, 20, OnDemoSelectablePressed, Color.Red);
-                    layout.Selectable(selectableIds[1], "Sky Blue", 120, 20, OnDemoSelectablePressed, Color.SkyBlue);
-                    layout.Selectable(selectableIds[2], "Orange", 120, 20, OnDemoSelectablePressed, Color.Orange);
-                    layout.Selectable(selectableIds[3], "Green", 120, 20, OnDemoSelectablePressed, Color.Green);
-                    layout.Selectable(selectableIds[4], "Magenta", 120, 20, OnDemoSelectablePressed, Color.Magenta);
-                    layout.Selectable(selectableIds[5], "Yellow", 120, 20, OnDemoSelectablePressed, Color.Yellow);
+                    layout.Selectable(selectableIds[0].id, selectableIds[0].isSelected, "Red", 120, 20, OnDemoSelectablePressed, 0);
+                    layout.Selectable(selectableIds[1].id, selectableIds[1].isSelected, "Sky Blue", 120, 20, OnDemoSelectablePressed, 1);
+                    layout.Selectable(selectableIds[2].id, selectableIds[2].isSelected, "Orange", 120, 20, OnDemoSelectablePressed, 2);
+                    layout.Selectable(selectableIds[3].id, selectableIds[3].isSelected, "Green", 120, 20, OnDemoSelectablePressed, 3);
+                    layout.Selectable(selectableIds[4].id, selectableIds[4].isSelected, "Magenta", 120, 20, OnDemoSelectablePressed, 4);
+                    layout.Selectable(selectableIds[5].id, selectableIds[5].isSelected, "Yellow", 120, 20, OnDemoSelectablePressed, 5);
                 }
                 layout.EndScrollView();
 

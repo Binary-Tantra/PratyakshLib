@@ -75,7 +75,7 @@ public class InspectorPanel : UILayoutBase
                         if (v.VarType.Name == "Bool")
                         {
                             bool bVal = (bool)v.VarValue;
-                            layout.Toggle(v.Id + 4000000, bVal, bVal ? "True" : "False", layoutWidth - 60, 20, (toggle) =>
+                            layout.Toggle(v.Id + 4000000, bVal, bVal ? "True" : "False", 50, 20, (toggle) =>
                             {
                                 onChangeVariableValue?.Invoke(v.Id, toggle.IsOn);
                             }, null);
@@ -86,24 +86,41 @@ public class InspectorPanel : UILayoutBase
                             {
                                 if (int.TryParse(input.InputFieldText, out int result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
-                                else input.InputFieldText = v.VarValue.ToString() ?? "0";
-                            }, null);
+                            }, (input) =>
+                            {
+                                if (int.TryParse(input.InputFieldText, out int result))
+                                    onChangeVariableValue?.Invoke(v.Id, result);
+                                else
+                                    input.InputFieldText = v.VarValue.ToString() ?? "0";
+                            });
                         }
                         else if (v.VarType.Name == "Float" || v.VarType.Name == "Number")
                         {
                             layout.InputField(v.Id + 6000000, "0.0", v.VarValue.ToString() ?? "0.0", layoutWidth - 60, 25, (input) =>
                             {
-                                if (float.TryParse(input.InputFieldText, out float result))
+                                if (float.TryParse(input.InputFieldText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
-                                else input.InputFieldText = v.VarValue.ToString() ?? "0.0";
-                            }, null);
+                                else if (float.TryParse(input.InputFieldText, out float res2))
+                                    onChangeVariableValue?.Invoke(v.Id, res2);
+                            }, (input) =>
+                            {
+                                if (float.TryParse(input.InputFieldText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float result))
+                                    onChangeVariableValue?.Invoke(v.Id, result);
+                                else if (float.TryParse(input.InputFieldText, out float res2))
+                                    onChangeVariableValue?.Invoke(v.Id, res2);
+                                else
+                                    input.InputFieldText = v.VarValue.ToString() ?? "0.0";
+                            });
                         }
                         else if (v.VarType.Name == "String")
                         {
                             layout.InputField(v.Id + 7000000, "Text", v.VarValue.ToString() ?? "", layoutWidth - 60, 25, (input) =>
                             {
                                 onChangeVariableValue?.Invoke(v.Id, input.InputFieldText);
-                            }, null);
+                            }, (input) =>
+                            {
+                                onChangeVariableValue?.Invoke(v.Id, input.InputFieldText);
+                            });
                         }
                     }
                     layout.EndHorizontal(25);

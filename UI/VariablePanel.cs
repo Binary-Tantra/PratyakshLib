@@ -75,8 +75,23 @@ public class VariablePanel : UILayoutBase
 
     private void OnAnyPointerInput(PointerInteractEventData evt, EditorObject? target)
     {
-        if (evt.mouseButton == MouseButton.Left && target != addButton && target != removeButton && target is Button b && b.ButtonText == "")
+        if (evt.mouseButton == MouseButton.Left && currentSelected != null)
         {
+            if (target != null)
+            {
+                if (target == currentSelected || target.IsAncestor(currentSelected))
+                    return;
+
+                if (target == addButton || target == removeButton || target.IsAncestor(addButton) || target.IsAncestor(removeButton))
+                    return;
+
+                if (target.IsAncestorType<SearchMenu>())
+                    return;
+
+                if (currentSelected.Payload is int selectedVarId && target is Button btn && btn.Payload is int btnVarId && btnVarId == selectedVarId)
+                    return;
+            }
+
             Deselect();
             sendSelectNull = true;
         }
@@ -98,6 +113,7 @@ public class VariablePanel : UILayoutBase
 
         currentSelected = varSel;
         currentSelected.OnTextEdited = OnRenameSelectable;
+        sendSelectNull = false;
         onSelectVariable?.Invoke((int)varSel.Payload);
     }
 
@@ -123,8 +139,9 @@ public class VariablePanel : UILayoutBase
                     {
                         Variable v = variables[varIds[i]];
                         string selectableText = v.VarName;
+                        bool isSelected = currentSelected != null && currentSelected.Payload is int selectedId && selectedId == v.Id;
 
-                        layout.Selectable(v.Id, selectableText, layoutWidth - 120, 24, OnVarUISelected, v.Id);
+                        layout.Selectable(v.Id, isSelected, selectableText, layoutWidth - 120, 24, OnVarUISelected, v.Id);
 
                         layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                         {

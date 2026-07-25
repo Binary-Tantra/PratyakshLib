@@ -37,6 +37,48 @@ public class LayoutEngine
     private Dictionary<int, ScrollView> layoutScrollViews = [];
     private Dictionary<int, Dropdown> layoutDropdowns = [];
 
+    private HashSet<int> activeInputFields = [];
+    private HashSet<int> activeButtons = [];
+    private HashSet<int> activeSelectables = [];
+    private HashSet<int> activeToggles = [];
+    private HashSet<int> activeScrollViewSet = [];
+    private HashSet<int> activeDropdowns = [];
+
+    private HashSet<int> buildingActiveInputFields = [];
+    private HashSet<int> buildingActiveButtons = [];
+    private HashSet<int> buildingActiveSelectables = [];
+    private HashSet<int> buildingActiveToggles = [];
+    private HashSet<int> buildingActiveScrollViewSet = [];
+    private HashSet<int> buildingActiveDropdowns = [];
+
+    public void BeginFrame()
+    {
+        buildingActiveInputFields.Clear();
+        buildingActiveButtons.Clear();
+        buildingActiveSelectables.Clear();
+        buildingActiveToggles.Clear();
+        buildingActiveScrollViewSet.Clear();
+        buildingActiveDropdowns.Clear();
+    }
+
+    public void EndFrame()
+    {
+        foreach (var kvp in layoutInputFields)
+        {
+            if (!buildingActiveInputFields.Contains(kvp.Key) && kvp.Value.IsFocused)
+            {
+                InteractionManager.ReleaseFocus();
+            }
+        }
+
+        activeInputFields = [.. buildingActiveInputFields];
+        activeButtons = [.. buildingActiveButtons];
+        activeSelectables = [.. buildingActiveSelectables];
+        activeToggles = [.. buildingActiveToggles];
+        activeScrollViewSet = [.. buildingActiveScrollViewSet];
+        activeDropdowns = [.. buildingActiveDropdowns];
+    }
+
     private Stack<EditorObject?> parentStack = new();
     private Stack<int> activeScrollViews = new();
 
@@ -108,27 +150,27 @@ public class LayoutEngine
 
     public void UpdateLayoutElements()
     {
-        List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
+        List<Button> lbs = [.. layoutButtons.Where(kvp => activeButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lbs.Count; i++)
             lbs[i].Update();
 
-        List<Selectable> lss = [.. layoutSelectables.Select((kvp) => kvp.Value)];
+        List<Selectable> lss = [.. layoutSelectables.Where(kvp => activeSelectables.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lss.Count; i++)
             lss[i].Update();
 
-        List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
+        List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lifs.Count; i++)
             lifs[i].Update();
 
-        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
+        List<Toggle> lts = [.. layoutToggles.Where(kvp => activeToggles.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lts.Count; i++)
             lts[i].Update();
 
-        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
+        List<ScrollView> lsvs = [.. layoutScrollViews.Where(kvp => activeScrollViewSet.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lsvs.Count; i++)
             lsvs[i].Update();
 
-        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
+        List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < ldd.Count; i++)
             ldd[i].Update();
     }
@@ -161,42 +203,42 @@ public class LayoutEngine
 
     public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
+        List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = ldd.Count - 1; i >= 0; i--)
         {
             var hit = ldd[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
+        List<Button> lbs = [.. layoutButtons.Where(kvp => activeButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lbs.Count - 1; i >= 0; i--)
         {
             var hit = lbs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<Selectable> lss = [.. layoutSelectables.Select((kvp) => kvp.Value)];
+        List<Selectable> lss = [.. layoutSelectables.Where(kvp => activeSelectables.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lss.Count - 1; i >= 0; i--)
         {
             var hit = lss[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
+        List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lifs.Count - 1; i >= 0; i--)
         {
             var hit = lifs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
+        List<Toggle> lts = [.. layoutToggles.Where(kvp => activeToggles.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lts.Count - 1; i >= 0; i--)
         {
             var hit = lts[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
+        List<ScrollView> lsvs = [.. layoutScrollViews.Where(kvp => activeScrollViewSet.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lsvs.Count - 1; i >= 0; i--)
         {
             var hit = lsvs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
@@ -393,6 +435,7 @@ public class LayoutEngine
 
     private void DrawButtonAbsolute(Button button, int posX, int posY)
     {
+        buildingActiveButtons.Add(button.Id);
         if (!layoutButtons.TryGetValue(button.Id, out Button? cachedButton))
         {
             cachedButton = button;
@@ -405,6 +448,7 @@ public class LayoutEngine
 
     private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder)
     {
+        buildingActiveButtons.Add(id);
         if (!layoutButtons.TryGetValue(id, out Button? cachedButton))
         {
             cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, defaultParent);
@@ -421,6 +465,7 @@ public class LayoutEngine
 
     private void DrawSelectableAbsolute(Selectable selectable, int posX, int posY)
     {
+        buildingActiveSelectables.Add(selectable.Id);
         if (!layoutSelectables.TryGetValue(selectable.Id, out Selectable? cachedSelectable))
         {
             cachedSelectable = selectable;
@@ -431,16 +476,19 @@ public class LayoutEngine
         cachedSelectable.Render();
     }
 
-    private Selectable DrawSelectableAbsolute(int id, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
+    private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
     {
+        buildingActiveSelectables.Add(id);
         if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
         {
-            cachedSelectable = new Selectable(selectableText, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
+            cachedSelectable = new Selectable(selectableText, isSelected, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
             layoutSelectables.Add(id, cachedSelectable);
         }
         else
         {
-            cachedSelectable.Text = selectableText;
+            if (isSelected) cachedSelectable.Select();
+            else cachedSelectable.Deselect();
+            cachedSelectable.SelectableText = selectableText;
         }
 
         cachedSelectable.RelativePosition = new Vector2(posX, posY);
@@ -451,6 +499,7 @@ public class LayoutEngine
 
     private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize)
     {
+        buildingActiveInputFields.Add(id);
         if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
         {
             cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, defaultParent);
@@ -458,7 +507,11 @@ public class LayoutEngine
         }
         else
         {
-            cachedInputField.InputFieldText = fieldText;
+            if (!cachedInputField.IsFocused)
+            {
+                cachedInputField.InputFieldText = fieldText;
+            }
+
             cachedInputField.OnTextChanged = onTextEdited;
             cachedInputField.OnFocusEnd = onFocusEnd;
         }
@@ -467,16 +520,18 @@ public class LayoutEngine
         cachedInputField.Render();
     }
 
-    private void DrawToggleAbsolute(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
+    private void DrawToggleAbsolute(int id, bool toggleValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
+        buildingActiveToggles.Add(id);
         if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
         {
-            cachedToggle = new Toggle(startingValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+            cachedToggle = new Toggle(toggleValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
             layoutToggles.Add(id, cachedToggle);
         }
         else
         {
-            cachedToggle.Value = startingValue;
+            cachedToggle.Value = toggleValue;
+            cachedToggle.Label = label;
             cachedToggle.SetOnToggleChanged(onToggleChanged);
         }
 
@@ -486,6 +541,7 @@ public class LayoutEngine
 
     private void DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
     {
+        buildingActiveDropdowns.Add(id);
         if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
         {
             cachedDropdown = new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
@@ -590,14 +646,14 @@ public class LayoutEngine
         if (updateLayout) DrawAny(selectable.Width, selectable.Height);
     }
 
-    public Selectable Selectable(int id, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, bool updateLayout = true)
+    public Selectable Selectable(int id, bool isSelected, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
         
-        Selectable selectable = DrawSelectableAbsolute(id, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
+        Selectable selectable = DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
         if (updateLayout) DrawAny(selectableWidth, selectableHeight);
 
         return selectable;
@@ -614,14 +670,14 @@ public class LayoutEngine
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
     }
 
-    public void Toggle(int id, bool startingValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
+    public void Toggle(int id, bool toggleValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawToggleAbsolute(id, startingValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        DrawToggleAbsolute(id, toggleValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
     }
 
@@ -676,6 +732,7 @@ public class LayoutEngine
     // Add the spacing parameter to the method signature
     public void BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
     {
+        buildingActiveScrollViewSet.Add(id);
         if (!layoutScrollViews.TryGetValue(id, out ScrollView? svc))
         {
             svc = new ScrollView(viewWidth, viewHeight, defaultParent);

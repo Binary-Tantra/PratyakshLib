@@ -39,6 +39,8 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
         if (worldSpace)
             finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
 
+        layout.BeginFrame();
+
         Raylib.BeginScissorMode((int)finalRect.X, (int)finalRect.Y, (int)finalRect.Width, (int)finalRect.Height);
         {
             layout.BeginHorizontalEx(0, (int)Position.X);
@@ -56,6 +58,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
         Raylib.EndScissorMode();
 
         layout.DrawOverlays();
+        layout.EndFrame();
     }
 
     protected override void OnUpdate()

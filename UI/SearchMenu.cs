@@ -55,14 +55,14 @@ public class SearchMenu : UILayoutBase
 
                     for (int i = 0; i < items.Count; i++)
                     {
-                        var item = items[i];
-                        if (string.IsNullOrEmpty(lowerQuery) || item.name.ToLower().Contains(lowerQuery))
+                        var (name, payload) = items[i];
+                        if (string.IsNullOrEmpty(lowerQuery) || name.Contains(lowerQuery, StringComparison.CurrentCultureIgnoreCase))
                         {
                             layout.BeginHorizontal(0);
                             {
-                                layout.Selectable(scrollId + 1 + i, item.name, layoutWidth - 30, 24, (sel) =>
+                                layout.Selectable(scrollId + 1 + i, false, name, layoutWidth - 30, 24, (sel) =>
                                 {
-                                    onItemSelected?.Invoke(item.payload);
+                                    onItemSelected?.Invoke(payload);
                                 }, null);
                             }
                             layout.EndHorizontal(24);

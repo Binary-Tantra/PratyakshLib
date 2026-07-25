@@ -23,23 +23,38 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     private bool isSelected = false;
 
-    public string SelectableText { get => selectableText; }
+    public string SelectableText
+    {
+        get => selectableText;
+        set
+        {
+            if (!isBeingEdited)
+            {
+                selectableText = value;
+                editIF.InputFieldText = value;
+            }
+        }
+    }
+
     public int Width { get => width; }
     public int Height { get => height; }
     public object Payload { get => payload; }
+    public bool IsSelected { get => isSelected; }
 
     private bool isBeingEdited = false;
     private InputField editIF;
 
     public Action<Selectable> OnTextEdited;
 
-    public Selectable(string selectableText, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Color? bgColor = null, Color? bgSelectionColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
+    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Color? bgColor = null, Color? bgSelectionColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
         this.selectableText = selectableText;
 
         RelativePosition = new Vector2(posX, posY);
+
+        this.isSelected = isSelected;
 
         this.width = width;
         this.height = height;
@@ -110,6 +125,12 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
             editIF.Update();
     }
 
+    public void Select()
+    {
+        isSelected = true;
+        onSelectableSelect?.Invoke(this);
+    }
+
     public void Deselect()
     {
         isSelected = false;
@@ -139,8 +160,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         if (evt.mouseButton != MouseButton.Left)
             return false;
 
-        isSelected = true;
-        onSelectableSelect?.Invoke(this);
+        Select();
 
         return true;
     }
@@ -162,20 +182,5 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         editIF.SetFocus();
 
         return true;
-    }
-
-    public void SetText(string newText)
-    {
-        selectableText = newText;
-        editIF.InputFieldText = newText;
-    }
-
-    public string Text
-    {
-        get => selectableText;
-        set
-        {
-            if (!isBeingEdited) SetText(value);
-        }
     }
 }

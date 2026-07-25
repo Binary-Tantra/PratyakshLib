@@ -63,10 +63,12 @@ public class InputFieldDesc : RectUIEDescription
 
 public class SelectableDesc : RectUIEDescription
 {
+    public bool startingSelected;
     public Action<Selectable> onSelect;
 
-    public SelectableDesc(string text, int? width, int? height, Action<Selectable> onSelect) : base(text, width, height)
+    public SelectableDesc(string text, bool startingSelected, int? width, int? height, Action<Selectable> onSelect) : base(text, width, height)
     {
+        this.startingSelected = startingSelected;
         this.onSelect = onSelect;
     }
 }

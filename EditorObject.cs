@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 
@@ -95,5 +95,37 @@ public abstract class EditorObject : Drawable, IInteractable
         }
 
         return finalRect;
+    }
+
+    public bool IsAncestor(Drawable targetAncestor)
+    {
+        Drawable? curr = this;
+        while (curr != null)
+        {
+            if (curr == targetAncestor) return true;
+            curr = curr.Parent;
+        }
+        return false;
+    }
+
+    public static bool IsAncestor(Drawable? obj, Drawable targetAncestor)
+    {
+        return obj is EditorObject eo && eo.IsAncestor(targetAncestor);
+    }
+
+    public bool IsAncestorType<T>() where T : Drawable
+    {
+        Drawable? curr = this;
+        while (curr != null)
+        {
+            if (curr is T) return true;
+            curr = curr.Parent;
+        }
+        return false;
+    }
+
+    public static bool IsAncestorType<T>(Drawable? obj) where T : Drawable
+    {
+        return obj is EditorObject eo && eo.IsAncestorType<T>();
     }
 }

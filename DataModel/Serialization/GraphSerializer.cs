@@ -131,13 +131,17 @@ public static class GraphSerializer
             {
                 saveData.PlaceholderText = inputDesc.placeholderText ?? string.Empty;
             }
+            else if (rectDesc is SelectableDesc selectableDesc)
+            {
+                saveData.StartingState = selectableDesc.startingSelected;
+            }
             else if (rectDesc is ToggleDesc toggleDesc)
             {
                 saveData.StartingState = toggleDesc.startingState;
             }
             else if (rectDesc is DropdownDesc dropDesc)
             {
-                saveData.Options = dropDesc.options != null ? new List<string>(dropDesc.options) : new List<string>();
+                saveData.Options = dropDesc.options != null ? [.. dropDesc.options] : [];
                 saveData.SelectedIndex = dropDesc.selectedIndex;
             }
             else if (rectDesc is HorizontalGroupDesc groupDesc)
@@ -177,7 +181,7 @@ public static class GraphSerializer
                 break;
 
             case UIElementType.Selectable:
-                elemDesc = new SelectableDesc(data.Text, data.Width, data.Height, (sel) => { });
+                elemDesc = new SelectableDesc(data.Text, data.StartingState, data.Width, data.Height, (sel) => { });
                 break;
 
             case UIElementType.Toggle:

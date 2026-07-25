@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary;
@@ -181,12 +181,25 @@ public static class InteractionManager
 
     public static void CaptureFocus(EditorObject target)
     {
+        if (currentlyFocused != null && currentlyFocused != target)
+        {
+            EditorObject oldFocus = currentlyFocused;
+            currentlyFocused = null;
+            if (oldFocus is IKeyInteractable keyable)
+                keyable.OnFocusLost();
+        }
         currentlyFocused = target;
     }
 
     public static void ReleaseFocus()
     {
-        currentlyFocused = null;
+        if (currentlyFocused != null)
+        {
+            EditorObject oldFocus = currentlyFocused;
+            currentlyFocused = null;
+            if (oldFocus is IKeyInteractable keyable)
+                keyable.OnFocusLost();
+        }
     }
 
     public static Drawable? FindDeepestHitObject(Vector2 mouseScreenPos, Vector2 mouseWorldPos)
@@ -488,9 +501,6 @@ public static class InteractionManager
             {
                 if (currentlyFocused != null && currentlyHit != currentlyFocused)
                 {
-                    if (currentlyFocused is IKeyInteractable oldFocus)
-                        oldFocus.OnFocusLost();
-
                     ReleaseFocus();
                 }
 

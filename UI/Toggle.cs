@@ -27,12 +27,14 @@ public class Toggle : UIBase, IPointerInteractable
         }
     }
 
-    public Toggle(bool startingValue, string label, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public string Label { get => label; set => label = value; }
+
+    public Toggle(bool toggleValue, string label, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
-        isOn = startingValue;
-        knobT = startingValue ? 1f : 0f;
+        isOn = toggleValue;
+        knobT = toggleValue ? 1f : 0f;
         this.label = label;
 
         this.trackWidth = trackWidth;

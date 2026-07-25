@@ -65,7 +65,7 @@ public class Dropdown : UIBase, IPointerInteractable
         for (int i = 0; i < options.Length; i++)
         {
             int index = i;
-            Selectable sel = new(options[i], 0, itemHeight + (i * itemHeight), width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: this);
+            Selectable sel = new(options[i], i == selectedIndex, 0, itemHeight + (i * itemHeight), width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: this);
             optionSelectables.Add(sel);
         }
     }
@@ -190,6 +190,7 @@ public class Dropdown : UIBase, IPointerInteractable
                 optionSelectables[i].RelativePosition = new Vector2(0, itemHeight + (i * itemHeight));
                 optionSelectables[i].Render();
             }
+
             Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y + itemHeight, width, optionSelectables.Count * itemHeight), 1f, borderNorm);
         }
     }

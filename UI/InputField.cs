@@ -115,10 +115,13 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         return true;
     }
 
-    public void SetFocus()
+    public bool IsFocused => isFocused;
+
+    public bool SetFocus()
     {
         InteractionManager.CaptureFocus(this);
         isFocused = true;
+        return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
@@ -136,17 +139,26 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
         if ((kvt.Key >= KeyboardKey.A && kvt.Key <= KeyboardKey.Z) ||
             (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine) ||
-             kvt.Key == KeyboardKey.Space)
+            (kvt.Key >= KeyboardKey.Kp0 && kvt.Key <= KeyboardKey.Kp9) ||
+             kvt.Key == KeyboardKey.Space ||
+             kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KpDecimal ||
+             kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KpSubtract ||
+             kvt.Key == KeyboardKey.Comma)
         {
             string newK;
 
             if (kvt.Key == KeyboardKey.Space)
                 newK = " ";
-            
-            else if (kvt.Key >= KeyboardKey.Zero &&
-                kvt.Key <= KeyboardKey.Nine)
-                newK = ((int)kvt.Key - 48).ToString();
-            
+            else if (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine)
+                newK = ((int)kvt.Key - (int)KeyboardKey.Zero).ToString();
+            else if (kvt.Key >= KeyboardKey.Kp0 && kvt.Key <= KeyboardKey.Kp9)
+                newK = ((int)kvt.Key - (int)KeyboardKey.Kp0).ToString();
+            else if (kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KpDecimal)
+                newK = ".";
+            else if (kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KpSubtract)
+                newK = "-";
+            else if (kvt.Key == KeyboardKey.Comma)
+                newK = ",";
             else newK = kvt.IsShiftDown ?
                  kvt.Key.ToString().ToUpper() :
                  kvt.Key.ToString().ToLower();
@@ -178,7 +190,10 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     private void EndFocus()
     {
+        if (!isFocused) return;
         isFocused = false;
+        if (InteractionManager.CurrentlyFocused == this)
+            InteractionManager.ReleaseFocus();
         OnFocusEnd?.Invoke(this);
     }
 

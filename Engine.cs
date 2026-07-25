@@ -231,8 +231,8 @@ public class Engine
             ["Execution", "Int", "String"], [
             (UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
             (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
-            (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
-            (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
+            (UIElementType.Selectable, new SelectableDesc("Red", false, 150, 25, (sel) => { })),
+            (UIElementType.Selectable, new SelectableDesc("Blue", false, 150, 25, (sel) => { })),
             (UIElementType.Group, new HorizontalGroupDesc("", 50,
                 [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
                 (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
@@ -398,10 +398,7 @@ public class Engine
         (varId, newValue) =>
         {
             Variable? v = graph.GetVariable(varId);
-            if (v != null)
-            {
-                v.VarValue = newValue;
-            }
+            v?.VarValue = newValue;
         });
 
         uiElements.Add(canvas);

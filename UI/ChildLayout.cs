@@ -60,11 +60,21 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Selectable:
                     SelectableDesc selDesc = (SelectableDesc)desc;
-                    layout.Selectable(id, selDesc.text, selDesc.width ?? maxWidthCoverage, selDesc.height ?? 25, selDesc.onSelect, id);
+                    payload = ids[i][j].payload ?? selDesc.startingSelected;
+                    layout.Selectable(id, (bool)payload, selDesc.text, selDesc.width ?? maxWidthCoverage, selDesc.height ?? 25, (sel) =>
+                    {
+                        ids[i][j] = (ids[i][j].id, sel.IsSelected);
+                        selDesc.onSelect?.Invoke(sel);
+                    }, id);
                     break;
                 case UIElementType.Toggle:
                     ToggleDesc togDesc = (ToggleDesc)desc;
-                    layout.Toggle(id, togDesc.startingState, togDesc.text, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, togDesc.onToggle, id);
+                    payload = ids[i][j].payload ?? togDesc.startingState;
+                    layout.Toggle(id, (bool)payload, togDesc.text, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
+                    {
+                        ids[i][j] = (ids[i][j].id, tog.Value);
+                        togDesc.onToggle?.Invoke(tog);
+                    }, id);
                     break;
                 case UIElementType.Dropdown:
                     DropdownDesc ddDesc = (DropdownDesc)desc;
