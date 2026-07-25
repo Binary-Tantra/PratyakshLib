@@ -1,4 +1,5 @@
 using System.Numerics;
+using LibLayoutEngine;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
@@ -19,7 +20,13 @@ public class Dropdown : UIBase, IPointerInteractable
     private List<Selectable> optionSelectables = new();
 
     public string[] Options => options;
-    public int SelectedIndex => selectedIndex;
+    
+    public int SelectedIndex
+    {
+        get => selectedIndex;
+        set => selectedIndex = value;
+    }
+    
     public string SelectedOption => (options != null && options.Length > selectedIndex && selectedIndex >= 0) ? options[selectedIndex] : "";
     public object Payload => payload;
     public int Width => width;
@@ -30,9 +37,12 @@ public class Dropdown : UIBase, IPointerInteractable
     public Dropdown(string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
-        this.options = options ?? Array.Empty<string>();
+
+        this.options = options ?? [];
         this.selectedIndex = selectedIndex;
+        
         RelativePosition = new Vector2(posX, posY);
+        
         this.width = width;
         this.itemHeight = itemHeight;
         this.onSelectionChanged = onSelectionChanged;
@@ -47,21 +57,24 @@ public class Dropdown : UIBase, IPointerInteractable
 
     private void RebuildOptions()
     {
-        foreach (var opt in optionSelectables) opt.Delete();
+        foreach (var opt in optionSelectables)
+            opt.Delete();
+
         optionSelectables.Clear();
 
         for (int i = 0; i < options.Length; i++)
         {
             int index = i;
-            Selectable sel = new Selectable(options[i], 0, itemHeight + (i * itemHeight), width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: this);
+            Selectable sel = new(options[i], 0, itemHeight + (i * itemHeight), width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: this);
             optionSelectables.Add(sel);
         }
     }
 
     public void SetOptions(string[] newOptions, int newSelectedIndex)
     {
-        this.options = newOptions ?? Array.Empty<string>();
-        this.selectedIndex = newSelectedIndex;
+        options = newOptions ?? [];
+        selectedIndex = newSelectedIndex;
+
         RebuildOptions();
     }
 
@@ -70,12 +83,6 @@ public class Dropdown : UIBase, IPointerInteractable
         selectedIndex = index;
         isOpen = false;
         onSelectionChanged?.Invoke(this, index);
-    }
-
-    public int Selection
-    {
-        get => selectedIndex;
-        set => selectedIndex = value;
     }
 
     private void OnClickOff(PointerInteractEventData evt, EditorObject? target)
@@ -105,7 +112,7 @@ public class Dropdown : UIBase, IPointerInteractable
         Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, width, itemHeight), 1f, borderNorm);
 
         int textY = (int)(Position.Y + (itemHeight - fontSize) / 2f);
-        Raylib.DrawText(SelectedOption, (int)Position.X + 8, textY, fontSize, textCol);
+        LayoutEngine.DrawTextAbsolute(SelectedOption, (int)Position.X + 8, textY, textCol, fontSize, Vector2.Zero);
 
         // Draw chevron icon
         int iconX = (int)Position.X + width - 15;
@@ -140,6 +147,7 @@ public class Dropdown : UIBase, IPointerInteractable
                 if (hit != null) return hit;
             }
         }
+
         return null;
     }
 

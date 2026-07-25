@@ -1,9 +1,7 @@
 namespace RaylibNodeLibrary.DataModel.Serialization;
 
-using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Linq;
 
 public static class GraphSerializer
 {
@@ -30,7 +28,7 @@ public static class GraphSerializer
             NodeSaveData nd = new NodeSaveData
             {
                 Id = n.Id,
-                TemplateName = n.TemplateName
+                TemplateId = n.TemplateId
             };
 
             if (nodeVisuals.TryGetValue(n.Id, out NodeVisual? vis) && vis != null)

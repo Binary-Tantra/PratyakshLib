@@ -1,19 +1,18 @@
-namespace RaylibNodeLibrary;
-
-using System.Collections.Generic;
 using System.Numerics;
 using RaylibNodeLibrary.DataModel;
 
+namespace RaylibNodeLibrary;
+
 public class NodeRegistry
 {
-    private Dictionary<string, NodeTemplate> templatesByName = [];
+    private Dictionary<int, NodeTemplate> templatesById = [];
     private Dictionary<string, List<NodeTemplate>> templatesByCategory = [];
 
-    public IReadOnlyList<NodeTemplate> AllTemplates => [.. templatesByName.Values];
+    public IReadOnlyList<NodeTemplate> AllTemplates => [.. templatesById.Values];
 
     public void RegisterNode(NodeTemplate template)
     {
-        templatesByName[template.Name] = template;
+        templatesById[template.Id] = template;
 
         if (!templatesByCategory.ContainsKey(template.Category))
             templatesByCategory[template.Category] = [];
@@ -22,11 +21,11 @@ public class NodeRegistry
             templatesByCategory[template.Category].Add(template);
     }
 
-    public void UnregisterNode(string name)
+    public void UnregisterNode(int id)
     {
-        if (templatesByName.TryGetValue(name, out var template))
+        if (templatesById.TryGetValue(id, out var template))
         {
-            templatesByName.Remove(name);
+            templatesById.Remove(id);
             if (templatesByCategory.ContainsKey(template.Category))
             {
                 templatesByCategory[template.Category].Remove(template);
@@ -40,21 +39,21 @@ public class NodeRegistry
 
     public void UnregisterNodeByPayload(object payload)
     {
-        string? nameToRemove = null;
-        foreach (var template in templatesByName.Values)
+        int? idToRemove = null;
+        foreach (var template in templatesById.Values)
         {
             if (template.Payload != null && template.Payload.Equals(payload))
             {
-                nameToRemove = template.Name;
+                idToRemove = template.Id;
                 break;
             }
         }
-        if (nameToRemove != null) UnregisterNode(nameToRemove);
+        if (idToRemove != null) UnregisterNode(idToRemove.Value);
     }
 
-    public NodeTemplate? GetTemplate(string name)
+    public NodeTemplate? GetTemplate(int id)
     {
-        return templatesByName.TryGetValue(name, out var template) ? template : null;
+        return templatesById.TryGetValue(id, out var template) ? template : null;
     }
 
     public IReadOnlyList<NodeTemplate> GetTemplatesInCategory(string category)
@@ -67,9 +66,9 @@ public class NodeRegistry
         return [.. templatesByCategory.Keys];
     }
     
-    public NodeVisual? SpawnNode(Graph graph, string templateName, Vector2 position)
+    public NodeVisual? SpawnNode(Graph graph, int templateId, Vector2 position)
     {
-        NodeTemplate? template = GetTemplate(templateName);
+        NodeTemplate? template = GetTemplate(templateId);
         if (template == null) return null;
         
         List<DataType> inPorts = [];
@@ -86,7 +85,7 @@ public class NodeRegistry
             if (t != null) outPorts.Add(t);
         }
 
-        Node n = graph.AddNode(template.Name, inPorts, outPorts);
+        Node n = graph.AddNode(template.Id, inPorts, outPorts);
         
         NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, position.X, position.Y);
         return nodeVis;

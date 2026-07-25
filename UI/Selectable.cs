@@ -1,3 +1,4 @@
+using LibLayoutEngine;
 using Raylib_cs;
 using System.Numerics;
 
@@ -100,7 +101,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         // Text
         int textY = (int)(Position.Y + (height - fontSize) / 2f);
-        Raylib.DrawText(selectableText, (int)Position.X + textPadX, textY, fontSize, isSelected ? textSelected : textNormal);
+        LayoutEngine.DrawTextAbsolute(selectableText, (int)Position.X + textPadX, textY, isSelected ? textSelected : textNormal, fontSize, Vector2.Zero);
     }
 
     protected override void OnUpdate()
@@ -166,7 +167,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
     public void SetText(string newText)
     {
         selectableText = newText;
-        editIF.SetText(newText);
+        editIF.InputFieldText = newText;
     }
 
     public string Text

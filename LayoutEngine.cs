@@ -5,7 +5,7 @@ using static Raylib_cs.Raylib;
 using RaylibNodeLibrary;
 using RaylibNodeLibrary.UI;
 
-namespace RlSimpleLayoutEngine;
+namespace LibLayoutEngine;
 
 public enum LayoutOpType
 {
@@ -20,7 +20,7 @@ public struct LayoutOperation
     public int PosModifiedCount { get; set; }
 }
 
-public class RlSimpleLayout
+public class LayoutEngine
 {
     private LayoutOperation[] layoutOps = new LayoutOperation[20];
 
@@ -28,10 +28,7 @@ public class RlSimpleLayout
     private int lastHorizontalIdx = -1;
     private int lastVerticalIdx = -1;
 
-    private int scrollWidthCache = -1;
-    private int scrollHeightCache = -1;
-
-    private Font textFont;
+    private static Font textFont;
 
     private Dictionary<int, Button> layoutButtons = [];
     private Dictionary<int, Selectable> layoutSelectables = [];
@@ -45,9 +42,13 @@ public class RlSimpleLayout
 
     EditorObject? defaultParent = null;
 
-    public void Init(Font font, EditorObject? defaultParent)
+    public static void InitSLEDefaultFont(Font font)
     {
         textFont = font;
+    }
+
+    public LayoutEngine(EditorObject? defaultParent)
+    {
         this.defaultParent = defaultParent;
     }
 
@@ -56,7 +57,6 @@ public class RlSimpleLayout
         layoutOpsIdx = -1;
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
-
 
         List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
         
@@ -353,35 +353,45 @@ public class RlSimpleLayout
         }
     }
 
-    private void DrawText_Internal(string text, int posX, int posY, Color fontColor, Vector2 offset)
+    public static int MeasureTextW(string text, float fontSize)
+    {
+        return (int)MeasureTextEx(textFont, text, fontSize, 0.5f).X;
+    }
+
+    public static void DrawTextAbsolute(string text, int posX, int posY, Color fontColor, float fontSize, Vector2 offset)
+    {
+        DrawTextPro(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), Vector2.Zero, 0, fontSize, 0.5f, fontColor);
+    }
+
+    public static void DrawTextAbsolute(string text, int posX, int posY, Color fontColor, Vector2 offset)
     {
         DrawTextEx(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), 15, 0.5f, fontColor);
     }
 
-    private void DrawPanel_Internal(int posX, int posY, int width, int height, Color panelColor)
+    public static void DrawPanelAbsolute(int posX, int posY, int width, int height, Color panelColor)
     {
         DrawRectangle(posX, posY, width, height, panelColor);
     }
 
-    private void DrawTextPanel_Internal(string text, int posX, int posY, int panelWidth, int panelHeight, Color panelColor, Color textColor, Vector2 textOffset)
+    public static void DrawTextPanelAbsolute(string text, int posX, int posY, int panelWidth, int panelHeight, int textSize, Color panelColor, Color textColor, Vector2 textOffset)
     {
-        DrawPanel_Internal(posX, posY, panelWidth, panelHeight, panelColor);
-        DrawText_Internal(text, posX, posY, textColor, textOffset);
+        DrawPanelAbsolute(posX, posY, panelWidth, panelHeight, panelColor);
+        DrawTextAbsolute(text, posX, posY, textColor, textSize, textOffset);
     }
 
-    private void DrawSection_Internal(string heading, int posX, int posY, int width, int heigth, float headingPercent, int fontSize, Color headingBgColor, Color bodyBgColor, Color fontColor)
+    public static void DrawSectionAbsolute(string heading, int posX, int posY, int width, int heigth, float headingPercent, int headingSize, Color headingBgColor, Color bodyBgColor, Color fontColor)
     {
         int headingHeight = (int)(heigth * headingPercent);
 
-        DrawPanel_Internal(posX, posY + headingHeight, width, heigth - headingHeight, bodyBgColor);
+        DrawPanelAbsolute(posX, posY + headingHeight, width, heigth - headingHeight, bodyBgColor);
 
         if (headingHeight != 0)
-            DrawTextPanel_Internal(heading, posX, posY, width, headingHeight, headingBgColor, fontColor, new Vector2(5, 0));
+            DrawTextPanelAbsolute(heading, posX, posY, width, headingHeight, headingSize, headingBgColor, fontColor, new Vector2(5, 0));
         else
-            DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), fontSize, 0.5f, fontColor);
+            DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
     }
 
-    private void DrawButton_Internal(Button button, int posX, int posY)
+    private void DrawButtonAbsolute(Button button, int posX, int posY)
     {
         if (!layoutButtons.TryGetValue(button.Id, out Button? cachedButton))
         {
@@ -393,7 +403,7 @@ public class RlSimpleLayout
         cachedButton.Render();
     }
 
-    private void DrawButton_Internal(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder)
+    private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder)
     {
         if (!layoutButtons.TryGetValue(id, out Button? cachedButton))
         {
@@ -409,7 +419,7 @@ public class RlSimpleLayout
         cachedButton.Render();
     }
 
-    private void DrawSelectable_Internal(Selectable selectable, int posX, int posY)
+    private void DrawSelectableAbsolute(Selectable selectable, int posX, int posY)
     {
         if (!layoutSelectables.TryGetValue(selectable.Id, out Selectable? cachedSelectable))
         {
@@ -421,7 +431,7 @@ public class RlSimpleLayout
         cachedSelectable.Render();
     }
 
-    private Selectable DrawSelectable_Internal(int id, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
+    private Selectable DrawSelectableAbsolute(int id, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
     {
         if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
         {
@@ -439,16 +449,16 @@ public class RlSimpleLayout
         return cachedSelectable;
     }
 
-    private void DrawInputField_Internal(int id, string placeholderText, string startingText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize)
+    private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize)
     {
         if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
         {
-            cachedInputField = new InputField(placeholderText, startingText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, defaultParent);
+            cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, defaultParent);
             layoutInputFields.Add(id, cachedInputField);
         }
         else
         {
-            cachedInputField.Text = startingText;
+            cachedInputField.InputFieldText = fieldText;
             cachedInputField.OnTextChanged = onTextEdited;
             cachedInputField.OnFocusEnd = onFocusEnd;
         }
@@ -457,7 +467,7 @@ public class RlSimpleLayout
         cachedInputField.Render();
     }
 
-    private void DrawToggle_Internal(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
+    private void DrawToggleAbsolute(int id, bool startingValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
         if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
         {
@@ -474,7 +484,7 @@ public class RlSimpleLayout
         cachedToggle.Render();
     }
 
-    private void DrawDropdown_Internal(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, int fontSize)
+    private void DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, int fontSize)
     {
         if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
         {
@@ -487,7 +497,7 @@ public class RlSimpleLayout
                 cachedDropdown.SetOptions(options, selectedIndex);
             else
             {
-                cachedDropdown.Selection = selectedIndex;
+                cachedDropdown.SelectedIndex = selectedIndex;
                 cachedDropdown.SetOnSelectionChanged(onSelectionChanged);
             }
         }
@@ -498,13 +508,13 @@ public class RlSimpleLayout
 
     public void Text(string text, Color fontColor, bool updateLayout = true)
     {
-        DrawText_Internal(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
+        DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
         if (updateLayout) DrawAny(text.Length * 2, 20);
     }
 
     public void Panel(int width, int height, Color panelColor, bool updateLayout = true)
     {
-        DrawPanel_Internal(PosX_Dynamic(), PosY_Dynamic(), width, height, panelColor);
+        DrawPanelAbsolute(PosX_Dynamic(), PosY_Dynamic(), width, height, panelColor);
         if (updateLayout) DrawAny(width, height);
     }
 
@@ -513,37 +523,37 @@ public class RlSimpleLayout
         PosX_Dynamic();
         PosY_Dynamic();
 
-        DrawTextPanel_Internal(text, x, y, panelWidth, panelHeight, panelColor, textColor, new Vector2(5, 0));
+        DrawTextPanelAbsolute(text, x, y, panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
     public void TextPanelPro(string text, int panelWidth, int panelHeight, Color panelColor, Color textColor, bool updateLayout = true)
     {
-        DrawTextPanel_Internal(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, panelColor, textColor, new Vector2(5, 0));
+        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
     public void TextPanelEx(string text, int panelWidth, int panelHeight, Vector2 panelOffset, bool updateLayout = true)
     {
-        DrawTextPanel_Internal(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, Color.Gray, Color.LightGray, panelOffset);
+        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Color.Gray, Color.LightGray, panelOffset);
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
     public void TextPanel(string text, int panelWidth, int panelHeight, bool updateLayout = true)
     {
-        DrawTextPanel_Internal(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, Color.LightGray, Color.DarkGray, new Vector2(5, 0));
+        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Color.LightGray, Color.DarkGray, new Vector2(5, 0));
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
     public void SectionEx(string heading, int width, int height, Color headingBgColor, Color bodyBgColor, Color fontColor, float headerPerc, bool updateLayout = true)
     {
-        DrawSection_Internal(heading, PosX_Dynamic(), PosY_Dynamic(), width, height, headerPerc, 20, headingBgColor, bodyBgColor, fontColor);
+        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, height, headerPerc, 20, headingBgColor, bodyBgColor, fontColor);
         if (updateLayout) DrawAny(width, height);
     }
 
     public void Section(string heading, int width, int heigth, float headerPerc, bool updateLayout = true)
     {
-        DrawSection_Internal(heading, PosX_Dynamic(), PosY_Dynamic(), width, heigth, headerPerc, 20, Color.DarkGray, Color.Gray, Color.LightGray);
+        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, heigth, headerPerc, 20, Color.DarkGray, Color.Gray, Color.LightGray);
         if (updateLayout) DrawAny(width, heigth);
     }
 
@@ -554,7 +564,7 @@ public class RlSimpleLayout
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawButton_Internal(button, (int)pos.X, (int)pos.Y);
+        DrawButtonAbsolute(button, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny((int)button.Width, (int)button.Height);
     }
 
@@ -565,7 +575,7 @@ public class RlSimpleLayout
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawButton_Internal(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true);
+        DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true);
         if (updateLayout) DrawAny(buttonWidth, buttonHeight);
     }
 
@@ -576,7 +586,7 @@ public class RlSimpleLayout
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawSelectable_Internal(selectable, (int)pos.X, (int)pos.Y);
+        DrawSelectableAbsolute(selectable, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny(selectable.Width, selectable.Height);
     }
 
@@ -587,20 +597,20 @@ public class RlSimpleLayout
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
         
-        Selectable selectable = DrawSelectable_Internal(id, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
+        Selectable selectable = DrawSelectableAbsolute(id, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
         if (updateLayout) DrawAny(selectableWidth, selectableHeight);
 
         return selectable;
     }
 
-    public void InputField(int id, string placeholderText, string startingText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool updateLayout = true)
+    public void InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawInputField_Internal(id, placeholderText, startingText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15);
+        DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15);
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
     }
 
@@ -611,7 +621,7 @@ public class RlSimpleLayout
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawToggle_Internal(id, startingValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        DrawToggleAbsolute(id, startingValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
     }
 
@@ -622,7 +632,7 @@ public class RlSimpleLayout
         if (defaultParent != null)
             pos -= defaultParent.Position;
 
-        DrawDropdown_Internal(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, 15);
+        DrawDropdownAbsolute(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, 15);
 
         Dropdown cached = layoutDropdowns[id];
 

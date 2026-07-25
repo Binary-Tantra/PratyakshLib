@@ -5,7 +5,7 @@ namespace RaylibNodeLibrary.UI;
 public class ChildLayout : UILayoutBase
 {
     private List<(UIElementType elemType, UIElementDescription elemDesc)> uiElements;
-    private readonly List<List<int>> ids;
+    private readonly List<List<(int id, object? payload)>> ids; // The third thing (object) is a payload for things like dropdown which need an extra thing (in its case, its selected option idx).
 
     private int maxWidthCoverage;
 
@@ -22,20 +22,20 @@ public class ChildLayout : UILayoutBase
             if (uiElements[i].type == UIElementType.Group)
             {
                 HorizontalGroupDesc gd = (HorizontalGroupDesc)uiElements[i].desc;
-                List<int> gdIds = [];
+                List<(int, object?)> gdIds = [];
 
                 for (int j = 0; j < gd.uiElements.Count; j++)
-                    gdIds.Add(IdGen.GetNewID());
+                    gdIds.Add((IdGen.GetNewID(), null));
 
                 ids.Add(gdIds);
             }
-            else ids.Add([IdGen.GetNewID()]);
+            else ids.Add([(IdGen.GetNewID(), null)]);
         }
     }
 
     public override void OnDrawLayout()
     {
-        void DrawAccType(int id, UIElementType type, UIElementDescription desc)
+        object? DrawAccType(int id, UIElementType type, UIElementDescription desc, object? payload)
         {
             switch (type)
             {
@@ -61,9 +61,12 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Dropdown:
                     DropdownDesc ddDesc = (DropdownDesc)desc;
-                    layout.Dropdown(id, ddDesc.options, ddDesc.selectedIndex, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, ddDesc.onSelectionChanged, id);
+                    payload ??= ddDesc.selectedIndex;
+                    layout.Dropdown(id, ddDesc.options, (int)payload, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, ddDesc.onSelectionChanged, id);
                     break;
             }
+
+            return payload;
         }
 
         for (int i = 0; i < uiElements.Count; i++)
@@ -78,7 +81,10 @@ public class ChildLayout : UILayoutBase
                     for (int j = 0; j < gDesc.uiElements.Count; j++)
                     {
                         maxWidthCoverage = (int)((float)(layoutWidth - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
-                        DrawAccType(ids[i][j], gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc);
+
+                        (int id, object? payload) = ids[i][j];
+                        payload = DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, payload);
+                        ids[i][j] = (id, payload);
                     }
                 }
                 layout.EndHorizontal(25);
@@ -86,7 +92,9 @@ public class ChildLayout : UILayoutBase
             else
             {
                 maxWidthCoverage = layoutWidth;
-                DrawAccType(ids[i][0], uiElements[i].elemType, uiElements[i].elemDesc);
+                (int id, object? payload) = ids[i][0];
+                payload = DrawAccType(ids[i][0].id, uiElements[i].elemType, uiElements[i].elemDesc, ids[i][0].payload);
+                ids[i][0] = (id, payload);
             }
         }
     }

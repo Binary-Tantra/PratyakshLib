@@ -1,6 +1,7 @@
 namespace RaylibNodeLibrary;
 
 using System.Numerics;
+using LibLayoutEngine;
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 using RaylibNodeLibrary.UI;
@@ -29,6 +30,8 @@ public class Engine
 
     private static int? currentlySelectedObjectId;
 
+    private static Font defaultFont;
+
     public static int ScreenWidth { get => screenWidth; }
     public static int ScreenHeight { get => screenHeight; }
     public static Camera2D RCamera { get => camera.RaylibCam2D; }
@@ -44,6 +47,7 @@ public class Engine
     public static int? CurrentlySelectedObjectId { get => currentlySelectedObjectId; }
     public static Dictionary<int, Color> DataTypeColors { get; private set; }
     public static NodeRegistry NodeRegistry { get; private set; }
+    public static Font DefaultFont { get => defaultFont; }
 
     public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
     public static event Action OnHandleInputComplete;
@@ -155,29 +159,50 @@ public class Engine
         Cleanup();
     }
 
+    private static void SetupDefaultTypeColors()
+    {
+        DataTypeColors = [];
+
+        DataType? execType = graph.Types.GetType("Execution");
+        DataType? intType = graph.Types.GetType("Int");
+        DataType? floatType = graph.Types.GetType("Float");
+        DataType? numType = graph.Types.GetType("Number");
+        DataType? strType = graph.Types.GetType("String");
+        DataType? boolType = graph.Types.GetType("Bool");
+
+        if (execType != null)
+            DataTypeColors.Add(execType.Id, Raylib.Fade(Color.White, 0.55f));
+        
+        if (intType != null)
+            DataTypeColors.Add(intType.Id, Color.Green);
+        
+        if (floatType != null)
+            DataTypeColors.Add(floatType.Id, Color.DarkGreen);
+        
+        if (numType != null)
+            DataTypeColors.Add(numType.Id, Color.DarkGreen);
+        
+        if (strType != null)
+            DataTypeColors.Add(strType.Id, Color.Pink);
+        
+        if (boolType != null)
+            DataTypeColors.Add(boolType.Id, Color.Red);
+    }
+
     private static void Setup()
     {
-        graph = new Graph();
-        graph.Types.RegisterDefaultTypes();
-
-        DataTypeColors = new Dictionary<int, Color>();
-        DataType? execType = graph.Types.GetType("Execution");
-        if (execType != null) DataTypeColors.Add(execType.Id, Raylib.Fade(Color.White, 0.55f));
-        DataType? intType = graph.Types.GetType("Int");
-        if (intType != null) DataTypeColors.Add(intType.Id, Color.Green);
-        DataType? floatType = graph.Types.GetType("Float");
-        if (floatType != null) DataTypeColors.Add(floatType.Id, Color.DarkGreen);
-        DataType? numType = graph.Types.GetType("Number");
-        if (numType != null) DataTypeColors.Add(numType.Id, Color.DarkGreen);
-        DataType? strType = graph.Types.GetType("String");
-        if (strType != null) DataTypeColors.Add(strType.Id, Color.Pink);
-        DataType? boolType = graph.Types.GetType("Bool");
-        if (boolType != null) DataTypeColors.Add(boolType.Id, Color.Red);
-
         screenWidth = 1024;
         screenHeight = 576;
 
+        graph = new Graph();
+        
+        graph.Types.RegisterDefaultTypes();
+        SetupDefaultTypeColors();
+
         Raylib.InitWindow(screenWidth, screenHeight, "Raylib Node Library");
+
+        defaultFont = Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
+        LayoutEngine.InitSLEDefaultFont(defaultFont);
 
         nodeToNodeUIDict = [];
         portToPortUIDict = [];
@@ -219,39 +244,12 @@ public class Engine
             (UIElementType.Text, new TextDesc("A + B", Color.White))
         ]));
 
-        NodeRegistry = new NodeRegistry();
-
-        NodeRegistry.RegisterNode(new NodeTemplate("Empty Node", "Basic", [], [], [
-            (UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
-            (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
-            (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
-            (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
-        ]));
-
-        NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
-            ["Execution", "String", "Int", "Number"], 
-            ["Execution", "Int", "String"], [
-            (UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
-            (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
-            (UIElementType.Selectable, new SelectableDesc("Red", 150, 25, (sel) => { })),
-            (UIElementType.Selectable, new SelectableDesc("Blue", 150, 25, (sel) => { })),
-            (UIElementType.Group, new HorizontalGroupDesc("", 50,
-                [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
-                (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
-            (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))
-        ]));
-
-        NodeRegistry.RegisterNode(new NodeTemplate("Math Add", "Math",
-            ["Float", "Float"], ["Float"], [
-            (UIElementType.Text, new TextDesc("A + B", Color.White))
-        ]));
-
         canvas = new Canvas(null, (payload, editorObj) =>
         {
             if (payload is NodeTemplate template)
             {
                 Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
-                NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Name, mp);
+                NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Id, mp);
                 if (visual != null)
                 {
                     actors.Add(visual);
@@ -316,7 +314,6 @@ public class Engine
         (varId) =>
         {
             // On remove var.
-
             if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? varNodesVisList))
             {
                 for (int i = 0; i < varNodesVisList.Count; i++)
@@ -519,6 +516,7 @@ public class Engine
 
     public static void Cleanup()
     {
+        Raylib.UnloadFont(defaultFont);
         Raylib.CloseWindow();
     }
 
@@ -546,11 +544,11 @@ public class Engine
         varToNodeUIsDict.Clear();
     }
 
-    public static void ReconstructGraph(RaylibNodeLibrary.DataModel.Serialization.GraphSaveData data)
+    public static void ReconstructGraph(DataModel.Serialization.GraphSaveData data)
     {
         ClearWorkspace();
 
-        RaylibNodeLibrary.DataModel.IdGen.SetCurrentId(data.MaxId);
+        IdGen.SetCurrentId(data.MaxId);
 
         foreach (var vData in data.Variables)
         {
@@ -563,23 +561,23 @@ public class Engine
             else if (varType.CSharpType == typeof(string)) value = vData.Value.GetString();
             else if (varType.CSharpType == typeof(bool)) value = vData.Value.GetBoolean();
             
-            Variable v = new Variable(vData.Id, vData.Name, varType, value ?? 0);
+            Variable v = new(vData.Id, vData.Name, varType, value ?? 0);
             graph.AddVariableExplicit(v);
         }
 
         foreach (var nd in data.Nodes)
         {
-            NodeTemplate? template = NodeRegistry.GetTemplate(nd.TemplateName);
+            NodeTemplate? template = NodeRegistry.GetTemplate(nd.TemplateId);
             if (template == null) continue;
 
-            Node n = new Node(nd.Id, nd.TemplateName);
+            Node n = new(nd.Id, nd.TemplateId);
 
             foreach (var pData in nd.InputPorts)
             {
                 DataType? t = graph.Types.GetType(pData.DataTypeName);
                 if (t != null)
                 {
-                    Port p = new Port(pData.Id, pData.Name, PortFlowType.Input, t);
+                    Port p = new(pData.Id, pData.Name, PortFlowType.Input, t);
                     n.AddInputPortExplicit(p);
                 }
             }
@@ -589,14 +587,14 @@ public class Engine
                 DataType? t = graph.Types.GetType(pData.DataTypeName);
                 if (t != null)
                 {
-                    Port p = new Port(pData.Id, pData.Name, PortFlowType.Output, t);
+                    Port p = new(pData.Id, pData.Name, PortFlowType.Output, t);
                     n.AddOutputPortExplicit(p);
                 }
             }
 
             graph.AddNodeExplicit(n);
 
-            NodeVisual nodeVis = new NodeVisual(n.Id, template.UIElements, template.Name, nd.PositionX, nd.PositionY);
+            NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, nd.PositionX, nd.PositionY);
             actors.Add(nodeVis);
 
             if (template.Payload is int varId)
@@ -609,7 +607,7 @@ public class Engine
 
         foreach (var cData in data.Connections)
         {
-            Connection c = new Connection(cData.Id, cData.SourcePortId, cData.TargetPortId);
+            Connection c = new(cData.Id, cData.SourcePortId, cData.TargetPortId);
             graph.AddConnectionExplicit(c);
 
             PortVisual? sourcePUI = portToPortUIDict[cData.SourcePortId];
@@ -640,16 +638,16 @@ public class Engine
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
         if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
         {
-            string json = RaylibNodeLibrary.DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, RaylibNodeLibrary.DataModel.IdGen.CurrentId);
-            System.IO.File.WriteAllText("save.json", json);
+            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, IdGen.CurrentId);
+            File.WriteAllText("save.json", json);
             Console.WriteLine("Saved graph to save.json");
         }
         else if (keyEvent.Key == KeyboardKey.L && InteractionManager.InputContext.isCtrlDown)
         {
-            if (System.IO.File.Exists("save.json"))
+            if (File.Exists("save.json"))
             {
-                string json = System.IO.File.ReadAllText("save.json");
-                var data = RaylibNodeLibrary.DataModel.Serialization.GraphSerializer.Deserialize(json);
+                string json = File.ReadAllText("save.json");
+                var data = DataModel.Serialization.GraphSerializer.Deserialize(json);
                 if (data != null)
                 {
                     ReconstructGraph(data);

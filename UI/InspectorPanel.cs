@@ -87,7 +87,7 @@ public class InspectorPanel : UILayoutBase
                             {
                                 if (int.TryParse(input.InputFieldText, out int result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
-                                else input.Text = v.VarValue.ToString() ?? "0";
+                                else input.InputFieldText = v.VarValue.ToString() ?? "0";
                             });
                         }
                         else if (v.VarType.Name == "Float" || v.VarType.Name == "Number")
@@ -96,7 +96,7 @@ public class InspectorPanel : UILayoutBase
                             {
                                 if (float.TryParse(input.InputFieldText, out float result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
-                                else input.Text = v.VarValue.ToString() ?? "0.0";
+                                else input.InputFieldText = v.VarValue.ToString() ?? "0.0";
                             });
                         }
                         else if (v.VarType.Name == "String")

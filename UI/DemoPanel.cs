@@ -10,19 +10,29 @@ public class DemoPanel : UILayoutBase
 
     private int scrollViewId;
     private int[] buttonIds;
+    
     private int inputFieldId;
+    private string fieldText;
+
     private int[] selectableIds;
     private int scrollView2Id;
+
     private int dropdownId;
+    private int dropdownSelectedIdx;
 
     public DemoPanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 400, 410, parent)
     {
         scrollViewId = IdGen.GetNewID();
         buttonIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
+        
         inputFieldId = IdGen.GetNewID();
+        fieldText = "";
+        
         selectableIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
         scrollView2Id = IdGen.GetNewID();
+        
         dropdownId = IdGen.GetNewID();
+        dropdownSelectedIdx = 0;
     }
 
     // Callbacks for our interactive elements
@@ -74,7 +84,10 @@ public class DemoPanel : UILayoutBase
             {
                 layout.Text("Enter Name: ", Color.White);
                 layout.AddSpace(100);
-                layout.InputField(inputFieldId, "Type here...", "", 200, 25);
+                layout.InputField(inputFieldId, "Type here...", fieldText, 200, 25, (inpf) =>
+                {
+                    fieldText = inpf.InputFieldText;
+                });
             }
             layout.EndHorizontal(25);
 
@@ -90,9 +103,10 @@ public class DemoPanel : UILayoutBase
             {
                 layout.Text("Resolution: ", Color.White);
                 layout.AddSpace(50);
-                height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], 0, 150, 25, (dd, idx) =>
+                height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 25, (dd, idx) =>
                 {
                     Console.WriteLine($"Dropdown updated -> Index: {idx} | Value: {dd.SelectedOption}");
+                    dropdownSelectedIdx = idx;
                 }, dropdownId).Height;
             }
             layout.EndHorizontal(height);

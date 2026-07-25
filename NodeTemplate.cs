@@ -1,10 +1,11 @@
-namespace RaylibNodeLibrary;
-
-using System.Collections.Generic;
+using RaylibNodeLibrary.DataModel;
 using RaylibNodeLibrary.UI;
+
+namespace RaylibNodeLibrary;
 
 public class NodeTemplate
 {
+    public int Id { get; }
     public string Name { get; }
     public string Category { get; }
     
@@ -19,6 +20,7 @@ public class NodeTemplate
                         List<(UIElementType, UIElementDescription)> uiElements,
                         object? payload = null)
     {
+        Id = IdGen.GetNewID();
         Name = name;
         Category = category;
         InputPortTypeNames = inputPortTypeNames;

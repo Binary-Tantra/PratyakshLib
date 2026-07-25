@@ -14,11 +14,11 @@ public class Node : DataObject
     public List<(int, string)> InputPortIdNames { get => [.. inputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
     public List<(int, string)> OutputPortIdNames { get => [.. outputPorts.Select((p) => (p.Key, p.Value.PortName))]; }
 
-    public string TemplateName { get; set; } = string.Empty;
+    public int TemplateId { get; set; } = -1;
 
-    public Node(string templateName, List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
+    public Node(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
     {
-        TemplateName = templateName;
+        TemplateId = templateId;
         Engine.NotifyAddNode(Id);
 
         inputPorts = [];
@@ -37,9 +37,9 @@ public class Node : DataObject
         }
     }
 
-    public Node(int id, string templateName) : base(id)
+    public Node(int id, int templateId) : base(id)
     {
-        TemplateName = templateName;
+        TemplateId = templateId;
         Engine.NotifyAddNode(Id);
 
         inputPorts = [];

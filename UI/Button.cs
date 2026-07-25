@@ -1,4 +1,6 @@
 using Raylib_cs;
+using LibLayoutEngine;
+using System.Numerics;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -76,7 +78,7 @@ public class Button : UIBase, IPointerInteractable
         int textX = (int)(Position.X + (dimensions.X - textW) / 2f);
         int textY = (int)(Position.Y + (dimensions.Y - fontSize) / 2f);
 
-        Raylib.DrawText(buttonText, textX, textY, fontSize, labelColor);
+        LayoutEngine.DrawTextAbsolute(buttonText, textX, textY, labelColor, fontSize, Vector2.Zero);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

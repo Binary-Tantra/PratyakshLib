@@ -1,12 +1,12 @@
 using System.Numerics;
 using Raylib_cs;
-using RlSimpleLayoutEngine;
+using LibLayoutEngine;
 
 namespace RaylibNodeLibrary.UI;
 
 public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
 {
-    protected RlSimpleLayout layout;
+    protected LayoutEngine layout;
 
     protected int layoutWidth;
     protected int layoutHeight;
@@ -15,6 +15,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
     private Vector2 dragOffset;
 
     protected int mainVerticalSpacing = 0;
+    protected int horizontalPadding = 0;
 
     public int LayoutWidth { get => layoutWidth; }
     public int LayoutHeight { get => layoutHeight; }
@@ -27,8 +28,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
         this.layoutWidth = layoutWidth;
         this.layoutHeight = layoutHeight;
 
-        layout = new RlSimpleLayout();
-        layout.Init(Raylib.GetFontDefault(), this);
+        layout = new LayoutEngine(this);
     }
 
     protected override void OnDraw()
@@ -43,6 +43,8 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
         {
             layout.BeginHorizontalEx(0, (int)Position.X);
             {
+                layout.AddSpace(horizontalPadding);
+
                 layout.BeginVerticalEx(mainVerticalSpacing, (int)Position.Y);
                 {
                     OnDrawLayout();

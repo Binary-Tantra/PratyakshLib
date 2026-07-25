@@ -27,9 +27,9 @@ public class Graph
         graphVariables.Clear();
     }
 
-    public Node AddNode(string templateName, List<DataType> inputPortTypes, List<DataType> outputPortTypes)
+    public Node AddNode(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes)
     {
-        Node n = new(templateName, inputPortTypes, outputPortTypes);
+        Node n = new(templateId, inputPortTypes, outputPortTypes);
         graphNodes.Add(n.Id, n);
 
         return n;

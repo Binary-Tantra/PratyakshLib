@@ -1,4 +1,3 @@
-using System.Numerics;
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 
@@ -23,42 +22,34 @@ public class SearchMenu : UILayoutBase
 
         searchInputId = IdGen.GetNewID();
         scrollId = IdGen.GetNewID();
-
     }
-
-
 
     public override void OnDrawLayout()
     {
-        layout.SectionEx("Search", layoutWidth, layoutHeight, Raylib.Fade(Color.DarkGray, 0.95f), Raylib.Fade(Color.Gray, 0.95f), Raylib.Fade(Color.White, 0.9f), 0.1f, false);
+        layout.SectionEx("", layoutWidth, layoutHeight, new Color(), new Color((byte)45, (byte)45, (byte)45, (byte)255), new Color(), 0.0f, false);
+
+        // Search Input Field
+        layout.InputField(searchInputId, "Search...", searchQuery, layoutWidth, 30, (inputField) =>
+        {
+            searchQuery = inputField.InputFieldText;
+        });
+
+        if (firstFrame)
+        {
+            InputField? inputField = layout.GetInputField(searchInputId);
+            if (inputField != null)
+            {
+                inputField.SetFocus();
+                firstFrame = false;
+            }
+        }
 
         layout.BeginHorizontal(0);
         {
             layout.AddSpace(10);
             layout.BeginVertical(5);
             {
-                layout.AddSpace(5);
-                
-                // Search Input Field
-                layout.InputField(searchInputId, "Search...", searchQuery, layoutWidth - 20, 30, (inputField) =>
-                {
-                    searchQuery = inputField.Text;
-                });
-
-                if (firstFrame)
-                {
-                    InputField? inputField = layout.GetInputField(searchInputId);
-                    if (inputField != null)
-                    {
-                        inputField.SetFocus();
-                        firstFrame = false;
-                    }
-                }
-
-                layout.AddSpace(5);
-
-                // Scroll view for results
-                layout.BeginScrollView(scrollId, layoutWidth - 20, layoutHeight - 60, 50, 0);
+                layout.BeginScrollView(scrollId, layoutWidth - 10, layoutHeight - 50, 10, 0);
                 {
                     string lowerQuery = searchQuery.ToLower();
 

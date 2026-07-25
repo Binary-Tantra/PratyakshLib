@@ -1,4 +1,6 @@
+using LibLayoutEngine;
 using Raylib_cs;
+using System.Numerics;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -18,9 +20,20 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     public Action<InputField>? OnTextChanged;
     public Action<InputField>? OnFocusEnd;
 
-    public string InputFieldText { get => inputFieldText; }
+    private bool notifyTextChanged;
 
-    public InputField(string placeholderText, string startingText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public string InputFieldText
+    {
+        get => inputFieldText;
+        set
+        {
+            inputFieldText = value;
+            isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
+            if (notifyTextChanged) OnTextChanged?.Invoke(this);
+        }
+    }
+
+    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -30,20 +43,12 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         if (string.IsNullOrEmpty(placeholderText))
             placeholderText = "Enter text";
 
+        notifyTextChanged = false;
         this.placeholderText = placeholderText;
+        InputFieldText = inputFieldText;
+        notifyTextChanged = true;
 
-        if (string.IsNullOrEmpty(startingText))
-        {
-            inputFieldText = placeholderText;
-            isShowingPlaceholder = true;
-        }
-        else
-        {
-            inputFieldText = startingText;
-            isShowingPlaceholder = false;
-        }
-
-        RelativePosition = new System.Numerics.Vector2(posX, posY);
+        RelativePosition = new Vector2(posX, posY);
 
         this.width = width;
         this.height = height;
@@ -77,9 +82,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
         // Placeholder Text or Normal Text
         if (isShowingPlaceholder)
-            Raylib.DrawText(placeholderText, (int)Position.X + textPadX, textY, fontSize, placeholderCol);
+            LayoutEngine.DrawTextAbsolute(placeholderText, (int)Position.X + textPadX, textY, placeholderCol, fontSize, Vector2.Zero);
         else
-            Raylib.DrawText(inputFieldText, (int)Position.X + textPadX, textY, fontSize, inputTextCol);
+            LayoutEngine.DrawTextAbsolute(InputFieldText, (int)Position.X + textPadX, textY, inputTextCol, fontSize, Vector2.Zero);
 
         // Blinking Cursor
         if (isFocused)
@@ -88,10 +93,10 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
             if (showCursorTime)
             {
-                int textW = isShowingPlaceholder ? 0 : Raylib.MeasureText(inputFieldText, fontSize);
+                int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(InputFieldText, fontSize);
                 int cursorX = (int)Position.X + textPadX + textW + 1;
 
-                Raylib.DrawLine(cursorX, (int)Position.Y + 3, cursorX, (int)Position.Y + height - 3, cursorCol);
+                Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + height - 7, cursorCol);
             }
         }
     }
@@ -124,12 +129,6 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         return true;
     }
 
-    private void SetIFText(string updated)
-    {
-        inputFieldText = updated;
-        OnTextChanged?.Invoke(this);
-    }
-
     public bool OnKeyDown(KeyInteractEventData kvt)
     {
         if (!isFocused)
@@ -154,17 +153,17 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
             if (isShowingPlaceholder)
             {
-                SetIFText(newK);
+                InputFieldText = newK;
                 isShowingPlaceholder = false;
             }
-            else SetIFText(inputFieldText + newK);
+            else InputFieldText += newK;
         }
         else if (kvt.Key == KeyboardKey.Backspace)
         {
-            if (inputFieldText.Length > 0)
-                SetIFText(inputFieldText[..^1]);
-            else 
-                SetIFText(string.Empty);
+            if (InputFieldText.Length > 0)
+                InputFieldText = InputFieldText[..^1];
+            else
+                InputFieldText = string.Empty;
         }
         else if (kvt.Key == KeyboardKey.Enter) EndFocus();
         else return false;
@@ -186,20 +185,5 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     public void OnFocusLost()
     {
         EndFocus();
-    }
-
-    public void SetText(string newText)
-    {
-        inputFieldText = newText;
-        isShowingPlaceholder = false;
-    }
-
-    public string Text
-    {
-        get => inputFieldText;
-        set
-        {
-            if (!isFocused) SetText(value);
-        }
     }
 }

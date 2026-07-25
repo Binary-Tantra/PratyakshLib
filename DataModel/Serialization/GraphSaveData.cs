@@ -22,7 +22,7 @@ public class VariableSaveData
 public class NodeSaveData
 {
     public int Id { get; set; }
-    public string TemplateName { get; set; } = string.Empty;
+    public int TemplateId { get; set; } = -1;
     public float PositionX { get; set; }
     public float PositionY { get; set; }
     public List<PortSaveData> InputPorts { get; set; } = new();

@@ -42,9 +42,11 @@ public class TypeManager
     public void RegisterDefaultTypes()
     {
         DataType exec = RegisterType("Execution", DataCategory.Execution);
+
+        DataType dataNumber = RegisterType("Number", DataCategory.Data);
         DataType dataInt = RegisterType("Int", DataCategory.Data, typeof(int));
         DataType dataFloat = RegisterType("Float", DataCategory.Data, typeof(float));
-        DataType dataNumber = RegisterType("Number", DataCategory.Data); // Abstract base for numbers
+
         DataType dataString = RegisterType("String", DataCategory.Data, typeof(string));
         DataType dataBool = RegisterType("Bool", DataCategory.Data, typeof(bool));
 
@@ -52,7 +54,7 @@ public class TypeManager
         dataInt.AddAssignableTo(dataNumber);
         dataFloat.AddAssignableTo(dataNumber);
         
-        // Let's say Int can be assigned to Float implicitly
+        // Int can be assigned to Float
         dataInt.AddAssignableTo(dataFloat);
     }
 }
