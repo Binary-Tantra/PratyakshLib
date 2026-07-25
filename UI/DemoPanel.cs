@@ -103,10 +103,10 @@ public class DemoPanel : UILayoutBase
             {
                 layout.Text("Resolution: ", Color.White);
                 layout.AddSpace(50);
-                height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 25, (dd, idx) =>
+                height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 25, (dd) =>
                 {
-                    Console.WriteLine($"Dropdown updated -> Index: {idx} | Value: {dd.SelectedOption}");
-                    dropdownSelectedIdx = idx;
+                    Console.WriteLine($"Dropdown updated -> Index: {dd.SelectedIndex} | Value: {dd.SelectedOption}");
+                    dropdownSelectedIdx = dd.SelectedIndex;
                 }, dropdownId).Height;
             }
             layout.EndHorizontal(height);

@@ -346,6 +346,9 @@ public class Engine
                     {
                         nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
                         nodeVisList[i].UpdateTitle($"Get {v.VarName}");
+
+                        Node? n = graph.GetNode(nodeVisList[i].NodeId);
+                        if (n != null) n.TemplateId = t.Id;
                     }
                 }
                 else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
@@ -372,18 +375,22 @@ public class Engine
                     nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
 
                     Node? n = graph.GetNode(nui.NodeId);
-                    if (n != null && n.OutputPorts.Count > 0)
+                    if (n != null)
                     {
-                        int portId = n.OutputPortIds[0];
-                        Port p = n.OutputPorts[portId];
-                        
-                        p.DataType = newType;
-                        p.PortName = newType.Name;
+                        n.TemplateId = t.Id;
+                        if (n.OutputPorts.Count > 0)
+                        {
+                            int portId = n.OutputPortIds[0];
+                            Port p = n.OutputPorts[portId];
+                            
+                            p.DataType = newType;
+                            p.PortName = newType.Name;
 
-                        if (portToPortUIDict.TryGetValue(portId, out PortVisual? pui) && pui != null)
-                            pui.UpdateDataType(newType.Id, newType.Name);
+                            if (portToPortUIDict.TryGetValue(portId, out PortVisual? pui) && pui != null)
+                                pui.UpdateDataType(newType.Id, newType.Name);
 
-                        graph.DisconnectIncompatibleConnections(portId);
+                            graph.DisconnectIncompatibleConnections(portId);
+                        }
                     }
                 }
             }
@@ -550,6 +557,31 @@ public class Engine
 
         IdGen.SetCurrentId(data.MaxId);
 
+        if (data.NodeTemplates != null && data.NodeTemplates.Count > 0)
+        {
+            NodeRegistry.Clear();
+            foreach (var tData in data.NodeTemplates)
+            {
+                var uiElements = new List<(UIElementType, UIElementDescription)>();
+                foreach (var uiData in tData.UIElements)
+                {
+                    uiElements.Add(DataModel.Serialization.GraphSerializer.DeserializeUIElement(uiData));
+                }
+
+                object? payload = null;
+                if (tData.Payload.HasValue)
+                {
+                    if (tData.Payload.Value.ValueKind == System.Text.Json.JsonValueKind.Number)
+                        payload = tData.Payload.Value.GetInt32();
+                    else if (tData.Payload.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                        payload = tData.Payload.Value.GetString();
+                }
+
+                NodeTemplate template = new(tData.Id, tData.Name, tData.Category, tData.InputPortTypeNames, tData.OutputPortTypeNames, uiElements, payload);
+                NodeRegistry.RegisterNode(template);
+            }
+        }
+
         foreach (var vData in data.Variables)
         {
             DataType? varType = graph.Types.GetType(vData.TypeName);
@@ -563,12 +595,30 @@ public class Engine
             
             Variable v = new(vData.Id, vData.Name, varType, value ?? 0);
             graph.AddVariableExplicit(v);
+
+            if (!varToNodeUIsDict.ContainsKey(v.Id))
+                varToNodeUIsDict.Add(v.Id, []);
         }
 
         foreach (var nd in data.Nodes)
         {
             NodeTemplate? template = NodeRegistry.GetTemplate(nd.TemplateId);
-            if (template == null) continue;
+
+            // Fallback: If exact template ID was not found (e.g. from an older file or unlinked variable template),
+            // search for a matching template by port signatures/payload.
+            if (template == null)
+            {
+                foreach (var t in NodeRegistry.AllTemplates)
+                {
+                    if (t.InputPortTypeNames.Count == nd.InputPorts.Count &&
+                        t.OutputPortTypeNames.Count == nd.OutputPorts.Count)
+                    {
+                        template = t;
+                        nd.TemplateId = t.Id;
+                        break;
+                    }
+                }
+            }
 
             Node n = new(nd.Id, nd.TemplateId);
 
@@ -594,10 +644,13 @@ public class Engine
 
             graph.AddNodeExplicit(n);
 
-            NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, nd.PositionX, nd.PositionY);
+            List<(UIElementType, UIElementDescription)> uiElems = template != null ? template.UIElements : [];
+            string titleName = template != null ? template.Name : "Node " + n.Id;
+
+            NodeVisual nodeVis = new(n.Id, uiElems, titleName, nd.PositionX, nd.PositionY);
             actors.Add(nodeVis);
 
-            if (template.Payload is int varId)
+            if (template != null && template.Payload is int varId)
             {
                 if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? list))
                     list.Add(nodeVis);
@@ -610,12 +663,16 @@ public class Engine
             Connection c = new(cData.Id, cData.SourcePortId, cData.TargetPortId);
             graph.AddConnectionExplicit(c);
 
-            PortVisual? sourcePUI = portToPortUIDict[cData.SourcePortId];
-            PortVisual? targetPUI = portToPortUIDict[cData.TargetPortId];
+            bool hasSource = portToPortUIDict.TryGetValue(cData.SourcePortId, out PortVisual? sourcePUI);
+            bool hasTarget = portToPortUIDict.TryGetValue(cData.TargetPortId, out PortVisual? targetPUI);
 
-            if (sourcePUI != null && targetPUI != null)
+            if (hasSource && hasTarget && sourcePUI != null && targetPUI != null)
             {
                 connectionUIManager.OnAddNewConnection(sourcePUI, targetPUI);
+            }
+            else
+            {
+                Console.WriteLine($"Warning: Could not connect ports visually ({cData.SourcePortId} -> {cData.TargetPortId}) because one or both PortVisuals were not found.");
             }
         }
     }
@@ -638,7 +695,7 @@ public class Engine
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
         if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
         {
-            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, IdGen.CurrentId);
+            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId);
             File.WriteAllText("save.json", json);
             Console.WriteLine("Saved graph to save.json");
         }

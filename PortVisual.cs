@@ -1,4 +1,5 @@
 using System.Numerics;
+using LibLayoutEngine;
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 
@@ -40,7 +41,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public static int GetPortTSize(string name)
     {
-        return Raylib.MeasureText(name, portTFontSize);
+        return LayoutEngine.MeasureTextW(name, portTFontSize);
     }
 
     public bool IsConnected
@@ -148,10 +149,13 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
             Raylib.DrawCircleLines((int)Position.X, (int)Position.Y, portSize, portColor);
         }
 
-        if (portFlowType == PortFlowType.Input)
-            Raylib.DrawText(portName, (int)Position.X + 10, (int)Position.Y - 5, portTFontSize, portTextColor);
-        else if (portFlowType == PortFlowType.Output)
-            Raylib.DrawText(portName, (int)Position.X - portTSize - 10, (int)Position.Y - 5, portTFontSize, portTextColor);
+        if (!isExecution)
+        {
+            if (portFlowType == PortFlowType.Input)
+                LayoutEngine.DrawTextAbsolute(portName, (int)Position.X + 10, (int)Position.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
+            else if (portFlowType == PortFlowType.Output)
+                LayoutEngine.DrawTextAbsolute(portName, (int)Position.X - portTSize - 10, (int)Position.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
+        }
     }
 
     protected override void OnDelete()

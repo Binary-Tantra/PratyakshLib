@@ -18,9 +18,18 @@ public class NodeTemplate
                         List<string> inputPortTypeNames, 
                         List<string> outputPortTypeNames, 
                         List<(UIElementType, UIElementDescription)> uiElements,
+                        object? payload = null) 
+        : this(IdGen.GetNewID(), name, category, inputPortTypeNames, outputPortTypeNames, uiElements, payload)
+    {
+    }
+
+    public NodeTemplate(int id, string name, string category, 
+                        List<string> inputPortTypeNames, 
+                        List<string> outputPortTypeNames, 
+                        List<(UIElementType, UIElementDescription)> uiElements,
                         object? payload = null)
     {
-        Id = IdGen.GetNewID();
+        Id = id;
         Name = name;
         Category = category;
         InputPortTypeNames = inputPortTypeNames;

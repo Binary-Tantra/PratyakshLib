@@ -1,5 +1,6 @@
 namespace RaylibNodeLibrary;
 
+using LibLayoutEngine;
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
 using RaylibNodeLibrary.UI;
@@ -219,7 +220,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         Raylib.DrawRectangleRounded(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectFillColor);
         Raylib.DrawRectangleRoundedLinesEx(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectOutlineThickness, hdRectBorderColor);
 
-        Raylib.DrawText(title, (int)rect.X + 5, (int)rect.Y, 15, titleColor);
+        LayoutEngine.DrawTextAbsolute(title, (int)rect.X + 5, (int)rect.Y, titleColor, 15, Vector2.Zero);
 
         nodeBodyLayout.Render();
 

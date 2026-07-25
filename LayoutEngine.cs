@@ -484,7 +484,7 @@ public class LayoutEngine
         cachedToggle.Render();
     }
 
-    private void DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, int fontSize)
+    private void DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
     {
         if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
         {
@@ -625,7 +625,7 @@ public class LayoutEngine
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
     }
 
-    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown, int>? onSelectionChanged, object? payload, bool updateLayout = true)
+    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 

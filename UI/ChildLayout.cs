@@ -35,8 +35,10 @@ public class ChildLayout : UILayoutBase
 
     public override void OnDrawLayout()
     {
-        object? DrawAccType(int id, UIElementType type, UIElementDescription desc, object? payload)
+        void DrawAccType(int id, UIElementType type, UIElementDescription desc, int i, int j)
         {
+            object? payload = null;
+
             switch (type)
             {
                 case UIElementType.Text:
@@ -49,7 +51,12 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.InputField:
                     InputFieldDesc ifDesc = (InputFieldDesc)desc;
-                    layout.InputField(id, ifDesc.placeholderText, ifDesc.text, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, null, null);
+                    payload = ids[i][j].payload ?? ifDesc.text;
+                    layout.InputField(id, ifDesc.placeholderText, (string)payload, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, (ifld) =>
+                    {
+                        ids[i][j] = (ids[i][j].id, ifld.InputFieldText);
+                        ifDesc.onTextChanged?.Invoke(ifld);
+                    }, ifDesc.onFocusEnd);
                     break;
                 case UIElementType.Selectable:
                     SelectableDesc selDesc = (SelectableDesc)desc;
@@ -61,12 +68,14 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Dropdown:
                     DropdownDesc ddDesc = (DropdownDesc)desc;
-                    payload ??= ddDesc.selectedIndex;
-                    layout.Dropdown(id, ddDesc.options, (int)payload, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, ddDesc.onSelectionChanged, id);
+                    payload = ids[i][j].payload ?? ddDesc.selectedIndex;
+                    layout.Dropdown(id, ddDesc.options, (int)payload, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, (dd) =>
+                    {
+                        ids[i][j] = (ids[i][j].id, dd.SelectedIndex);
+                        ddDesc.onSelectionChanged?.Invoke(dd);
+                    }, id);
                     break;
             }
-
-            return payload;
         }
 
         for (int i = 0; i < uiElements.Count; i++)
@@ -83,7 +92,7 @@ public class ChildLayout : UILayoutBase
                         maxWidthCoverage = (int)((float)(layoutWidth - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
 
                         (int id, object? payload) = ids[i][j];
-                        payload = DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, payload);
+                        DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, i, j);
                         ids[i][j] = (id, payload);
                     }
                 }
@@ -92,9 +101,7 @@ public class ChildLayout : UILayoutBase
             else
             {
                 maxWidthCoverage = layoutWidth;
-                (int id, object? payload) = ids[i][0];
-                payload = DrawAccType(ids[i][0].id, uiElements[i].elemType, uiElements[i].elemDesc, ids[i][0].payload);
-                ids[i][0] = (id, payload);
+                DrawAccType(ids[i][0].id, uiElements[i].elemType, uiElements[i].elemDesc, i, 0);
             }
         }
     }

@@ -10,6 +10,12 @@ public class NodeRegistry
 
     public IReadOnlyList<NodeTemplate> AllTemplates => [.. templatesById.Values];
 
+    public void Clear()
+    {
+        templatesById.Clear();
+        templatesByCategory.Clear();
+    }
+
     public void RegisterNode(NodeTemplate template)
     {
         templatesById[template.Id] = template;

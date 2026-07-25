@@ -6,9 +6,39 @@ using System.Text.Json;
 public class GraphSaveData
 {
     public int MaxId { get; set; }
+    public List<NodeTemplateSaveData> NodeTemplates { get; set; } = new();
     public List<VariableSaveData> Variables { get; set; } = new();
     public List<NodeSaveData> Nodes { get; set; } = new();
     public List<ConnectionSaveData> Connections { get; set; } = new();
+}
+
+public class NodeTemplateSaveData
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public List<string> InputPortTypeNames { get; set; } = new();
+    public List<string> OutputPortTypeNames { get; set; } = new();
+    public List<UIElementSaveData> UIElements { get; set; } = new();
+    public JsonElement? Payload { get; set; }
+}
+
+public class UIElementSaveData
+{
+    public int ElementType { get; set; }
+    public string Text { get; set; } = string.Empty;
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public byte ColorR { get; set; } = 255;
+    public byte ColorG { get; set; } = 255;
+    public byte ColorB { get; set; } = 255;
+    public byte ColorA { get; set; } = 255;
+    public string PlaceholderText { get; set; } = string.Empty;
+    public bool StartingState { get; set; }
+    public List<string> Options { get; set; } = new();
+    public int SelectedIndex { get; set; }
+    public int Spacing { get; set; }
+    public List<UIElementSaveData> Children { get; set; } = new();
 }
 
 public class VariableSaveData

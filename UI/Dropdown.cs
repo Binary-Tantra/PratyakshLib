@@ -14,7 +14,7 @@ public class Dropdown : UIBase, IPointerInteractable
     private int itemHeight;
     private int fontSize;
 
-    private Action<Dropdown, int> onSelectionChanged;
+    private Action<Dropdown> onSelectionChanged;
     private object payload;
 
     private List<Selectable> optionSelectables = new();
@@ -34,7 +34,7 @@ public class Dropdown : UIBase, IPointerInteractable
     // Accordion logic: height expands when open so the LayoutEngine reflows elements below it.
     public int Height => isOpen ? itemHeight + (options.Length * itemHeight) : itemHeight;
 
-    public Dropdown(string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown, int> onSelectionChanged, object payload, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public Dropdown(string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown> onSelectionChanged, object payload, int fontSize = 15, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -82,7 +82,7 @@ public class Dropdown : UIBase, IPointerInteractable
     {
         selectedIndex = index;
         isOpen = false;
-        onSelectionChanged?.Invoke(this, index);
+        onSelectionChanged?.Invoke(this);
     }
 
     private void OnClickOff(PointerInteractEventData evt, EditorObject? target)
@@ -174,7 +174,7 @@ public class Dropdown : UIBase, IPointerInteractable
         return evt.mouseButton == MouseButton.Left;
     }
 
-    public void SetOnSelectionChanged(Action<Dropdown, int> onSelectionChanged)
+    public void SetOnSelectionChanged(Action<Dropdown> onSelectionChanged)
     {
         this.onSelectionChanged = onSelectionChanged;
     }

@@ -1,6 +1,5 @@
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
-using System.Linq;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -29,7 +28,7 @@ public class InspectorPanel : UILayoutBase
             layout.BeginHorizontal(10);
             {
                 layout.AddSpace(5);
-                layout.BeginVerticalEx(5, 50);
+                layout.BeginVerticalEx(5, (int)Position.Y + 35);
                 {
                     layout.BeginHorizontal(0);
                     {
@@ -50,11 +49,11 @@ public class InspectorPanel : UILayoutBase
 
                         layout.AddSpace(40);
 
-                        List<DataType> dataTypes = Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
+                        List<DataType> dataTypes = [.. Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
                         layout.Button(v.Id + 3000000, v.VarType.Name, layoutWidth - 60, 25, (btn) =>
                         {
                             System.Numerics.Vector2 mp = Raylib.GetMousePosition();
-                            List<(string name, object payload)> typeItems = dataTypes.Select(dt => (dt.Name, (object)dt)).ToList();
+                            List<(string name, object payload)> typeItems = [.. dataTypes.Select(dt => (dt.Name, (object)dt))];
 
                             requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
                             {
@@ -83,28 +82,28 @@ public class InspectorPanel : UILayoutBase
                         }
                         else if (v.VarType.Name == "Int")
                         {
-                            layout.InputField(v.Id + 5000000, "0", v.VarValue.ToString() ?? "0", layoutWidth - 60, 25, null, (input) =>
+                            layout.InputField(v.Id + 5000000, "0", v.VarValue.ToString() ?? "0", layoutWidth - 60, 25, (input) =>
                             {
                                 if (int.TryParse(input.InputFieldText, out int result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
                                 else input.InputFieldText = v.VarValue.ToString() ?? "0";
-                            });
+                            }, null);
                         }
                         else if (v.VarType.Name == "Float" || v.VarType.Name == "Number")
                         {
-                            layout.InputField(v.Id + 6000000, "0.0", v.VarValue.ToString() ?? "0.0", layoutWidth - 60, 25, null, (input) =>
+                            layout.InputField(v.Id + 6000000, "0.0", v.VarValue.ToString() ?? "0.0", layoutWidth - 60, 25, (input) =>
                             {
                                 if (float.TryParse(input.InputFieldText, out float result))
                                     onChangeVariableValue?.Invoke(v.Id, result);
                                 else input.InputFieldText = v.VarValue.ToString() ?? "0.0";
-                            });
+                            }, null);
                         }
                         else if (v.VarType.Name == "String")
                         {
-                            layout.InputField(v.Id + 7000000, "Text", v.VarValue.ToString() ?? "", layoutWidth - 60, 25, null, (input) =>
+                            layout.InputField(v.Id + 7000000, "Text", v.VarValue.ToString() ?? "", layoutWidth - 60, 25, (input) =>
                             {
                                 onChangeVariableValue?.Invoke(v.Id, input.InputFieldText);
-                            });
+                            }, null);
                         }
                     }
                     layout.EndHorizontal(25);

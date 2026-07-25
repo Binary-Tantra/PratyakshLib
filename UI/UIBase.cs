@@ -52,6 +52,8 @@ public class ButtonDesc : RectUIEDescription
 public class InputFieldDesc : RectUIEDescription
 {
     public string placeholderText;
+    internal Action<InputField>? onTextChanged;
+    internal Action<InputField>? onFocusEnd;
 
     public InputFieldDesc(string placeholderText, string inputFieldText, int? width, int? height) : base(inputFieldText, width, height)
     {
@@ -85,9 +87,9 @@ public class DropdownDesc : RectUIEDescription
 {
     public string[] options;
     public int selectedIndex;
-    public Action<Dropdown, int> onSelectionChanged;
+    public Action<Dropdown> onSelectionChanged;
 
-    public DropdownDesc(string[] options, int selectedIndex, int? width, int? height, Action<Dropdown, int> onSelectionChanged) : base("", width, height)
+    public DropdownDesc(string[] options, int selectedIndex, int? width, int? height, Action<Dropdown> onSelectionChanged) : base("", width, height)
     {
         this.options = options;
         this.selectedIndex = selectedIndex;
