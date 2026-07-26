@@ -24,29 +24,29 @@ public class InspectorPanel : UILayoutBase
 
         if (Engine.CurrentlySelectedObjectId != null && Engine.Graph.Variables.TryGetValue((int)Engine.CurrentlySelectedObjectId, out Variable? v))
         {
+            var descriptors = v.GetInspectorUIDescriptors();
+
             layout.AddSpace(10);
             layout.BeginHorizontal(10);
             {
                 layout.AddSpace(5);
                 layout.BeginVerticalEx(5, (int)Position.Y + 35);
                 {
+                    // Render Name (Bindable InputField)
                     layout.BeginHorizontal(0);
                     {
                         layout.Text("Name:", Color.White);
                         layout.AddSpace(40);
-                        layout.InputField(v.Id + 2000000, "Var Name", v.VarName, layoutWidth - 60, 25, null, (input) =>
-                        {
-                            onRenameVariable?.Invoke(v.Id, input.InputFieldText);
-                        });
+                        layout.BindableInputFieldString(v.Id + 2000000, "Var Name", v.VarNameBindable, layoutWidth - 60, 25);
                     }
                     layout.EndHorizontal(25);
 
                     layout.AddSpace(5);
 
+                    // Render Type (Button selector)
                     layout.BeginHorizontal(0);
                     {
                         layout.Text("Type:", Color.White);
-
                         layout.AddSpace(40);
 
                         List<DataType> dataTypes = [.. Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
@@ -66,64 +66,40 @@ public class InspectorPanel : UILayoutBase
 
                     layout.AddSpace(5);
 
-                    layout.BeginHorizontal(0);
+                    // Render Value generic bindables from descriptors
+                    foreach (var item in descriptors)
                     {
-                        layout.Text("Value:", Color.White);
+                        if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc strDesc && strDesc.dataModel == v.VarNameBindable)
+                        {
+                            // Already drew VarName
+                            continue;
+                        }
 
-                        layout.AddSpace(40);
+                        layout.BeginHorizontal(0);
+                        {
+                            layout.Text("Value:", Color.White);
+                            layout.AddSpace(40);
 
-                        if (v.VarType.Name == "Bool")
-                        {
-                            bool bVal = (bool)v.VarValue;
-                            layout.Toggle(v.Id + 4000000, bVal, bVal ? "True" : "False", 50, 20, (toggle) =>
+                            if (item.type == UIElementType.BindableToggle && item.desc is BindableToggleDesc togDesc)
                             {
-                                onChangeVariableValue?.Invoke(v.Id, toggle.IsOn);
-                            }, null);
+                                layout.BindableToggle(v.Id + 4000000, togDesc.dataModel, togDesc.dataModel.Get() ? "True" : "False", 50, 20);
+                            }
+                            else if (item.type == UIElementType.BindableInputField_Int && item.desc is BindableInputFieldIntDesc intDesc)
+                            {
+                                layout.BindableInputFieldInt(v.Id + 5000000, "0", intDesc.dataModel, layoutWidth - 60, 25);
+                            }
+                            else if (item.type == UIElementType.BindableInputField_Float && item.desc is BindableInputFieldFloatDesc fltDesc)
+                            {
+                                layout.BindableInputFieldFloat(v.Id + 6000000, "0.0", fltDesc.dataModel, layoutWidth - 60, 25);
+                            }
+                            else if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc valStrDesc)
+                            {
+                                layout.BindableInputFieldString(v.Id + 7000000, "Text", valStrDesc.dataModel, layoutWidth - 60, 25);
+                            }
                         }
-                        else if (v.VarType.Name == "Int")
-                        {
-                            layout.InputField(v.Id + 5000000, "0", v.VarValue.ToString() ?? "0", layoutWidth - 60, 25, (input) =>
-                            {
-                                if (int.TryParse(input.InputFieldText, out int result))
-                                    onChangeVariableValue?.Invoke(v.Id, result);
-                            }, (input) =>
-                            {
-                                if (int.TryParse(input.InputFieldText, out int result))
-                                    onChangeVariableValue?.Invoke(v.Id, result);
-                                else
-                                    input.InputFieldText = v.VarValue.ToString() ?? "0";
-                            });
-                        }
-                        else if (v.VarType.Name == "Float" || v.VarType.Name == "Number")
-                        {
-                            layout.InputField(v.Id + 6000000, "0.0", v.VarValue.ToString() ?? "0.0", layoutWidth - 60, 25, (input) =>
-                            {
-                                if (float.TryParse(input.InputFieldText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float result))
-                                    onChangeVariableValue?.Invoke(v.Id, result);
-                                else if (float.TryParse(input.InputFieldText, out float res2))
-                                    onChangeVariableValue?.Invoke(v.Id, res2);
-                            }, (input) =>
-                            {
-                                if (float.TryParse(input.InputFieldText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float result))
-                                    onChangeVariableValue?.Invoke(v.Id, result);
-                                else if (float.TryParse(input.InputFieldText, out float res2))
-                                    onChangeVariableValue?.Invoke(v.Id, res2);
-                                else
-                                    input.InputFieldText = v.VarValue.ToString() ?? "0.0";
-                            });
-                        }
-                        else if (v.VarType.Name == "String")
-                        {
-                            layout.InputField(v.Id + 7000000, "Text", v.VarValue.ToString() ?? "", layoutWidth - 60, 25, (input) =>
-                            {
-                                onChangeVariableValue?.Invoke(v.Id, input.InputFieldText);
-                            }, (input) =>
-                            {
-                                onChangeVariableValue?.Invoke(v.Id, input.InputFieldText);
-                            });
-                        }
+                        layout.EndHorizontal(25);
+                        layout.AddSpace(5);
                     }
-                    layout.EndHorizontal(25);
                 }
                 layout.EndVertical(layoutWidth - 20);
             }

@@ -645,6 +645,10 @@ public class Engine
             string titleName = template != null ? template.Name : "Node " + n.Id;
 
             NodeVisual nodeVis = new(n.Id, uiElems, titleName, nd.PositionX, nd.PositionY);
+            if (nd.UIElementValues != null && nd.UIElementValues.Count > 0)
+            {
+                nodeVis.SetUIStatePayloads(nd.UIElementValues);
+            }
             actors.Add(nodeVis);
 
             if (template != null && template.Payload is int varId)
@@ -672,6 +676,11 @@ public class Engine
                 Console.WriteLine($"Warning: Could not connect ports visually ({cData.SourcePortId} -> {cData.TargetPortId}) because one or both PortVisuals were not found.");
             }
         }
+
+        if (data.Panels != null && canvas != null)
+        {
+            canvas.RestorePanelsSaveData(data.Panels);
+        }
     }
 
     public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet)
@@ -692,7 +701,7 @@ public class Engine
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
         if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
         {
-            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId);
+            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId, canvas);
             File.WriteAllText("save.json", json);
             Console.WriteLine("Saved graph to save.json");
         }

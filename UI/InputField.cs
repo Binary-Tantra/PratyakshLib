@@ -27,10 +27,17 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         get => inputFieldText;
         set
         {
+            if (inputFieldText == value) return;
             inputFieldText = value;
             isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
             if (notifyTextChanged) OnTextChanged?.Invoke(this);
         }
+    }
+
+    public void SetTextWithoutNotify(string text)
+    {
+        inputFieldText = text ?? string.Empty;
+        isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
     }
 
     private bool isMasked = false;

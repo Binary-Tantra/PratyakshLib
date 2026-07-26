@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 using Raylib_cs;
+using RaylibNodeLibrary.DataBinding;
 using RaylibNodeLibrary.UI;
 
 public static class GraphSerializer
@@ -11,12 +12,17 @@ public static class GraphSerializer
     private static JsonSerializerOptions? serializeOptions;
     private static JsonSerializerOptions? deserializeOptions;
 
-    public static string Serialize(Graph graph, Dictionary<int, NodeVisual?> nodeVisuals, NodeRegistry nodeRegistry, int maxId)
+    public static string Serialize(Graph graph, Dictionary<int, NodeVisual?> nodeVisuals, NodeRegistry nodeRegistry, int maxId, Canvas? canvas = null)
     {
         GraphSaveData data = new GraphSaveData
         {
             MaxId = maxId
         };
+
+        if (canvas != null)
+        {
+            data.Panels = canvas.GetPanelsSaveData();
+        }
 
         foreach (var template in nodeRegistry.AllTemplates)
         {
@@ -61,6 +67,11 @@ public static class GraphSerializer
             {
                 nd.PositionX = vis.RelativePosition.X;
                 nd.PositionY = vis.RelativePosition.Y;
+                var payloads = vis.GetUIStatePayloads();
+                foreach (var p in payloads)
+                {
+                    nd.UIElementValues.Add(p != null ? JsonSerializer.SerializeToElement(p) : null);
+                }
             }
 
             foreach (var p in n.InputPorts.Values)
@@ -144,6 +155,34 @@ public static class GraphSerializer
                 saveData.Options = dropDesc.options != null ? [.. dropDesc.options] : [];
                 saveData.SelectedIndex = dropDesc.selectedIndex;
             }
+            else if (rectDesc is BindableToggleDesc bTogDesc)
+            {
+                saveData.StartingState = bTogDesc.dataModel.Get();
+            }
+            else if (rectDesc is BindableInputFieldStringDesc bStrDesc)
+            {
+                saveData.PlaceholderText = bStrDesc.placeholderText ?? string.Empty;
+                saveData.Text = bStrDesc.dataModel.Get() ?? string.Empty;
+            }
+            else if (rectDesc is BindableInputFieldIntDesc bIntDesc)
+            {
+                saveData.PlaceholderText = bIntDesc.placeholderText ?? string.Empty;
+                saveData.Text = bIntDesc.dataModel.Get().ToString();
+            }
+            else if (rectDesc is BindableInputFieldFloatDesc bFltDesc)
+            {
+                saveData.PlaceholderText = bFltDesc.placeholderText ?? string.Empty;
+                saveData.Text = bFltDesc.dataModel.Get().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else if (rectDesc is BindableSelectableDesc bSelDesc)
+            {
+                saveData.StartingState = bSelDesc.dataModel.Get();
+            }
+            else if (rectDesc is BindableDropdownDesc bDdDesc)
+            {
+                saveData.Options = bDdDesc.options != null ? [.. bDdDesc.options] : [];
+                saveData.SelectedIndex = bDdDesc.dataModel.Get();
+            }
             else if (rectDesc is HorizontalGroupDesc groupDesc)
             {
                 saveData.Spacing = groupDesc.spacing;
@@ -190,6 +229,30 @@ public static class GraphSerializer
 
             case UIElementType.Dropdown:
                 elemDesc = new DropdownDesc([.. data.Options], data.SelectedIndex, data.Width, data.Height, (dd) => { });
+                break;
+
+            case UIElementType.BindableToggle:
+                elemDesc = new BindableToggleDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableInputField_String:
+                elemDesc = new BindableInputFieldStringDesc(data.PlaceholderText, new BindableString(data.Text), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableInputField_Int:
+                elemDesc = new BindableInputFieldIntDesc(data.PlaceholderText, new BindableInt(int.TryParse(data.Text, out int iVal) ? iVal : 0), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableInputField_Float:
+                elemDesc = new BindableInputFieldFloatDesc(data.PlaceholderText, new BindableFloat(float.TryParse(data.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fVal) ? fVal : 0f), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableSelectable:
+                elemDesc = new BindableSelectableDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableDropdown:
+                elemDesc = new BindableDropdownDesc([.. data.Options], new BindableInt(data.SelectedIndex), data.Width, data.Height);
                 break;
 
             case UIElementType.Group:

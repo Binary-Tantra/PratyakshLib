@@ -138,6 +138,12 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         if (notify) onSelectableDeselect?.Invoke(this);
     }
 
+    public void SetIsSelectedWithoutNotify(bool selected)
+    {
+        if (selected) Select(false);
+        else Deselect(false);
+    }
+
     protected override void OnDelete()
     {
         Deselect();
@@ -155,6 +161,11 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
     {
         this.width = width;
         this.height = height;
+    }
+
+    public void SetOnSelect(Action<Selectable>? onSelectableSelect)
+    {
+        this.onSelectableSelect = onSelectableSelect;
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

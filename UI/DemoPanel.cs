@@ -69,6 +69,56 @@ public class DemoPanel : UILayoutBase
         alertBannerId = IdGen.GetNewID();
     }
 
+    public string PanelName => "DemoPanel";
+
+    public Dictionary<string, object?> GetSaveData()
+    {
+        return new Dictionary<string, object?>
+        {
+            ["fieldText"] = fieldText,
+            ["passwordText"] = passwordText,
+            ["cycleSelectedIdx"] = cycleSelectedIdx,
+            ["dropdownSelectedIdx"] = dropdownSelectedIdx,
+            ["selectedSpace"] = selectedSpace,
+            ["selectableStates"] = selectableIds.Select(s => s.isSelected).ToList()
+        };
+    }
+
+    public void RestoreSaveData(System.Text.Json.JsonElement data)
+    {
+        if (data.ValueKind != System.Text.Json.JsonValueKind.Object) return;
+
+        if (data.TryGetProperty("fieldText", out var ft) && ft.ValueKind == System.Text.Json.JsonValueKind.String)
+            fieldText = ft.GetString() ?? "";
+
+        if (data.TryGetProperty("passwordText", out var pt) && pt.ValueKind == System.Text.Json.JsonValueKind.String)
+            passwordText = pt.GetString() ?? "";
+
+        if (data.TryGetProperty("cycleSelectedIdx", out var cs) && cs.ValueKind == System.Text.Json.JsonValueKind.Number)
+            cycleSelectedIdx = cs.GetInt32();
+
+        if (data.TryGetProperty("dropdownSelectedIdx", out var dd) && dd.ValueKind == System.Text.Json.JsonValueKind.Number)
+            dropdownSelectedIdx = dd.GetInt32();
+
+        if (data.TryGetProperty("selectedSpace", out var ss) && ss.ValueKind == System.Text.Json.JsonValueKind.Number)
+            selectedSpace = ss.GetInt32();
+
+        if (data.TryGetProperty("selectableStates", out var selArray) && selArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                int idx = 0;
+                foreach (var item in selArray.EnumerateArray())
+                {
+                    if (idx < selectableIds.Length && item.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False)
+                    {
+                        bool isSel = item.GetBoolean();
+                        selectableIds[idx].isSelected = isSel;
+                        if (isSel) currentSelectedColor = selectableIds[idx].color;
+                    }
+                    idx++;
+                }
+            }
+    }
+
     // Callbacks for our interactive elements
     private void OnDemoButtonPressed(Button btn)
     {

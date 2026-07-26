@@ -340,4 +340,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     {
         nodeBodyLayout.ChangeUIElement(elementIdx, desc);
     }
+
+    public List<object?> GetUIStatePayloads() => nodeBodyLayout.GetUIStatePayloads();
+    public void SetUIStatePayloads(List<System.Text.Json.JsonElement?> savedPayloads) => nodeBodyLayout.SetUIStatePayloads(savedPayloads);
 }

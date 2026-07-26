@@ -194,4 +194,29 @@ public class Canvas : UIBase, IPointerInteractable
 
         return true;
     }
+
+    public Dictionary<string, System.Text.Json.JsonElement> GetPanelsSaveData()
+    {
+        var result = new Dictionary<string, System.Text.Json.JsonElement>();
+        var demoData = demoPanel.GetSaveData();
+        result[demoPanel.PanelName] = System.Text.Json.JsonSerializer.SerializeToElement(demoData);
+        return result;
+    }
+
+    public void RestorePanelsSaveData(Dictionary<string, System.Text.Json.JsonElement> panelsData)
+    {
+        if (panelsData == null) return;
+
+        foreach (var (panelName, panelElement) in panelsData)
+        {
+            if (panelName == demoPanel.PanelName)
+            {
+                demoPanel.RestoreSaveData(panelElement);
+            }
+            else
+            {
+                Console.WriteLine($"Warning: Panel '{panelName}' found in save data, but no active panel was registered to restore its state.");
+            }
+        }
+    }
 }

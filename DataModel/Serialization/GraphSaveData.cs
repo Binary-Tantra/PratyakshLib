@@ -10,6 +10,7 @@ public class GraphSaveData
     public List<VariableSaveData> Variables { get; set; } = new();
     public List<NodeSaveData> Nodes { get; set; } = new();
     public List<ConnectionSaveData> Connections { get; set; } = new();
+    public Dictionary<string, JsonElement> Panels { get; set; } = new();
 }
 
 public class NodeTemplateSaveData
@@ -57,6 +58,7 @@ public class NodeSaveData
     public float PositionY { get; set; }
     public List<PortSaveData> InputPorts { get; set; } = new();
     public List<PortSaveData> OutputPorts { get; set; } = new();
+    public List<JsonElement?> UIElementValues { get; set; } = new();
 }
 
 public class PortSaveData

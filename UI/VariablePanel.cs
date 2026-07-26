@@ -85,7 +85,7 @@ public class VariablePanel : UILayoutBase
                 if (target == addButton || target == removeButton || target.IsAncestor(addButton) || target.IsAncestor(removeButton))
                     return;
 
-                if (target.IsAncestorType<SearchMenu>())
+                if (target.IsAncestorType<SearchMenu>() || target.IsAncestorType<InspectorPanel>())
                     return;
 
                 if (currentSelected.Payload is int selectedVarId && target is Button btn && btn.Payload is int btnVarId && btnVarId == selectedVarId)

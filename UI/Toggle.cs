@@ -138,6 +138,12 @@ public class Toggle : UIBase, IPointerInteractable
         isOn = value;
     }
 
+    public void SetIsOnWithoutNotify(bool value)
+    {
+        isOn = value;
+        knobT = value ? 1f : 0f;
+    }
+
     public void SetOnToggleChanged(Action<Toggle>? onToggleChanged)
     {
         this.onToggleChanged = onToggleChanged;

@@ -85,6 +85,30 @@ public class ChildLayout : UILayoutBase
                         ddDesc.onSelectionChanged?.Invoke(dd);
                     }, id);
                     break;
+                case UIElementType.BindableToggle:
+                    BindableToggleDesc bTogDesc = (BindableToggleDesc)desc;
+                    layout.BindableToggle(id, bTogDesc.dataModel, bTogDesc.text, bTogDesc.width ?? maxWidthCoverage, bTogDesc.height ?? 20);
+                    break;
+                case UIElementType.BindableInputField_String:
+                    BindableInputFieldStringDesc bIfStrDesc = (BindableInputFieldStringDesc)desc;
+                    layout.BindableInputFieldString(id, bIfStrDesc.placeholderText, bIfStrDesc.dataModel, bIfStrDesc.width ?? maxWidthCoverage, bIfStrDesc.height ?? 25);
+                    break;
+                case UIElementType.BindableInputField_Int:
+                    BindableInputFieldIntDesc bIfIntDesc = (BindableInputFieldIntDesc)desc;
+                    layout.BindableInputFieldInt(id, bIfIntDesc.placeholderText, bIfIntDesc.dataModel, bIfIntDesc.width ?? maxWidthCoverage, bIfIntDesc.height ?? 25);
+                    break;
+                case UIElementType.BindableInputField_Float:
+                    BindableInputFieldFloatDesc bIfFltDesc = (BindableInputFieldFloatDesc)desc;
+                    layout.BindableInputFieldFloat(id, bIfFltDesc.placeholderText, bIfFltDesc.dataModel, bIfFltDesc.width ?? maxWidthCoverage, bIfFltDesc.height ?? 25);
+                    break;
+                case UIElementType.BindableSelectable:
+                    BindableSelectableDesc bSelDesc = (BindableSelectableDesc)desc;
+                    layout.BindableSelectable(id, bSelDesc.dataModel, bSelDesc.text, bSelDesc.width ?? maxWidthCoverage, bSelDesc.height ?? 25);
+                    break;
+                case UIElementType.BindableDropdown:
+                    BindableDropdownDesc bDdDesc = (BindableDropdownDesc)desc;
+                    layout.BindableDropdown(id, bDdDesc.options, bDdDesc.dataModel, bDdDesc.width ?? maxWidthCoverage, bDdDesc.height ?? 25);
+                    break;
             }
         }
 
@@ -128,5 +152,49 @@ public class ChildLayout : UILayoutBase
         }
 
         uiElements[elementIdx] = (uiElements[elementIdx].elemType, desc);
+    }
+
+    public List<object?> GetUIStatePayloads()
+    {
+        List<object?> payloads = new();
+        for (int i = 0; i < ids.Count; i++)
+        {
+            for (int j = 0; j < ids[i].Count; j++)
+            {
+                payloads.Add(ids[i][j].payload);
+            }
+        }
+        return payloads;
+    }
+
+    public void SetUIStatePayloads(List<System.Text.Json.JsonElement?> savedPayloads)
+    {
+        if (savedPayloads == null) return;
+        int idx = 0;
+        for (int i = 0; i < ids.Count; i++)
+        {
+            for (int j = 0; j < ids[i].Count; j++)
+            {
+                if (idx < savedPayloads.Count)
+                {
+                    var elem = savedPayloads[idx];
+                    if (elem.HasValue)
+                    {
+                        object? val = null;
+                        var k = elem.Value.ValueKind;
+                        if (k == System.Text.Json.JsonValueKind.String) val = elem.Value.GetString();
+                        else if (k == System.Text.Json.JsonValueKind.True) val = true;
+                        else if (k == System.Text.Json.JsonValueKind.False) val = false;
+                        else if (k == System.Text.Json.JsonValueKind.Number)
+                        {
+                            if (elem.Value.TryGetInt32(out int intVal)) val = intVal;
+                            else if (elem.Value.TryGetSingle(out float fltVal)) val = fltVal;
+                        }
+                        if (val != null) ids[i][j] = (ids[i][j].id, val);
+                    }
+                    idx++;
+                }
+            }
+        }
     }
 }

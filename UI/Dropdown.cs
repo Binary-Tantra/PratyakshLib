@@ -179,6 +179,15 @@ public class Dropdown : UIBase, IPointerInteractable
         this.onSelectionChanged = onSelectionChanged;
     }
 
+    public void SetSelectedIndexWithoutNotify(int index)
+    {
+        selectedIndex = index;
+        for (int i = 0; i < optionSelectables.Count; i++)
+        {
+            optionSelectables[i].SetIsSelectedWithoutNotify(i == selectedIndex);
+        }
+    }
+
     public void DrawOverlay()
     {
         if (isOpen)

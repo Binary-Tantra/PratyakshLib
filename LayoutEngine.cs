@@ -41,6 +41,13 @@ public class LayoutEngine
     private Dictionary<int, StatusBadge> layoutStatusBadges = [];
     private Dictionary<int, AlertBanner> layoutAlertBanners = [];
 
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.BoolToggleBinder> layoutToggleBinders = [];
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.StringInputBinder> layoutInputFieldStringBinders = [];
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.IntInputBinder> layoutInputFieldIntBinders = [];
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.FloatInputBinder> layoutInputFieldFloatBinders = [];
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.BoolSelectableBinder> layoutSelectableBinders = [];
+    private Dictionary<int, RaylibNodeLibrary.DataBinding.IntDropdownBinder> layoutDropdownBinders = [];
+
     private HashSet<int> activeInputFields = [];
     private HashSet<int> activeButtons = [];
     private HashSet<int> activeSelectables = [];
@@ -119,6 +126,24 @@ public class LayoutEngine
         layoutOpsIdx = -1;
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
+
+        foreach (var b in layoutToggleBinders.Values) b.Unbind();
+        layoutToggleBinders.Clear();
+
+        foreach (var b in layoutInputFieldStringBinders.Values) b.Unbind();
+        layoutInputFieldStringBinders.Clear();
+
+        foreach (var b in layoutInputFieldIntBinders.Values) b.Unbind();
+        layoutInputFieldIntBinders.Clear();
+
+        foreach (var b in layoutInputFieldFloatBinders.Values) b.Unbind();
+        layoutInputFieldFloatBinders.Clear();
+
+        foreach (var b in layoutSelectableBinders.Values) b.Unbind();
+        layoutSelectableBinders.Clear();
+
+        foreach (var b in layoutDropdownBinders.Values) b.Unbind();
+        layoutDropdownBinders.Clear();
 
         List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
         
@@ -242,11 +267,31 @@ public class LayoutEngine
 
     public void RemoveLayoutSelectable(int id)
     {
+        if (layoutSelectableBinders.TryGetValue(id, out var binder))
+        {
+            binder.Unbind();
+            layoutSelectableBinders.Remove(id);
+        }
         _ = layoutSelectables.Remove(id);
     }
 
     public void RemoveLayoutInputField(int id)
     {
+        if (layoutInputFieldStringBinders.TryGetValue(id, out var sBinder))
+        {
+            sBinder.Unbind();
+            layoutInputFieldStringBinders.Remove(id);
+        }
+        if (layoutInputFieldIntBinders.TryGetValue(id, out var iBinder))
+        {
+            iBinder.Unbind();
+            layoutInputFieldIntBinders.Remove(id);
+        }
+        if (layoutInputFieldFloatBinders.TryGetValue(id, out var fBinder))
+        {
+            fBinder.Unbind();
+            layoutInputFieldFloatBinders.Remove(id);
+        }
         _ = layoutInputFields.Remove(id);
     }
 
@@ -258,7 +303,22 @@ public class LayoutEngine
 
     public void RemoveLayoutToggle(int id)
     {
+        if (layoutToggleBinders.TryGetValue(id, out var binder))
+        {
+            binder.Unbind();
+            layoutToggleBinders.Remove(id);
+        }
         _ = layoutToggles.Remove(id);
+    }
+
+    public void RemoveLayoutDropdown(int id)
+    {
+        if (layoutDropdownBinders.TryGetValue(id, out var binder))
+        {
+            binder.Unbind();
+            layoutDropdownBinders.Remove(id);
+        }
+        _ = layoutDropdowns.Remove(id);
     }
 
     public void RemoveLayoutCycleSelector(int id)
@@ -1099,11 +1159,6 @@ public class LayoutEngine
         DrawAny(width, height);
     }
 
-    public void RemoveLayoutDropdown(int id)
-    {
-        _ = layoutDropdowns.Remove(id);
-    }
-
     public void DrawOverlays()
     {
         List<Dropdown> ldd = [.. layoutDropdowns.Values];
@@ -1111,5 +1166,231 @@ public class LayoutEngine
         {
             ldd[i].DrawOverlay();
         }
+    }
+
+    // ==================== BINDABLE DRAWING METHODS ====================
+
+    public void DrawBindableToggleAbsolute(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
+    {
+        buildingActiveToggles.Add(id);
+        if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
+        {
+            cachedToggle = new Toggle(dataModel.Get(), label, toggleWidth, toggleHeight, null, id, 15, defaultParent);
+            layoutToggles.Add(id, cachedToggle);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLToggleUI(cachedToggle);
+            var binder = new RaylibNodeLibrary.DataBinding.BoolToggleBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutToggleBinders.Add(id, binder);
+        }
+        else
+        {
+            cachedToggle.Label = label;
+            if (layoutToggleBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLToggleUI)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedToggle.RelativePosition = new Vector2(posX, posY);
+        cachedToggle.Render();
+    }
+
+    public void BindableToggle(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableToggleAbsolute(id, dataModel, label, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
+    }
+
+    public void DrawBindableInputFieldStringAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
+    {
+        buildingActiveInputFields.Add(id);
+        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        {
+            cachedField = new InputField(placeholderText, dataModel.Get(), posX, posY, width, height, null, null, 15, false, defaultParent);
+            layoutInputFields.Add(id, cachedField);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_String(cachedField);
+            var binder = new RaylibNodeLibrary.DataBinding.StringInputBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutInputFieldStringBinders.Add(id, binder);
+        }
+        else
+        {
+            if (layoutInputFieldStringBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_String)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedField.RelativePosition = new Vector2(posX, posY);
+        cachedField.Render();
+    }
+
+    public void BindableInputFieldString(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableInputFieldStringAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
+    }
+
+    public void DrawBindableInputFieldIntAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    {
+        buildingActiveInputFields.Add(id);
+        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        {
+            cachedField = new InputField(placeholderText, dataModel.Get().ToString(), posX, posY, width, height, null, null, 15, false, defaultParent);
+            layoutInputFields.Add(id, cachedField);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_Int(cachedField);
+            var binder = new RaylibNodeLibrary.DataBinding.IntInputBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutInputFieldIntBinders.Add(id, binder);
+        }
+        else
+        {
+            if (layoutInputFieldIntBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_Int)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedField.RelativePosition = new Vector2(posX, posY);
+        cachedField.Render();
+    }
+
+    public void BindableInputFieldInt(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableInputFieldIntAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
+    }
+
+    public void DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
+    {
+        buildingActiveInputFields.Add(id);
+        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        {
+            cachedField = new InputField(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), posX, posY, width, height, null, null, 15, false, defaultParent);
+            layoutInputFields.Add(id, cachedField);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_Float(cachedField);
+            var binder = new RaylibNodeLibrary.DataBinding.FloatInputBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutInputFieldFloatBinders.Add(id, binder);
+        }
+        else
+        {
+            if (layoutInputFieldFloatBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_Float)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedField.RelativePosition = new Vector2(posX, posY);
+        cachedField.Render();
+    }
+
+    public void BindableInputFieldFloat(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableInputFieldFloatAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
+    }
+
+    public void DrawBindableSelectableAbsolute(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string selectableText, int posX, int posY, int width, int height)
+    {
+        buildingActiveSelectables.Add(id);
+        if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
+        {
+            cachedSelectable = new Selectable(selectableText, dataModel.Get(), posX, posY, width, height, null, id, 15, Color.Gray, Color.Blue, Color.White, defaultParent);
+            layoutSelectables.Add(id, cachedSelectable);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLSelectableUI(cachedSelectable);
+            var binder = new RaylibNodeLibrary.DataBinding.BoolSelectableBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutSelectableBinders.Add(id, binder);
+        }
+        else
+        {
+            cachedSelectable.SelectableText = selectableText;
+            if (layoutSelectableBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLSelectableUI)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedSelectable.RelativePosition = new Vector2(posX, posY);
+        cachedSelectable.Render();
+    }
+
+    public void BindableSelectable(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableSelectableAbsolute(id, dataModel, selectableText, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
+    }
+
+    public void DrawBindableDropdownAbsolute(int id, string[] options, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    {
+        buildingActiveDropdowns.Add(id);
+        if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
+        {
+            cachedDropdown = new Dropdown(options, dataModel.Get(), posX, posY, width, height, null, id, 15, defaultParent);
+            layoutDropdowns.Add(id, cachedDropdown);
+
+            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLDropdownUI(cachedDropdown);
+            var binder = new RaylibNodeLibrary.DataBinding.IntDropdownBinder();
+            binder.Bind(dataModel, uiWrapper);
+            layoutDropdownBinders.Add(id, binder);
+        }
+        else
+        {
+            if (layoutDropdownBinders.TryGetValue(id, out var binder))
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLDropdownUI)binder.GetBoundUIObject()!);
+                }
+            }
+        }
+
+        cachedDropdown.RelativePosition = new Vector2(posX, posY);
+        cachedDropdown.Render();
+    }
+
+    public void BindableDropdown(int id, string[] options, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+        DrawBindableDropdownAbsolute(id, options, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        if (updateLayout) DrawAny(width, height);
     }
 }

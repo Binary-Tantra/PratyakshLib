@@ -4,7 +4,8 @@ namespace RaylibNodeLibrary.UI;
 
 public enum UIElementType
 {
-    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Group
+    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Group,
+    BindableToggle, BindableInputField_String, BindableInputField_Int, BindableInputField_Float, BindableSelectable, BindableDropdown
 }
 
 public abstract class UIElementDescription
@@ -166,6 +167,74 @@ public class HorizontalGroupDesc : RectUIEDescription
     {
         this.spacing = spacing;
         this.uiElements = uiElements;
+    }
+}
+
+public class BindableToggleDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<bool> dataModel;
+
+    public BindableToggleDesc(string label, DataBinding.BindableValueBase<bool> dataModel, int? width = null, int? height = null) : base(label, width, height)
+    {
+        this.dataModel = dataModel;
+    }
+}
+
+public class BindableInputFieldStringDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<string> dataModel;
+    public string placeholderText;
+
+    public BindableInputFieldStringDesc(string placeholderText, DataBinding.BindableValueBase<string> dataModel, int? width = null, int? height = null) : base("", width, height)
+    {
+        this.placeholderText = placeholderText;
+        this.dataModel = dataModel;
+    }
+}
+
+public class BindableInputFieldIntDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<int> dataModel;
+    public string placeholderText;
+
+    public BindableInputFieldIntDesc(string placeholderText, DataBinding.BindableValueBase<int> dataModel, int? width = null, int? height = null) : base("", width, height)
+    {
+        this.placeholderText = placeholderText;
+        this.dataModel = dataModel;
+    }
+}
+
+public class BindableInputFieldFloatDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<float> dataModel;
+    public string placeholderText;
+
+    public BindableInputFieldFloatDesc(string placeholderText, DataBinding.BindableValueBase<float> dataModel, int? width = null, int? height = null) : base("", width, height)
+    {
+        this.placeholderText = placeholderText;
+        this.dataModel = dataModel;
+    }
+}
+
+public class BindableSelectableDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<bool> dataModel;
+
+    public BindableSelectableDesc(string text, DataBinding.BindableValueBase<bool> dataModel, int? width = null, int? height = null) : base(text, width, height)
+    {
+        this.dataModel = dataModel;
+    }
+}
+
+public class BindableDropdownDesc : RectUIEDescription
+{
+    public DataBinding.BindableValueBase<int> dataModel;
+    public string[] options;
+
+    public BindableDropdownDesc(string[] options, DataBinding.BindableValueBase<int> dataModel, int? width = null, int? height = null) : base("", width, height)
+    {
+        this.options = options;
+        this.dataModel = dataModel;
     }
 }
 
