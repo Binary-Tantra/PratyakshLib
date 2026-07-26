@@ -36,6 +36,10 @@ public class LayoutEngine
     private Dictionary<int, Toggle> layoutToggles = [];
     private Dictionary<int, ScrollView> layoutScrollViews = [];
     private Dictionary<int, Dropdown> layoutDropdowns = [];
+    private Dictionary<int, CycleSelector> layoutCycleSelectors = [];
+    private Dictionary<int, LinkButton> layoutLinkButtons = [];
+    private Dictionary<int, StatusBadge> layoutStatusBadges = [];
+    private Dictionary<int, AlertBanner> layoutAlertBanners = [];
 
     private HashSet<int> activeInputFields = [];
     private HashSet<int> activeButtons = [];
@@ -43,6 +47,10 @@ public class LayoutEngine
     private HashSet<int> activeToggles = [];
     private HashSet<int> activeScrollViewSet = [];
     private HashSet<int> activeDropdowns = [];
+    private HashSet<int> activeCycleSelectors = [];
+    private HashSet<int> activeLinkButtons = [];
+    private HashSet<int> activeStatusBadges = [];
+    private HashSet<int> activeAlertBanners = [];
 
     private HashSet<int> buildingActiveInputFields = [];
     private HashSet<int> buildingActiveButtons = [];
@@ -50,6 +58,10 @@ public class LayoutEngine
     private HashSet<int> buildingActiveToggles = [];
     private HashSet<int> buildingActiveScrollViewSet = [];
     private HashSet<int> buildingActiveDropdowns = [];
+    private HashSet<int> buildingActiveCycleSelectors = [];
+    private HashSet<int> buildingActiveLinkButtons = [];
+    private HashSet<int> buildingActiveStatusBadges = [];
+    private HashSet<int> buildingActiveAlertBanners = [];
 
     public void BeginFrame()
     {
@@ -59,6 +71,10 @@ public class LayoutEngine
         buildingActiveToggles.Clear();
         buildingActiveScrollViewSet.Clear();
         buildingActiveDropdowns.Clear();
+        buildingActiveCycleSelectors.Clear();
+        buildingActiveLinkButtons.Clear();
+        buildingActiveStatusBadges.Clear();
+        buildingActiveAlertBanners.Clear();
     }
 
     public void EndFrame()
@@ -77,6 +93,10 @@ public class LayoutEngine
         activeToggles = [.. buildingActiveToggles];
         activeScrollViewSet = [.. buildingActiveScrollViewSet];
         activeDropdowns = [.. buildingActiveDropdowns];
+        activeCycleSelectors = [.. buildingActiveCycleSelectors];
+        activeLinkButtons = [.. buildingActiveLinkButtons];
+        activeStatusBadges = [.. buildingActiveStatusBadges];
+        activeAlertBanners = [.. buildingActiveAlertBanners];
     }
 
     private Stack<EditorObject?> parentStack = new();
@@ -146,6 +166,30 @@ public class LayoutEngine
             ldd[i].Delete();
         
         layoutDropdowns.Clear();
+
+
+        List<CycleSelector> lcs = [.. layoutCycleSelectors.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lcs.Count; i++)
+            lcs[i].Delete();
+        layoutCycleSelectors.Clear();
+
+
+        List<LinkButton> llb = [.. layoutLinkButtons.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < llb.Count; i++)
+            llb[i].Delete();
+        layoutLinkButtons.Clear();
+
+
+        List<StatusBadge> lsb = [.. layoutStatusBadges.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lsb.Count; i++)
+            lsb[i].Delete();
+        layoutStatusBadges.Clear();
+
+
+        List<AlertBanner> lab = [.. layoutAlertBanners.Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lab.Count; i++)
+            lab[i].Delete();
+        layoutAlertBanners.Clear();
     }
 
     public void UpdateLayoutElements()
@@ -173,6 +217,22 @@ public class LayoutEngine
         List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < ldd.Count; i++)
             ldd[i].Update();
+
+        List<CycleSelector> lcs = [.. layoutCycleSelectors.Where(kvp => activeCycleSelectors.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lcs.Count; i++)
+            lcs[i].Update();
+
+        List<LinkButton> llb = [.. layoutLinkButtons.Where(kvp => activeLinkButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = 0; i < llb.Count; i++)
+            llb[i].Update();
+
+        List<StatusBadge> lsb = [.. layoutStatusBadges.Where(kvp => activeStatusBadges.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lsb.Count; i++)
+            lsb[i].Update();
+
+        List<AlertBanner> lab = [.. layoutAlertBanners.Where(kvp => activeAlertBanners.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = 0; i < lab.Count; i++)
+            lab[i].Update();
     }
 
     public void RemoveLayoutButton(int id)
@@ -201,12 +261,53 @@ public class LayoutEngine
         _ = layoutToggles.Remove(id);
     }
 
+    public void RemoveLayoutCycleSelector(int id)
+    {
+        _ = layoutCycleSelectors.Remove(id);
+    }
+
+    public void RemoveLayoutLinkButton(int id)
+    {
+        _ = layoutLinkButtons.Remove(id);
+    }
+
+    public void RemoveLayoutStatusBadge(int id)
+    {
+        _ = layoutStatusBadges.Remove(id);
+    }
+
+    public void RemoveLayoutAlertBanner(int id)
+    {
+        _ = layoutAlertBanners.Remove(id);
+    }
+
     public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
+        List<AlertBanner> lab = [.. layoutAlertBanners.Where(kvp => activeAlertBanners.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = lab.Count - 1; i >= 0; i--)
+        {
+            var hit = lab[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
         List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = ldd.Count - 1; i >= 0; i--)
         {
             var hit = ldd[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
+        List<CycleSelector> lcs = [.. layoutCycleSelectors.Where(kvp => activeCycleSelectors.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = lcs.Count - 1; i >= 0; i--)
+        {
+            var hit = lcs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            if (hit != null) return hit;
+        }
+
+        List<LinkButton> llb = [.. layoutLinkButtons.Where(kvp => activeLinkButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        for (int i = llb.Count - 1; i >= 0; i--)
+        {
+            var hit = llb[i].HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
@@ -446,17 +547,20 @@ public class LayoutEngine
         cachedButton.Render();
     }
 
-    private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder)
+    private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color? fillColor = null, Color? borderColor = null, Color? textColor = null)
     {
         buildingActiveButtons.Add(id);
         if (!layoutButtons.TryGetValue(id, out Button? cachedButton))
         {
-            cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, defaultParent);
+            cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
             layoutButtons.Add(id, cachedButton);
         }
         else
         {
             cachedButton.ButtonText = buttonText;
+            if (fillColor.HasValue) cachedButton.FillColor = fillColor;
+            if (borderColor.HasValue) cachedButton.BorderColor = borderColor;
+            if (textColor.HasValue) cachedButton.TextColor = textColor;
         }
 
         cachedButton.RelativePosition = new Vector2(posX, posY);
@@ -486,8 +590,12 @@ public class LayoutEngine
         }
         else
         {
-            if (isSelected) cachedSelectable.Select();
-            else cachedSelectable.Deselect();
+            if (isSelected != cachedSelectable.IsSelected)
+            {
+                if (isSelected) cachedSelectable.Select(false);
+                else cachedSelectable.Deselect(false);
+            }
+
             cachedSelectable.SelectableText = selectableText;
         }
 
@@ -497,12 +605,12 @@ public class LayoutEngine
         return cachedSelectable;
     }
 
-    private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize)
+    private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
     {
         buildingActiveInputFields.Add(id);
         if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
         {
-            cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, defaultParent);
+            cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
             layoutInputFields.Add(id, cachedInputField);
         }
         else
@@ -512,6 +620,7 @@ public class LayoutEngine
                 cachedInputField.InputFieldText = fieldText;
             }
 
+            cachedInputField.IsMasked = isMasked;
             cachedInputField.OnTextChanged = onTextEdited;
             cachedInputField.OnFocusEnd = onFocusEnd;
         }
@@ -560,6 +669,83 @@ public class LayoutEngine
 
         cachedDropdown.RelativePosition = new Vector2(posX, posY);
         cachedDropdown.Render();
+    }
+
+    private CycleSelector DrawCycleSelectorAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload, int fontSize)
+    {
+        buildingActiveCycleSelectors.Add(id);
+        if (!layoutCycleSelectors.TryGetValue(id, out CycleSelector? cachedCycle))
+        {
+            cachedCycle = new CycleSelector(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
+            layoutCycleSelectors.Add(id, cachedCycle);
+        }
+        else
+        {
+            cachedCycle.Options = options;
+            cachedCycle.SetOnSelectionChanged(onSelectionChanged);
+        }
+
+        cachedCycle.RelativePosition = new Vector2(posX, posY);
+        cachedCycle.Render();
+        return cachedCycle;
+    }
+
+    private LinkButton DrawLinkButtonAbsolute(int id, string text, string url, int posX, int posY, Action<LinkButton>? onClick, int fontSize)
+    {
+        buildingActiveLinkButtons.Add(id);
+        if (!layoutLinkButtons.TryGetValue(id, out LinkButton? cachedLink))
+        {
+            cachedLink = new LinkButton(text, url, onClick, fontSize, defaultParent);
+            layoutLinkButtons.Add(id, cachedLink);
+        }
+        else
+        {
+            cachedLink.Text = text;
+            cachedLink.Url = url;
+        }
+
+        cachedLink.RelativePosition = new Vector2(posX, posY);
+        cachedLink.Render();
+        return cachedLink;
+    }
+
+    private StatusBadge DrawStatusBadgeAbsolute(int id, string text, StatusType statusType, Color? customColor, int posX, int posY, int fontSize)
+    {
+        buildingActiveStatusBadges.Add(id);
+        if (!layoutStatusBadges.TryGetValue(id, out StatusBadge? cachedBadge))
+        {
+            cachedBadge = new StatusBadge(text, statusType, customColor, fontSize, defaultParent);
+            layoutStatusBadges.Add(id, cachedBadge);
+        }
+        else
+        {
+            cachedBadge.Text = text;
+            cachedBadge.Type = statusType;
+            if (customColor.HasValue) cachedBadge.CustomColor = customColor.Value;
+        }
+
+        cachedBadge.RelativePosition = new Vector2(posX, posY);
+        cachedBadge.Render();
+        return cachedBadge;
+    }
+
+    private AlertBanner DrawAlertBannerAbsolute(int id, string message, AlertType alertType, int posX, int posY, int width, int height, bool isDismissible, int fontSize)
+    {
+        buildingActiveAlertBanners.Add(id);
+        if (!layoutAlertBanners.TryGetValue(id, out AlertBanner? cachedBanner))
+        {
+            cachedBanner = new AlertBanner(message, alertType, width, height, isDismissible, fontSize, defaultParent);
+            layoutAlertBanners.Add(id, cachedBanner);
+        }
+        else
+        {
+            cachedBanner.Message = message;
+            cachedBanner.Type = alertType;
+        }
+
+        cachedBanner.RelativePosition = new Vector2(posX, posY);
+        cachedBanner.Render();
+        return cachedBanner;
     }
 
     public void Text(string text, Color fontColor, bool updateLayout = true)
@@ -635,6 +821,17 @@ public class LayoutEngine
         if (updateLayout) DrawAny(buttonWidth, buttonHeight);
     }
 
+    public void Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Color? fillColor, Color? borderColor = null, Color? textColor = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true, fillColor, borderColor, textColor);
+        if (updateLayout) DrawAny(buttonWidth, buttonHeight);
+    }
+
     public void Selectable(Selectable selectable, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
@@ -653,20 +850,20 @@ public class LayoutEngine
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
         
-        Selectable selectable = DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)175, (byte)175, (byte)175, (byte)255), new Color((byte)175, (byte)175, (byte)255, (byte)255), Color.Black);
+        Selectable selectable = DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)38, (byte)38, (byte)38, (byte)255), new Color((byte)28, (byte)50, (byte)88, (byte)255), new Color((byte)200, (byte)200, (byte)200, (byte)255));
         if (updateLayout) DrawAny(selectableWidth, selectableHeight);
 
         return selectable;
     }
 
-    public void InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool updateLayout = true)
+    public void InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool isMasked = false, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15);
+        DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15, isMasked);
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
     }
 
@@ -695,6 +892,79 @@ public class LayoutEngine
         // Core accordion logic: layout relies on the Dropdown reporting its expanded height.
         if (updateLayout) DrawAny(width, cached.Height);
         return cached;
+    }
+
+    public CycleSelector CycleSelector(int id, string[] options, int selectedIndex, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+
+        CycleSelector cached = DrawCycleSelectorAbsolute(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, height, onSelectionChanged, payload, 15);
+        if (updateLayout) DrawAny(width, height);
+        return cached;
+    }
+
+    public LinkButton LinkButton(int id, string text, string url, Action<LinkButton>? onClick = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+
+        LinkButton cached = DrawLinkButtonAbsolute(id, text, url, (int)pos.X, (int)pos.Y, onClick, 14);
+        int textW = MeasureTextW(text, 14);
+        if (updateLayout) DrawAny(textW, 18);
+        return cached;
+    }
+
+    public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Color? customColor = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+
+        StatusBadge cached = DrawStatusBadgeAbsolute(id, text, statusType, customColor, (int)pos.X, (int)pos.Y, 13);
+        int textW = MeasureTextW(text, 13);
+        int badgeW = textW + 24;
+        int badgeH = 13 + 8;
+        if (updateLayout) DrawAny(badgeW, badgeH);
+        return cached;
+    }
+
+    public AlertBanner AlertBanner(int id, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+
+        AlertBanner cached = DrawAlertBannerAbsolute(id, message, alertType, (int)pos.X, (int)pos.Y, width, height, isDismissible, 13);
+        if (updateLayout && !cached.IsDismissed) DrawAny(width, height);
+        return cached;
+    }
+
+    public void TextTruncated(string text, int maxWidth, Color fontColor, int fontSize = 15, bool updateLayout = true)
+    {
+        string truncatedStr = text;
+        int measuredW = MeasureTextW(text, fontSize);
+        if (measuredW > maxWidth)
+        {
+            const string ellipsis = "...";
+            int ellipsisW = MeasureTextW(ellipsis, fontSize);
+            int availableW = maxWidth - ellipsisW;
+
+            if (availableW > 0)
+            {
+                int len = text.Length;
+                while (len > 0 && MeasureTextW(text.Substring(0, len), fontSize) > availableW)
+                {
+                    len--;
+                }
+                truncatedStr = text.Substring(0, len) + ellipsis;
+            }
+            else
+            {
+                truncatedStr = ellipsis;
+            }
+        }
+
+        DrawTextAbsolute(truncatedStr, PosX_Dynamic(), PosY_Dynamic(), fontColor, fontSize, Vector2.Zero);
+        if (updateLayout) DrawAny(Math.Min(measuredW, maxWidth), fontSize + 4);
     }
 
     public void BeginHorizontal(int spacingDist)

@@ -33,7 +33,13 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         }
     }
 
-    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, Drawable? parent = null) : base(parent)
+    private bool isMasked = false;
+    private char maskChar = '*';
+
+    public bool IsMasked { get => isMasked; set => isMasked = value; }
+    public char MaskChar { get => maskChar; set => maskChar = value; }
+
+    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, bool isMasked = false, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -45,6 +51,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
         notifyTextChanged = false;
         this.placeholderText = placeholderText;
+        this.isMasked = isMasked;
         InputFieldText = inputFieldText;
         notifyTextChanged = true;
 
@@ -54,6 +61,56 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         this.height = height;
 
         this.fontSize = fontSize;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool CloseClipboard();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetClipboardData(uint uFormat);
+
+    private static string GetClipboardTextSafe()
+    {
+        const uint CF_UNICODETEXT = 13;
+        if (!OpenClipboard(IntPtr.Zero)) return string.Empty;
+        try
+        {
+            IntPtr handle = GetClipboardData(CF_UNICODETEXT);
+            if (handle == IntPtr.Zero) return string.Empty;
+            return System.Runtime.InteropServices.Marshal.PtrToStringUni(handle) ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+        finally
+        {
+            CloseClipboard();
+        }
+    }
+
+    public void PasteFromClipboard()
+    {
+        try
+        {
+            string clipboardText = GetClipboardTextSafe();
+            if (!string.IsNullOrEmpty(clipboardText))
+            {
+                if (isShowingPlaceholder)
+                {
+                    InputFieldText = clipboardText;
+                    isShowingPlaceholder = false;
+                }
+                else
+                {
+                    InputFieldText += clipboardText;
+                }
+            }
+        }
+        catch { /* Clipboard access failed */ }
     }
 
     protected override void OnDraw()
@@ -80,11 +137,16 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         else
             Raylib.DrawRectangleLinesEx(borderRect, 1f, borderNormal);
 
+        // Text display string (masked or raw)
+        string displayText = isShowingPlaceholder 
+            ? placeholderText 
+            : (isMasked ? new string(maskChar, InputFieldText.Length) : InputFieldText);
+
         // Placeholder Text or Normal Text
         if (isShowingPlaceholder)
             LayoutEngine.DrawTextAbsolute(placeholderText, (int)Position.X + textPadX, textY, placeholderCol, fontSize, Vector2.Zero);
         else
-            LayoutEngine.DrawTextAbsolute(InputFieldText, (int)Position.X + textPadX, textY, inputTextCol, fontSize, Vector2.Zero);
+            LayoutEngine.DrawTextAbsolute(displayText, (int)Position.X + textPadX, textY, inputTextCol, fontSize, Vector2.Zero);
 
         // Blinking Cursor
         if (isFocused)
@@ -93,7 +155,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
             if (showCursorTime)
             {
-                int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(InputFieldText, fontSize);
+                int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(displayText, fontSize);
                 int cursorX = (int)Position.X + textPadX + textW + 1;
 
                 Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + height - 7, cursorCol);
@@ -136,6 +198,13 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     {
         if (!isFocused)
             return false;
+
+        // Check for Ctrl + V (Paste)
+        if (kvt.Key == KeyboardKey.V && (Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.IsKeyDown(KeyboardKey.RightControl)))
+        {
+            PasteFromClipboard();
+            return true;
+        }
 
         if ((kvt.Key >= KeyboardKey.A && kvt.Key <= KeyboardKey.Z) ||
             (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine) ||

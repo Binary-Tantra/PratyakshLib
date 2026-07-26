@@ -28,7 +28,15 @@ public class Button : UIBase, IPointerInteractable
     public float Width { get => dimensions.X; }
     public float Height { get => dimensions.Y; }
 
-    public Button(float width, float height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Drawable? parent = null) : base(parent)
+    private Color? customFillColor;
+    private Color? customBorderColor;
+    private Color? customTextColor;
+
+    public Color? FillColor { get => customFillColor; set => customFillColor = value; }
+    public Color? BorderColor { get => customBorderColor; set => customBorderColor = value; }
+    public Color? TextColor { get => customTextColor; set => customTextColor = value; }
+
+    public Button(float width, float height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Color? fillColor = null, Color? borderColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
     {
         selfInteractable = true;
 
@@ -44,6 +52,9 @@ public class Button : UIBase, IPointerInteractable
         this.buttonText = buttonText;
         this.fontSize = fontSize;
         this.hasBorder = hasBorder;
+        this.customFillColor = fillColor;
+        this.customBorderColor = borderColor;
+        this.customTextColor = textColor;
     }
 
     protected override Rectangle OnGetInteractionRect()
@@ -53,25 +64,34 @@ public class Button : UIBase, IPointerInteractable
 
     protected override void OnDraw()
     {
-        // Palette
-        Color fillNormal = new((byte)48, (byte)48, (byte)48, (byte)255);
-        Color fillHover = new((byte)64, (byte)64, (byte)64, (byte)255);
-        Color fillPressed = new((byte)30, (byte)30, (byte)30, (byte)255);
-        Color borderNorm = new((byte)75, (byte)75, (byte)75, (byte)255);
-        Color borderHover = new((byte)108, (byte)108, (byte)108, (byte)255);
-        Color labelColor = new((byte)200, (byte)200, (byte)200, (byte)255);
+        // Default Base Colors
+        Color baseFill = customFillColor ?? new Color((byte)48, (byte)48, (byte)48, (byte)255);
+        
+        Color fillNormal = baseFill;
+        Color fillHover = customFillColor.HasValue
+            ? new Color((byte)Math.Min(255, baseFill.R + 30), (byte)Math.Min(255, baseFill.G + 30), (byte)Math.Min(255, baseFill.B + 30), baseFill.A)
+            : new Color((byte)64, (byte)64, (byte)64, (byte)255);
+        Color fillPressed = customFillColor.HasValue
+            ? new Color((byte)Math.Max(0, baseFill.R - 20), (byte)Math.Max(0, baseFill.G - 20), (byte)Math.Max(0, baseFill.B - 20), baseFill.A)
+            : new Color((byte)30, (byte)30, (byte)30, (byte)255);
+
+        Color borderNorm = customBorderColor ?? new Color((byte)75, (byte)75, (byte)75, (byte)255);
+        Color borderHover = customBorderColor.HasValue
+            ? new Color((byte)Math.Min(255, borderNorm.R + 30), (byte)Math.Min(255, borderNorm.G + 30), (byte)Math.Min(255, borderNorm.B + 30), borderNorm.A)
+            : new Color((byte)108, (byte)108, (byte)108, (byte)255);
+
+        Color labelColor = customTextColor ?? new Color((byte)200, (byte)200, (byte)200, (byte)255);
 
         // Fill
-        Color fillColor = pressed ? fillPressed : (hovered ? fillHover : fillNormal);
-        //if (hovered) Console.WriteLine(fillColor);
-        Color borderColor = hovered ? borderHover : borderNorm;
+        Color currentFill = pressed ? fillPressed : (hovered ? fillHover : fillNormal);
+        Color currentBorder = hovered ? borderHover : borderNorm;
 
         // BG
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, fillColor);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, currentFill);
 
         // Border
         if (hasBorder)
-            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, dimensions.X, dimensions.Y), 1f, borderColor);
+            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, dimensions.X, dimensions.Y), 1f, currentBorder);
 
         // Text (centered)
         int textW = Raylib.MeasureText(buttonText, fontSize);

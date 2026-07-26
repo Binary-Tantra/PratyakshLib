@@ -1,10 +1,10 @@
-﻿using Raylib_cs;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
 public enum UIElementType
 {
-    Text, Button, InputField, Selectable, Toggle, Dropdown, Group
+    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Group
 }
 
 public abstract class UIElementDescription
@@ -42,22 +42,30 @@ public class RectUIEDescription : UIElementDescription
 public class ButtonDesc : RectUIEDescription
 {
     public Action<Button> onClick;
+    public Color? fillColor;
+    public Color? borderColor;
+    public Color? textColor;
 
-    public ButtonDesc(string text, int? width, int? height, Action<Button> onClick) : base(text, width, height)
+    public ButtonDesc(string text, int? width, int? height, Action<Button> onClick, Color? fillColor = null, Color? borderColor = null, Color? textColor = null) : base(text, width, height)
     {
         this.onClick = onClick;
+        this.fillColor = fillColor;
+        this.borderColor = borderColor;
+        this.textColor = textColor;
     }
 }
 
 public class InputFieldDesc : RectUIEDescription
 {
     public string placeholderText;
+    public bool isMasked;
     internal Action<InputField>? onTextChanged;
     internal Action<InputField>? onFocusEnd;
 
-    public InputFieldDesc(string placeholderText, string inputFieldText, int? width, int? height) : base(inputFieldText, width, height)
+    public InputFieldDesc(string placeholderText, string inputFieldText, int? width, int? height, bool isMasked = false) : base(inputFieldText, width, height)
     {
         this.placeholderText = placeholderText;
+        this.isMasked = isMasked;
     }
 }
 
@@ -96,6 +104,56 @@ public class DropdownDesc : RectUIEDescription
         this.options = options;
         this.selectedIndex = selectedIndex;
         this.onSelectionChanged = onSelectionChanged;
+    }
+}
+
+public class CycleSelectorDesc : RectUIEDescription
+{
+    public string[] options;
+    public int selectedIndex;
+    public Action<CycleSelector> onSelectionChanged;
+
+    public CycleSelectorDesc(string[] options, int selectedIndex, int? width, int? height, Action<CycleSelector> onSelectionChanged) : base("", width, height)
+    {
+        this.options = options;
+        this.selectedIndex = selectedIndex;
+        this.onSelectionChanged = onSelectionChanged;
+    }
+}
+
+public class LinkButtonDesc : RectUIEDescription
+{
+    public string url;
+    public Action<LinkButton>? onClick;
+
+    public LinkButtonDesc(string text, string url, Action<LinkButton>? onClick = null, int? width = null, int? height = null) : base(text, width, height)
+    {
+        this.url = url;
+        this.onClick = onClick;
+    }
+}
+
+public class StatusBadgeDesc : RectUIEDescription
+{
+    public StatusType statusType;
+    public Color? customColor;
+
+    public StatusBadgeDesc(string text, StatusType statusType = StatusType.Idle, Color? customColor = null, int? width = null, int? height = null) : base(text, width, height)
+    {
+        this.statusType = statusType;
+        this.customColor = customColor;
+    }
+}
+
+public class AlertBannerDesc : RectUIEDescription
+{
+    public AlertType alertType;
+    public bool isDismissible;
+
+    public AlertBannerDesc(string message, AlertType alertType = AlertType.Error, bool isDismissible = true, int? width = null, int? height = null) : base(message, width, height)
+    {
+        this.alertType = alertType;
+        this.isDismissible = isDismissible;
     }
 }
 

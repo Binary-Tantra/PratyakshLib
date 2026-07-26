@@ -14,6 +14,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
     private int fontSize;
 
     private Action<Selectable> onSelectableSelect;
+    private Action<Selectable> onSelectableDeselect;
 
     private Color bgColor;
     private Color bgSelectionColor;
@@ -64,9 +65,9 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         this.fontSize = fontSize;
 
-        this.bgColor = bgColor ?? new Color((byte)175, (byte)175, (byte)175, (byte)255);
-        this.bgSelectionColor = bgSelectionColor ?? new Color((byte)175, (byte)175, (byte)255, (byte)255);
-        this.textColor = textColor ?? Color.Black;
+        this.bgColor = bgColor ?? new Color((byte)38, (byte)38, (byte)38, (byte)255);
+        this.bgSelectionColor = bgSelectionColor ?? new Color((byte)28, (byte)50, (byte)88, (byte)255);
+        this.textColor = textColor ?? new Color((byte)200, (byte)200, (byte)200, (byte)255);
 
         Engine.OnAnyPointerDown += OnClickOff;
 
@@ -95,13 +96,13 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
             return;
         }
 
-        // Palette
-        Color fillNormal = new((byte)38, (byte)38, (byte)38, (byte)255);
-        Color fillHover = new((byte)55, (byte)55, (byte)55, (byte)255);
-        Color fillSelected = new((byte)28, (byte)50, (byte)88, (byte)255);
+        // Palette - derived from user-provided or default colors
+        Color fillNormal = bgColor;
+        Color fillHover = new Color((byte)Math.Min(255, bgColor.R + 25), (byte)Math.Min(255, bgColor.G + 25), (byte)Math.Min(255, bgColor.B + 25), bgColor.A);
+        Color fillSelected = bgSelectionColor;
         Color accentBar = new((byte)65, (byte)120, (byte)200, (byte)255);
-        Color textNormal = new((byte)200, (byte)200, (byte)200, (byte)255);
-        Color textSelected = new((byte)220, (byte)228, (byte)255, (byte)255);
+        Color textNormal = textColor;
+        Color textSelected = textColor;
 
         const int accentW = 3;
         const int textPadX = 9;
@@ -125,15 +126,16 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
             editIF.Update();
     }
 
-    public void Select()
+    public void Select(bool notify = true)
     {
         isSelected = true;
-        onSelectableSelect?.Invoke(this);
+        if (notify) onSelectableSelect?.Invoke(this);
     }
 
-    public void Deselect()
+    public void Deselect(bool notify = true)
     {
         isSelected = false;
+        if (notify) onSelectableDeselect?.Invoke(this);
     }
 
     protected override void OnDelete()
