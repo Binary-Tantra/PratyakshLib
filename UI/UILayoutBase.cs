@@ -1,10 +1,9 @@
 using System.Numerics;
 using Raylib_cs;
-using LibLayoutEngine;
 
 namespace RaylibNodeLibrary.UI;
 
-public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
+public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IClippable
 {
     protected LayoutEngine layout;
 
@@ -76,6 +75,17 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable
     protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         return layout.HitTestElements(mouseScreenPosition, mouseWorldPosition);
+    }
+
+    public Rectangle GetScissorRect()
+    {
+        Rectangle rect = new Rectangle(Position.X, Position.Y, layoutWidth, layoutHeight);
+        bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
+
+        if (worldSpace)
+            rect = Engine.Camera.GetWorldToScreenRect(rect);
+
+        return rect;
     }
 
     protected override Rectangle OnGetInteractionRect()

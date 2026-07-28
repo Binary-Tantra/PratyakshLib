@@ -57,38 +57,14 @@ public class LayoutEngine
 
     private Dictionary<int, ElementInfo<Button>> layoutButtons = [];
     private Dictionary<int, ElementInfo<Selectable>> layoutSelectables = [];
-    private Dictionary<int, InputField> layoutInputFields = [];
-    private Dictionary<int, Toggle> layoutToggles = [];
-    private Dictionary<int, ScrollView> layoutScrollViews = [];
-    private Dictionary<int, Dropdown> layoutDropdowns = [];
-    private Dictionary<int, CycleSelector> layoutCycleSelectors = [];
-    private Dictionary<int, LinkButton> layoutLinkButtons = [];
-    private Dictionary<int, StatusBadge> layoutStatusBadges = [];
-    private Dictionary<int, AlertBanner> layoutAlertBanners = [];
-
-    private Dictionary<int, BoolToggleBinder> layoutToggleBinders = [];
-    private Dictionary<int, StringInputBinder> layoutInputFieldStringBinders = [];
-    private Dictionary<int, IntInputBinder> layoutInputFieldIntBinders = [];
-    private Dictionary<int, FloatInputBinder> layoutInputFieldFloatBinders = [];
-    private Dictionary<int, IntDropdownBinder> layoutDropdownBinders = [];
-
-    private HashSet<int> activeInputFields = [];
-    private HashSet<int> activeToggles = [];
-    private HashSet<int> activeScrollViewSet = [];
-    private HashSet<int> activeDropdowns = [];
-    private HashSet<int> activeCycleSelectors = [];
-    private HashSet<int> activeLinkButtons = [];
-    private HashSet<int> activeStatusBadges = [];
-    private HashSet<int> activeAlertBanners = [];
-
-    private HashSet<int> buildingActiveInputFields = [];
-    private HashSet<int> buildingActiveToggles = [];
-    private HashSet<int> buildingActiveScrollViewSet = [];
-    private HashSet<int> buildingActiveDropdowns = [];
-    private HashSet<int> buildingActiveCycleSelectors = [];
-    private HashSet<int> buildingActiveLinkButtons = [];
-    private HashSet<int> buildingActiveStatusBadges = [];
-    private HashSet<int> buildingActiveAlertBanners = [];
+    private Dictionary<int, ElementInfo<InputField>> layoutInputFields = [];
+    private Dictionary<int, ElementInfo<Toggle>> layoutToggles = [];
+    private Dictionary<int, ElementInfo<ScrollView>> layoutScrollViews = [];
+    private Dictionary<int, ElementInfo<Dropdown>> layoutDropdowns = [];
+    private Dictionary<int, ElementInfo<CycleSelector>> layoutCycleSelectors = [];
+    private Dictionary<int, ElementInfo<LinkButton>> layoutLinkButtons = [];
+    private Dictionary<int, ElementInfo<StatusBadge>> layoutStatusBadges = [];
+    private Dictionary<int, ElementInfo<AlertBanner>> layoutAlertBanners = [];
 
     private Stack<EditorObject?> parentStack = new();
     private Stack<int> activeScrollViews = new();
@@ -110,9 +86,12 @@ public class LayoutEngine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void DeleteElement<T>(int id, Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
     {
-        targetDict[id].DataBinder?.Unbind();
-        targetDict[id].UIElement.Delete();
-        targetDict.Remove(id);
+        if (targetDict.TryGetValue(id, out var info))
+        {
+            info.DataBinder?.Unbind();
+            info.UIElement.Delete();
+            targetDict.Remove(id);
+        }
     }
 
     private static void DeleteElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
@@ -135,48 +114,44 @@ public class LayoutEngine
         }
     }
 
-    private static void HitTestActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
+    private static Drawable? HitTestActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
     {
-        foreach (var kvp in targetDict)
+        var keys = targetDict.Keys.ToArray();
+        for (int i = keys.Length - 1; i >= 0; i--)
         {
-            if (targetDict[kvp.Key].IsActiveThisFrame)
-                targetDict[kvp.Key].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
+            int key = keys[i];
+            if (targetDict[key].IsActiveThisFrame)
+            {
+                var hit = targetDict[key].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
+                if (hit != null) return hit;
+            }
         }
+        return null;
     }
 
     public void BeginFrame()
     {
         DeactivateElements(layoutButtons);
         DeactivateElements(layoutSelectables);
-        
-        buildingActiveInputFields.Clear();
-        buildingActiveToggles.Clear();
-        buildingActiveScrollViewSet.Clear();
-        buildingActiveDropdowns.Clear();
-        buildingActiveCycleSelectors.Clear();
-        buildingActiveLinkButtons.Clear();
-        buildingActiveStatusBadges.Clear();
-        buildingActiveAlertBanners.Clear();
+        DeactivateElements(layoutInputFields);
+        DeactivateElements(layoutToggles);
+        DeactivateElements(layoutScrollViews);
+        DeactivateElements(layoutDropdowns);
+        DeactivateElements(layoutCycleSelectors);
+        DeactivateElements(layoutLinkButtons);
+        DeactivateElements(layoutStatusBadges);
+        DeactivateElements(layoutAlertBanners);
     }
 
     public void EndFrame()
     {
         foreach (var kvp in layoutInputFields)
         {
-            if (!buildingActiveInputFields.Contains(kvp.Key) && kvp.Value.IsFocused)
+            if (!layoutInputFields[kvp.Key].IsActiveThisFrame && layoutInputFields[kvp.Key].UIElement.IsFocused)
             {
                 InteractionManager.ReleaseFocus();
             }
         }
-
-        activeInputFields = [.. buildingActiveInputFields];
-        activeToggles = [.. buildingActiveToggles];
-        activeScrollViewSet = [.. buildingActiveScrollViewSet];
-        activeDropdowns = [.. buildingActiveDropdowns];
-        activeCycleSelectors = [.. buildingActiveCycleSelectors];
-        activeLinkButtons = [.. buildingActiveLinkButtons];
-        activeStatusBadges = [.. buildingActiveStatusBadges];
-        activeAlertBanners = [.. buildingActiveAlertBanners];
     }
 
     public static void InitSLEDefaultFont(Font font)
@@ -195,258 +170,78 @@ public class LayoutEngine
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
 
-        foreach (var b in layoutToggleBinders.Values) b.Unbind();
-        layoutToggleBinders.Clear();
-
-        foreach (var b in layoutInputFieldStringBinders.Values) b.Unbind();
-        layoutInputFieldStringBinders.Clear();
-
-        foreach (var b in layoutInputFieldIntBinders.Values) b.Unbind();
-        layoutInputFieldIntBinders.Clear();
-
-        foreach (var b in layoutInputFieldFloatBinders.Values) b.Unbind();
-        layoutInputFieldFloatBinders.Clear();
-
-
-        foreach (var b in layoutDropdownBinders.Values) b.Unbind();
-        layoutDropdownBinders.Clear();
-
-        foreach (var kvp in layoutButtons)
-            layoutButtons[kvp.Key].UIElement.Delete();
-
-        layoutButtons.Clear();
-
+        DeleteElements(layoutButtons);
         DeleteElements(layoutSelectables);
-
-        List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
-
-        for (int i = 0; i < lifs.Count; i++)
-            lifs[i].Delete();
-
-        layoutInputFields.Clear();
-
-
-        List<Toggle> lts = [.. layoutToggles.Select((kvp) => kvp.Value)];
-        
-        for (int i = 0; i < lts.Count; i++)
-            lts[i].Delete();
-        
-        layoutToggles.Clear();
-
-
-        List<ScrollView> lsvs = [.. layoutScrollViews.Select((kvp) => kvp.Value)];
-        
-        for (int i = 0; i < lsvs.Count; i++)
-            lsvs[i].Delete();
-        
-        layoutScrollViews.Clear();
-
-
-        List<Dropdown> ldd = [.. layoutDropdowns.Select((kvp) => kvp.Value)];
-        
-        for (int i = 0; i < ldd.Count; i++)
-            ldd[i].Delete();
-        
-        layoutDropdowns.Clear();
-
-
-        List<CycleSelector> lcs = [.. layoutCycleSelectors.Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lcs.Count; i++)
-            lcs[i].Delete();
-        layoutCycleSelectors.Clear();
-
-
-        List<LinkButton> llb = [.. layoutLinkButtons.Select((kvp) => kvp.Value)];
-        for (int i = 0; i < llb.Count; i++)
-            llb[i].Delete();
-        layoutLinkButtons.Clear();
-
-
-        List<StatusBadge> lsb = [.. layoutStatusBadges.Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lsb.Count; i++)
-            lsb[i].Delete();
-        layoutStatusBadges.Clear();
-
-
-        List<AlertBanner> lab = [.. layoutAlertBanners.Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lab.Count; i++)
-            lab[i].Delete();
-        layoutAlertBanners.Clear();
+        DeleteElements(layoutInputFields);
+        DeleteElements(layoutToggles);
+        DeleteElements(layoutScrollViews);
+        DeleteElements(layoutDropdowns);
+        DeleteElements(layoutCycleSelectors);
+        DeleteElements(layoutLinkButtons);
+        DeleteElements(layoutStatusBadges);
+        DeleteElements(layoutAlertBanners);
     }
 
     public void UpdateLayoutElements()
     {
         UpdateActiveElements(layoutButtons);
         UpdateActiveElements(layoutSelectables);
-
-        List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lifs.Count; i++)
-            lifs[i].Update();
-
-        List<Toggle> lts = [.. layoutToggles.Where(kvp => activeToggles.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lts.Count; i++)
-            lts[i].Update();
-
-        List<ScrollView> lsvs = [.. layoutScrollViews.Where(kvp => activeScrollViewSet.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lsvs.Count; i++)
-            lsvs[i].Update();
-
-        List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < ldd.Count; i++)
-            ldd[i].Update();
-
-        List<CycleSelector> lcs = [.. layoutCycleSelectors.Where(kvp => activeCycleSelectors.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lcs.Count; i++)
-            lcs[i].Update();
-
-        List<LinkButton> llb = [.. layoutLinkButtons.Where(kvp => activeLinkButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < llb.Count; i++)
-            llb[i].Update();
-
-        List<StatusBadge> lsb = [.. layoutStatusBadges.Where(kvp => activeStatusBadges.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lsb.Count; i++)
-            lsb[i].Update();
-
-        List<AlertBanner> lab = [.. layoutAlertBanners.Where(kvp => activeAlertBanners.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lab.Count; i++)
-            lab[i].Update();
+        UpdateActiveElements(layoutInputFields);
+        UpdateActiveElements(layoutToggles);
+        UpdateActiveElements(layoutScrollViews);
+        UpdateActiveElements(layoutDropdowns);
+        UpdateActiveElements(layoutCycleSelectors);
+        UpdateActiveElements(layoutLinkButtons);
+        UpdateActiveElements(layoutStatusBadges);
+        UpdateActiveElements(layoutAlertBanners);
     }
 
-    public void RemoveLayoutButton(int id)
-    {
-        DeleteElement(id, layoutButtons);
-    }
-
-    public void RemoveLayoutSelectable(int id)
-    {
-        DeleteElement(id, layoutSelectables);
-    }
-
-    public void RemoveLayoutInputField(int id)
-    {
-        if (layoutInputFieldStringBinders.TryGetValue(id, out var sBinder))
-        {
-            sBinder.Unbind();
-            layoutInputFieldStringBinders.Remove(id);
-        }
-        if (layoutInputFieldIntBinders.TryGetValue(id, out var iBinder))
-        {
-            iBinder.Unbind();
-            layoutInputFieldIntBinders.Remove(id);
-        }
-        if (layoutInputFieldFloatBinders.TryGetValue(id, out var fBinder))
-        {
-            fBinder.Unbind();
-            layoutInputFieldFloatBinders.Remove(id);
-        }
-        _ = layoutInputFields.Remove(id);
-    }
+    public void RemoveLayoutButton(int id) => DeleteElement(id, layoutButtons);
+    public void RemoveLayoutSelectable(int id) => DeleteElement(id, layoutSelectables);
+    public void RemoveLayoutInputField(int id) => DeleteElement(id, layoutInputFields);
+    public void RemoveLayoutToggle(int id) => DeleteElement(id, layoutToggles);
+    public void RemoveLayoutScrollView(int id) => DeleteElement(id, layoutScrollViews);
+    public void RemoveLayoutDropdown(int id) => DeleteElement(id, layoutDropdowns);
+    public void RemoveLayoutCycleSelector(int id) => DeleteElement(id, layoutCycleSelectors);
+    public void RemoveLayoutLinkButton(int id) => DeleteElement(id, layoutLinkButtons);
+    public void RemoveLayoutStatusBadge(int id) => DeleteElement(id, layoutStatusBadges);
+    public void RemoveLayoutAlertBanner(int id) => DeleteElement(id, layoutAlertBanners);
 
     public InputField? GetInputField(int id)
     {
-        layoutInputFields.TryGetValue(id, out InputField? inputField);
-        return inputField;
-    }
-
-    public void RemoveLayoutToggle(int id)
-    {
-        if (layoutToggleBinders.TryGetValue(id, out var binder))
-        {
-            binder.Unbind();
-            layoutToggleBinders.Remove(id);
-        }
-        _ = layoutToggles.Remove(id);
-    }
-
-    public void RemoveLayoutDropdown(int id)
-    {
-        if (layoutDropdownBinders.TryGetValue(id, out var binder))
-        {
-            binder.Unbind();
-            layoutDropdownBinders.Remove(id);
-        }
-        _ = layoutDropdowns.Remove(id);
-    }
-
-    public void RemoveLayoutCycleSelector(int id)
-    {
-        _ = layoutCycleSelectors.Remove(id);
-    }
-
-    public void RemoveLayoutLinkButton(int id)
-    {
-        _ = layoutLinkButtons.Remove(id);
-    }
-
-    public void RemoveLayoutStatusBadge(int id)
-    {
-        _ = layoutStatusBadges.Remove(id);
-    }
-
-    public void RemoveLayoutAlertBanner(int id)
-    {
-        _ = layoutAlertBanners.Remove(id);
+        if (layoutInputFields.TryGetValue(id, out var info))
+            return info.UIElement;
+        return null;
     }
 
     public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        List<AlertBanner> lab = [.. layoutAlertBanners.Where(kvp => activeAlertBanners.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lab.Count - 1; i >= 0; i--)
-        {
-            var hit = lab[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        Drawable? hit = HitTestActiveElements(layoutAlertBanners, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<Dropdown> ldd = [.. layoutDropdowns.Where(kvp => activeDropdowns.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = ldd.Count - 1; i >= 0; i--)
-        {
-            var hit = ldd[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutDropdowns, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<CycleSelector> lcs = [.. layoutCycleSelectors.Where(kvp => activeCycleSelectors.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lcs.Count - 1; i >= 0; i--)
-        {
-            var hit = lcs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutCycleSelectors, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<LinkButton> llb = [.. layoutLinkButtons.Where(kvp => activeLinkButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = llb.Count - 1; i >= 0; i--)
-        {
-            var hit = llb[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutLinkButtons, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<ElementInfo<Button>> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
-        for (int i = lbs.Count - 1; i >= 0; i--)
-        {
-            var hit = lbs[i].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutButtons, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        HitTestActiveElements(layoutButtons, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutSelectables, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lifs.Count - 1; i >= 0; i--)
-        {
-            var hit = lifs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutInputFields, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<Toggle> lts = [.. layoutToggles.Where(kvp => activeToggles.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lts.Count - 1; i >= 0; i--)
-        {
-            var hit = lts[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutToggles, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
-        List<ScrollView> lsvs = [.. layoutScrollViews.Where(kvp => activeScrollViewSet.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lsvs.Count - 1; i >= 0; i--)
-        {
-            var hit = lsvs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        hit = HitTestActiveElements(layoutScrollViews, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
 
         return null;
     }
@@ -724,145 +519,167 @@ public class LayoutEngine
 
     private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
     {
-        buildingActiveInputFields.Add(id);
-        if (!layoutInputFields.TryGetValue(id, out InputField? cachedInputField))
+        bool found = layoutInputFields.ContainsKey(id);
+        if (!found)
         {
-            cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
-            layoutInputFields.Add(id, cachedInputField);
+            InputField cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
+            ElementInfo<InputField> elem = new(cachedInputField, null);
+            layoutInputFields.Add(id, elem);
         }
         else
         {
-            if (!cachedInputField.IsFocused)
+            if (!layoutInputFields[id].UIElement.IsFocused)
             {
-                cachedInputField.InputFieldText = fieldText;
+                layoutInputFields[id].UIElement.InputFieldText = fieldText;
             }
 
-            cachedInputField.IsMasked = isMasked;
-            cachedInputField.OnTextChanged = onTextEdited;
-            cachedInputField.OnFocusEnd = onFocusEnd;
+            layoutInputFields[id].UIElement.IsMasked = isMasked;
+            layoutInputFields[id].UIElement.OnTextChanged = onTextEdited;
+            layoutInputFields[id].UIElement.OnFocusEnd = onFocusEnd;
         }
 
-        cachedInputField.RelativePosition = new Vector2(posX, posY);
-        cachedInputField.Render();
+        layoutInputFields[id] = layoutInputFields[id].Activate();
+
+        layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutInputFields[id].UIElement.Render();
     }
 
     private void DrawToggleAbsolute(int id, bool toggleValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
-        buildingActiveToggles.Add(id);
-        if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
+        bool found = layoutToggles.ContainsKey(id);
+        if (!found)
         {
-            cachedToggle = new Toggle(toggleValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
-            layoutToggles.Add(id, cachedToggle);
+            Toggle cachedToggle = new Toggle(toggleValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+            ElementInfo<Toggle> elem = new(cachedToggle, null);
+            layoutToggles.Add(id, elem);
         }
         else
         {
-            cachedToggle.Value = toggleValue;
-            cachedToggle.Label = label;
-            cachedToggle.SetOnToggleChanged(onToggleChanged);
+            layoutToggles[id].UIElement.Value = toggleValue;
+            layoutToggles[id].UIElement.Label = label;
+            layoutToggles[id].UIElement.SetOnToggleChanged(onToggleChanged);
         }
 
-        cachedToggle.RelativePosition = new Vector2(posX, posY);
-        cachedToggle.Render();
+        layoutToggles[id] = layoutToggles[id].Activate();
+
+        layoutToggles[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutToggles[id].UIElement.Render();
     }
 
-    private void DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
+    private Dropdown DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
     {
-        buildingActiveDropdowns.Add(id);
-        if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
+        bool found = layoutDropdowns.ContainsKey(id);
+        if (!found)
         {
-            cachedDropdown = new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
-            layoutDropdowns.Add(id, cachedDropdown);
+            Dropdown cachedDropdown = new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
+            ElementInfo<Dropdown> elem = new(cachedDropdown, null);
+            layoutDropdowns.Add(id, elem);
         }
         else
         {
-            if (cachedDropdown.Options.Length != options.Length)
-                cachedDropdown.SetOptions(options, selectedIndex);
+            if (layoutDropdowns[id].UIElement.Options.Length != options.Length)
+                layoutDropdowns[id].UIElement.SetOptions(options, selectedIndex);
             else
             {
-                cachedDropdown.SelectedIndex = selectedIndex;
-                cachedDropdown.SetOnSelectionChanged(onSelectionChanged);
+                layoutDropdowns[id].UIElement.SelectedIndex = selectedIndex;
+                layoutDropdowns[id].UIElement.SetOnSelectionChanged(onSelectionChanged);
             }
         }
 
-        cachedDropdown.RelativePosition = new Vector2(posX, posY);
-        cachedDropdown.Render();
+        layoutDropdowns[id] = layoutDropdowns[id].Activate();
+
+        layoutDropdowns[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutDropdowns[id].UIElement.Render();
+        return layoutDropdowns[id].UIElement;
     }
 
     private CycleSelector DrawCycleSelectorAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload, int fontSize)
     {
-        buildingActiveCycleSelectors.Add(id);
-        if (!layoutCycleSelectors.TryGetValue(id, out CycleSelector? cachedCycle))
+        bool found = layoutCycleSelectors.ContainsKey(id);
+        if (!found)
         {
-            cachedCycle = new CycleSelector(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
-            layoutCycleSelectors.Add(id, cachedCycle);
+            CycleSelector cachedCycle = new CycleSelector(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
+            ElementInfo<CycleSelector> elem = new(cachedCycle, null);
+            layoutCycleSelectors.Add(id, elem);
         }
         else
         {
-            cachedCycle.Options = options;
-            cachedCycle.SetOnSelectionChanged(onSelectionChanged);
+            layoutCycleSelectors[id].UIElement.Options = options;
+            layoutCycleSelectors[id].UIElement.SetOnSelectionChanged(onSelectionChanged);
         }
 
-        cachedCycle.RelativePosition = new Vector2(posX, posY);
-        cachedCycle.Render();
-        return cachedCycle;
+        layoutCycleSelectors[id] = layoutCycleSelectors[id].Activate();
+
+        layoutCycleSelectors[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutCycleSelectors[id].UIElement.Render();
+        return layoutCycleSelectors[id].UIElement;
     }
 
     private LinkButton DrawLinkButtonAbsolute(int id, string text, string url, int posX, int posY, Action<LinkButton>? onClick, int fontSize)
     {
-        buildingActiveLinkButtons.Add(id);
-        if (!layoutLinkButtons.TryGetValue(id, out LinkButton? cachedLink))
+        bool found = layoutLinkButtons.ContainsKey(id);
+        if (!found)
         {
-            cachedLink = new LinkButton(text, url, onClick, fontSize, defaultParent);
-            layoutLinkButtons.Add(id, cachedLink);
+            LinkButton cachedLink = new LinkButton(text, url, onClick, fontSize, defaultParent);
+            ElementInfo<LinkButton> elem = new(cachedLink, null);
+            layoutLinkButtons.Add(id, elem);
         }
         else
         {
-            cachedLink.Text = text;
-            cachedLink.Url = url;
+            layoutLinkButtons[id].UIElement.Text = text;
+            layoutLinkButtons[id].UIElement.Url = url;
         }
 
-        cachedLink.RelativePosition = new Vector2(posX, posY);
-        cachedLink.Render();
-        return cachedLink;
+        layoutLinkButtons[id] = layoutLinkButtons[id].Activate();
+
+        layoutLinkButtons[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutLinkButtons[id].UIElement.Render();
+        return layoutLinkButtons[id].UIElement;
     }
 
     private StatusBadge DrawStatusBadgeAbsolute(int id, string text, StatusType statusType, Color? customColor, int posX, int posY, int fontSize)
     {
-        buildingActiveStatusBadges.Add(id);
-        if (!layoutStatusBadges.TryGetValue(id, out StatusBadge? cachedBadge))
+        bool found = layoutStatusBadges.ContainsKey(id);
+        if (!found)
         {
-            cachedBadge = new StatusBadge(text, statusType, customColor, fontSize, defaultParent);
-            layoutStatusBadges.Add(id, cachedBadge);
+            StatusBadge cachedBadge = new StatusBadge(text, statusType, customColor, fontSize, defaultParent);
+            ElementInfo<StatusBadge> elem = new(cachedBadge, null);
+            layoutStatusBadges.Add(id, elem);
         }
         else
         {
-            cachedBadge.Text = text;
-            cachedBadge.Type = statusType;
-            if (customColor.HasValue) cachedBadge.CustomColor = customColor.Value;
+            layoutStatusBadges[id].UIElement.Text = text;
+            layoutStatusBadges[id].UIElement.Type = statusType;
+            if (customColor.HasValue) layoutStatusBadges[id].UIElement.CustomColor = customColor.Value;
         }
 
-        cachedBadge.RelativePosition = new Vector2(posX, posY);
-        cachedBadge.Render();
-        return cachedBadge;
+        layoutStatusBadges[id] = layoutStatusBadges[id].Activate();
+
+        layoutStatusBadges[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutStatusBadges[id].UIElement.Render();
+        return layoutStatusBadges[id].UIElement;
     }
 
     private AlertBanner DrawAlertBannerAbsolute(int id, string message, AlertType alertType, int posX, int posY, int width, int height, bool isDismissible, int fontSize)
     {
-        buildingActiveAlertBanners.Add(id);
-        if (!layoutAlertBanners.TryGetValue(id, out AlertBanner? cachedBanner))
+        bool found = layoutAlertBanners.ContainsKey(id);
+        if (!found)
         {
-            cachedBanner = new AlertBanner(message, alertType, width, height, isDismissible, fontSize, defaultParent);
-            layoutAlertBanners.Add(id, cachedBanner);
+            AlertBanner cachedBanner = new AlertBanner(message, alertType, width, height, isDismissible, fontSize, defaultParent);
+            ElementInfo<AlertBanner> elem = new(cachedBanner, null);
+            layoutAlertBanners.Add(id, elem);
         }
         else
         {
-            cachedBanner.Message = message;
-            cachedBanner.Type = alertType;
+            layoutAlertBanners[id].UIElement.Message = message;
+            layoutAlertBanners[id].UIElement.Type = alertType;
         }
 
-        cachedBanner.RelativePosition = new Vector2(posX, posY);
-        cachedBanner.Render();
-        return cachedBanner;
+        layoutAlertBanners[id] = layoutAlertBanners[id].Activate();
+
+        layoutAlertBanners[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutAlertBanners[id].UIElement.Render();
+        return layoutAlertBanners[id].UIElement;
     }
 
     public void Text(string text, Color fontColor, bool updateLayout = true)
@@ -1004,7 +821,7 @@ public class LayoutEngine
 
         DrawDropdownAbsolute(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, 15);
 
-        Dropdown cached = layoutDropdowns[id];
+        Dropdown cached = layoutDropdowns[id].UIElement;
 
         // Core accordion logic: layout relies on the Dropdown reporting its expanded height.
         if (updateLayout) DrawAny(width, cached.Height);
@@ -1119,12 +936,16 @@ public class LayoutEngine
     // Add the spacing parameter to the method signature
     public void BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
     {
-        buildingActiveScrollViewSet.Add(id);
-        if (!layoutScrollViews.TryGetValue(id, out ScrollView? svc))
+        bool found = layoutScrollViews.ContainsKey(id);
+        if (!found)
         {
-            svc = new ScrollView(viewWidth, viewHeight, defaultParent);
-            layoutScrollViews.Add(id, svc);
+            ScrollView newSvc = new ScrollView(viewWidth, viewHeight, defaultParent);
+            ElementInfo<ScrollView> elem = new(newSvc, null);
+            layoutScrollViews.Add(id, elem);
         }
+
+        layoutScrollViews[id] = layoutScrollViews[id].Activate();
+        ScrollView svc = layoutScrollViews[id].UIElement;
 
         svc.SetViewSize(new Vector2(viewWidth, viewHeight));
         svc.RelativePosition = new Vector2(PosX_Dynamic(), PosY_Dynamic() + startYOffset);
@@ -1181,7 +1002,7 @@ public class LayoutEngine
         if (activeScrollViews.Count == 0) return;
 
         int svId = activeScrollViews.Pop();
-        ScrollView svc = layoutScrollViews[svId];
+        ScrollView svc = layoutScrollViews[svId].UIElement;
 
         int contentWidth = PosX() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
         int contentHeight = PosY() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
@@ -1218,10 +1039,10 @@ public class LayoutEngine
 
     public void DrawOverlays()
     {
-        List<Dropdown> ldd = [.. layoutDropdowns.Values];
-        for (int i = 0; i < ldd.Count; i++)
+        foreach (var kvp in layoutDropdowns)
         {
-            ldd[i].DrawOverlay();
+            if (layoutDropdowns[kvp.Key].IsActiveThisFrame)
+                layoutDropdowns[kvp.Key].UIElement.DrawOverlay();
         }
     }
 
@@ -1229,32 +1050,35 @@ public class LayoutEngine
 
     public void DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
     {
-        buildingActiveToggles.Add(id);
-        if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
+        bool found = layoutToggles.ContainsKey(id);
+        if (!found)
         {
-            cachedToggle = new Toggle(dataModel.Get(), label, toggleWidth, toggleHeight, null, id, 15, defaultParent);
-            layoutToggles.Add(id, cachedToggle);
-
-            var uiWrapper = new RLToggleUI(cachedToggle);
-            var binder = new BoolToggleBinder();
+            Toggle cachedToggle = new Toggle(dataModel.Get(), label, toggleWidth, toggleHeight, null, id, 15, defaultParent);
+            RLToggleUI uiWrapper = new RLToggleUI(cachedToggle);
+            BoolToggleBinder binder = new BoolToggleBinder();
             binder.Bind(dataModel, uiWrapper);
-            layoutToggleBinders.Add(id, binder);
+
+            ElementInfo<Toggle> elem = new ElementInfo<Toggle>(cachedToggle, binder);
+            layoutToggles.Add(id, elem);
         }
         else
         {
-            cachedToggle.Label = label;
-            if (layoutToggleBinders.TryGetValue(id, out var binder))
+            layoutToggles[id].UIElement.Label = label;
+            if (layoutToggles[id].DataBinder is BoolToggleBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLToggleUI)binder.GetBoundUIObject()!);
+                    if (binder.GetBoundUIObject() is RLToggleUI uiTarget)
+                        binder.Bind(dataModel, uiTarget);
                 }
             }
         }
 
-        cachedToggle.RelativePosition = new Vector2(posX, posY);
-        cachedToggle.Render();
+        layoutToggles[id] = layoutToggles[id].Activate();
+
+        layoutToggles[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutToggles[id].UIElement.Render();
     }
 
     public void BindableToggle(int id, BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
@@ -1267,31 +1091,34 @@ public class LayoutEngine
 
     public void DrawBindableInputFieldStringAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
     {
-        buildingActiveInputFields.Add(id);
-        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        bool found = layoutInputFields.ContainsKey(id);
+        if (!found)
         {
-            cachedField = new InputField(placeholderText, dataModel.Get(), posX, posY, width, height, null, null, 15, false, defaultParent);
-            layoutInputFields.Add(id, cachedField);
-
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_String(cachedField);
-            var binder = new RaylibNodeLibrary.DataBinding.StringInputBinder();
+            InputField cachedField = new InputField(placeholderText, dataModel.Get(), posX, posY, width, height, null, null, 15, false, defaultParent);
+            RLInputFieldUI_String uiWrapper = new RLInputFieldUI_String(cachedField);
+            StringInputBinder binder = new StringInputBinder();
             binder.Bind(dataModel, uiWrapper);
-            layoutInputFieldStringBinders.Add(id, binder);
+
+            ElementInfo<InputField> elem = new ElementInfo<InputField>(cachedField, binder);
+            layoutInputFields.Add(id, elem);
         }
         else
         {
-            if (layoutInputFieldStringBinders.TryGetValue(id, out var binder))
+            if (layoutInputFields[id].DataBinder is StringInputBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_String)binder.GetBoundUIObject()!);
+                    if (binder.GetBoundUIObject() is RLInputFieldUI_String uiTarget)
+                        binder.Bind(dataModel, uiTarget);
                 }
             }
         }
 
-        cachedField.RelativePosition = new Vector2(posX, posY);
-        cachedField.Render();
+        layoutInputFields[id] = layoutInputFields[id].Activate();
+
+        layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutInputFields[id].UIElement.Render();
     }
 
     public void BindableInputFieldString(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
@@ -1304,31 +1131,34 @@ public class LayoutEngine
 
     public void DrawBindableInputFieldIntAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
-        buildingActiveInputFields.Add(id);
-        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        bool found = layoutInputFields.ContainsKey(id);
+        if (!found)
         {
-            cachedField = new InputField(placeholderText, dataModel.Get().ToString(), posX, posY, width, height, null, null, 15, false, defaultParent);
-            layoutInputFields.Add(id, cachedField);
-
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_Int(cachedField);
-            var binder = new RaylibNodeLibrary.DataBinding.IntInputBinder();
+            InputField cachedField = new InputField(placeholderText, dataModel.Get().ToString(), posX, posY, width, height, null, null, 15, false, defaultParent);
+            RLInputFieldUI_Int uiWrapper = new RLInputFieldUI_Int(cachedField);
+            IntInputBinder binder = new IntInputBinder();
             binder.Bind(dataModel, uiWrapper);
-            layoutInputFieldIntBinders.Add(id, binder);
+
+            ElementInfo<InputField> elem = new ElementInfo<InputField>(cachedField, binder);
+            layoutInputFields.Add(id, elem);
         }
         else
         {
-            if (layoutInputFieldIntBinders.TryGetValue(id, out var binder))
+            if (layoutInputFields[id].DataBinder is IntInputBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_Int)binder.GetBoundUIObject()!);
+                    if (binder.GetBoundUIObject() is RLInputFieldUI_Int uiTarget)
+                        binder.Bind(dataModel, uiTarget);
                 }
             }
         }
 
-        cachedField.RelativePosition = new Vector2(posX, posY);
-        cachedField.Render();
+        layoutInputFields[id] = layoutInputFields[id].Activate();
+
+        layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutInputFields[id].UIElement.Render();
     }
 
     public void BindableInputFieldInt(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
@@ -1341,31 +1171,34 @@ public class LayoutEngine
 
     public void DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
     {
-        buildingActiveInputFields.Add(id);
-        if (!layoutInputFields.TryGetValue(id, out InputField? cachedField))
+        bool found = layoutInputFields.ContainsKey(id);
+        if (!found)
         {
-            cachedField = new InputField(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), posX, posY, width, height, null, null, 15, false, defaultParent);
-            layoutInputFields.Add(id, cachedField);
-
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLInputFieldUI_Float(cachedField);
-            var binder = new RaylibNodeLibrary.DataBinding.FloatInputBinder();
+            InputField cachedField = new InputField(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), posX, posY, width, height, null, null, 15, false, defaultParent);
+            RLInputFieldUI_Float uiWrapper = new RLInputFieldUI_Float(cachedField);
+            FloatInputBinder binder = new FloatInputBinder();
             binder.Bind(dataModel, uiWrapper);
-            layoutInputFieldFloatBinders.Add(id, binder);
+
+            ElementInfo<InputField> elem = new ElementInfo<InputField>(cachedField, binder);
+            layoutInputFields.Add(id, elem);
         }
         else
         {
-            if (layoutInputFieldFloatBinders.TryGetValue(id, out var binder))
+            if (layoutInputFields[id].DataBinder is FloatInputBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLInputFieldUI_Float)binder.GetBoundUIObject()!);
+                    if (binder.GetBoundUIObject() is RLInputFieldUI_Float uiTarget)
+                        binder.Bind(dataModel, uiTarget);
                 }
             }
         }
 
-        cachedField.RelativePosition = new Vector2(posX, posY);
-        cachedField.Render();
+        layoutInputFields[id] = layoutInputFields[id].Activate();
+
+        layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutInputFields[id].UIElement.Render();
     }
 
     public void BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
@@ -1427,31 +1260,34 @@ public class LayoutEngine
 
     public void DrawBindableDropdownAbsolute(int id, string[] options, BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
-        buildingActiveDropdowns.Add(id);
-        if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
+        bool found = layoutDropdowns.ContainsKey(id);
+        if (!found)
         {
-            cachedDropdown = new Dropdown(options, dataModel.Get(), posX, posY, width, height, null, id, 15, defaultParent);
-            layoutDropdowns.Add(id, cachedDropdown);
-
-            var uiWrapper = new RLDropdownUI(cachedDropdown);
-            var binder = new IntDropdownBinder();
+            Dropdown cachedDropdown = new Dropdown(options, dataModel.Get(), posX, posY, width, height, null, id, 15, defaultParent);
+            RLDropdownUI uiWrapper = new RLDropdownUI(cachedDropdown);
+            IntDropdownBinder binder = new IntDropdownBinder();
             binder.Bind(dataModel, uiWrapper);
-            layoutDropdownBinders.Add(id, binder);
+
+            ElementInfo<Dropdown> elem = new ElementInfo<Dropdown>(cachedDropdown, binder);
+            layoutDropdowns.Add(id, elem);
         }
         else
         {
-            if (layoutDropdownBinders.TryGetValue(id, out var binder))
+            if (layoutDropdowns[id].DataBinder is IntDropdownBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RLDropdownUI)binder.GetBoundUIObject()!);
+                    if (binder.GetBoundUIObject() is RLDropdownUI uiTarget)
+                        binder.Bind(dataModel, uiTarget);
                 }
             }
         }
 
-        cachedDropdown.RelativePosition = new Vector2(posX, posY);
-        cachedDropdown.Render();
+        layoutDropdowns[id] = layoutDropdowns[id].Activate();
+
+        layoutDropdowns[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutDropdowns[id].UIElement.Render();
     }
 
     public void BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)

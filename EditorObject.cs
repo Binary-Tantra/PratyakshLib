@@ -33,6 +33,18 @@ public abstract class EditorObject : Drawable, IInteractable
             return null;
 
         Vector2 mousePos = InteractionUseWorldPos() ? mouseWorldPosition : mouseScreenPosition;
+
+        Drawable? ancestor = Parent;
+        while (ancestor != null)
+        {
+            if (ancestor is IClippable clippable)
+            {
+                if (!Raylib.CheckCollisionPointRec(mousePos, clippable.GetScissorRect()))
+                    return null;
+            }
+            ancestor = ancestor.Parent;
+        }
+
         if (Raylib.CheckCollisionPointRec(mousePos, GetInteractableRect()))
             result = this;
 

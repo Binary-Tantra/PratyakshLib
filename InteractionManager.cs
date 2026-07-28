@@ -8,6 +8,11 @@ public interface IInteractable
     public Rectangle GetInteractableRect();
 }
 
+public interface IClippable
+{
+    public Rectangle GetScissorRect();
+}
+
 public enum InputDevice
 {
     Mouse, Keyboard, Other
@@ -235,11 +240,15 @@ public static class InteractionManager
                 {
                     if (handler.OnMouseDown(eventData))
                         return true;
+                    else
+                        checkCompleted = false;
                 }
                 else if (pointerEventType == PointerEventType.Up)
                 {
                     if (handler.OnMouseUp(eventData))
                         return true;
+                    else
+                        checkCompleted = false;
                 }
                 else checkCompleted = false;
             }

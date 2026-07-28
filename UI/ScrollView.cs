@@ -1,9 +1,9 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
-public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable
+public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, IClippable
 {
     private Vector2 scrollOffset;
     private Vector2 contentSize;
@@ -73,7 +73,8 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable
             float thumbY = Position.Y + (viewSize.Y - thumbHeight) * scrollRatio;
 
             Rectangle thumb = new Rectangle(Position.X + viewSize.X - scrollbarWidth + 2, thumbY + 2, scrollbarWidth - 4, thumbHeight - 4);
-            Color thumbColor = isScrollBarDragging ? new Color(120, 120, 120, 255) : (hovered ? new Color(100, 100, 100, 255) : new Color(80, 80, 80, 255));
+            bool isHoveringTrack = Raylib.CheckCollisionPointRec(InteractionManager.InputContext.mouseScreenPosition, track);
+            Color thumbColor = isScrollBarDragging ? new Color(120, 120, 120, 255) : ((hovered && isHoveringTrack) ? new Color(100, 100, 100, 255) : new Color(80, 80, 80, 255));
 
             Raylib.DrawRectangleRounded(thumb, 0.5f, 4, thumbColor);
         }
