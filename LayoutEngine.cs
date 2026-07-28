@@ -207,13 +207,6 @@ public class LayoutEngine
     public void RemoveLayoutStatusBadge(int id) => DeleteElement(id, layoutStatusBadges);
     public void RemoveLayoutAlertBanner(int id) => DeleteElement(id, layoutAlertBanners);
 
-    public InputField? GetInputField(int id)
-    {
-        if (layoutInputFields.TryGetValue(id, out var info))
-            return info.UIElement;
-        return null;
-    }
-
     public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         Drawable? hit = HitTestActiveElements(layoutAlertBanners, mouseScreenPosition, mouseWorldPosition);
@@ -431,47 +424,51 @@ public class LayoutEngine
             DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
     }
 
-    private void DrawButtonAbsolute(Button button, int posX, int posY)
+    private Button DrawButtonAbsolute(Button button, int posX, int posY)
     {
-        bool found = layoutButtons.TryGetValue(button.Id, out ElementInfo<Button> cachedButton);
+        int id = button.Id;
+        bool found = layoutButtons.ContainsKey(id);
 
         if (!found)
         {
-            cachedButton = new ElementInfo<Button>(button, null);
-            layoutButtons.Add(button.Id, cachedButton);
-        }
-
-        layoutButtons[button.Id] = layoutButtons[button.Id].Activate();
-
-        cachedButton.UIElement.RelativePosition = new Vector2(posX, posY);
-        cachedButton.UIElement.Render();
-    }
-
-    private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color? fillColor = null, Color? borderColor = null, Color? textColor = null)
-    {
-        bool found = layoutButtons.TryGetValue(id, out ElementInfo<Button> cachedButton);
-
-        if (!found)
-        {
-            Button b = new(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
-            cachedButton = new ElementInfo<Button>(b, null);
-            layoutButtons.Add(id, cachedButton);
-        }
-        else
-        {
-            cachedButton.UIElement.ButtonText = buttonText;
-            if (fillColor.HasValue) cachedButton.UIElement.FillColor = fillColor;
-            if (borderColor.HasValue) cachedButton.UIElement.BorderColor = borderColor;
-            if (textColor.HasValue) cachedButton.UIElement.TextColor = textColor;
+            ElementInfo<Button> elem = new(button, null);
+            layoutButtons.Add(id, elem);
         }
 
         layoutButtons[id] = layoutButtons[id].Activate();
 
-        cachedButton.UIElement.RelativePosition = new Vector2(posX, posY);
-        cachedButton.UIElement.Render();
+        layoutButtons[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutButtons[id].UIElement.Render();
+
+        return layoutButtons[id].UIElement;
     }
 
-    private void DrawSelectableAbsolute(Selectable selectable, int posX, int posY)
+    private Button DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color? fillColor = null, Color? borderColor = null, Color? textColor = null)
+    {
+        bool found = layoutButtons.ContainsKey(id);
+
+        if (!found)
+        {
+            Button b = new(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+            ElementInfo<Button>  elem = new(b, null);
+            layoutButtons.Add(id, elem);
+        }
+        else
+        {
+            layoutButtons[id].UIElement.ButtonText = buttonText;
+            if (fillColor.HasValue) layoutButtons[id].UIElement.FillColor = fillColor;
+            if (borderColor.HasValue) layoutButtons[id].UIElement.BorderColor = borderColor;
+            if (textColor.HasValue) layoutButtons[id].UIElement.TextColor = textColor;
+        }
+
+        layoutButtons[id] = layoutButtons[id].Activate();
+
+        layoutButtons[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutButtons[id].UIElement.Render();
+        return layoutButtons[id].UIElement;
+    }
+
+    private Selectable DrawSelectableAbsolute(Selectable selectable, int posX, int posY)
     {
         int id = selectable.Id;
         bool found = layoutSelectables.ContainsKey(id);
@@ -486,6 +483,7 @@ public class LayoutEngine
 
         layoutSelectables[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutSelectables[id].UIElement.Render();
+        return layoutSelectables[id].UIElement;
     }
 
     private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
@@ -517,9 +515,10 @@ public class LayoutEngine
         return layoutSelectables[id].UIElement;
     }
 
-    private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
+    private InputField DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
     {
         bool found = layoutInputFields.ContainsKey(id);
+
         if (!found)
         {
             InputField cachedInputField = new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
@@ -542,9 +541,10 @@ public class LayoutEngine
 
         layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutInputFields[id].UIElement.Render();
+        return layoutInputFields[id].UIElement;
     }
 
-    private void DrawToggleAbsolute(int id, bool toggleValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
+    private Toggle DrawToggleAbsolute(int id, bool toggleValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
         bool found = layoutToggles.ContainsKey(id);
         if (!found)
@@ -564,6 +564,7 @@ public class LayoutEngine
 
         layoutToggles[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutToggles[id].UIElement.Render();
+        return layoutToggles[id].UIElement;
     }
 
     private Dropdown DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
@@ -733,48 +734,52 @@ public class LayoutEngine
         if (updateLayout) DrawAny(width, heigth);
     }
 
-    public void Button(Button button, bool updateLayout = true)
+    public Button Button(Button button, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawButtonAbsolute(button, (int)pos.X, (int)pos.Y);
+        Button b = DrawButtonAbsolute(button, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny((int)button.Width, (int)button.Height);
+        return b;
     }
 
-    public void Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, bool updateLayout = true)
+    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true);
+        Button b = DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true);
         if (updateLayout) DrawAny(buttonWidth, buttonHeight);
+        return b;
     }
 
-    public void Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Color? fillColor, Color? borderColor = null, Color? textColor = null, bool updateLayout = true)
+    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Color? fillColor, Color? borderColor = null, Color? textColor = null, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true, fillColor, borderColor, textColor);
+        Button b = DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true, fillColor, borderColor, textColor);
         if (updateLayout) DrawAny(buttonWidth, buttonHeight);
+        return b;
     }
 
-    public void Selectable(Selectable selectable, bool updateLayout = true)
+    public Selectable Selectable(Selectable selectable, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawSelectableAbsolute(selectable, (int)pos.X, (int)pos.Y);
+        Selectable sel = DrawSelectableAbsolute(selectable, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny(selectable.Width, selectable.Height);
+        return sel;
     }
 
     public Selectable Selectable(int id, bool isSelected, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, bool updateLayout = true)
@@ -790,26 +795,28 @@ public class LayoutEngine
         return selectable;
     }
 
-    public void InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool isMasked = false, bool updateLayout = true)
+    public InputField InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool isMasked = false, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15, isMasked);
+        InputField field = DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15, isMasked);
         if (updateLayout) DrawAny(inputFieldWidth, inputFieldHeight);
+        return field;
     }
 
-    public void Toggle(int id, bool toggleValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
+    public Toggle Toggle(int id, bool toggleValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        DrawToggleAbsolute(id, toggleValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        Toggle toggle = DrawToggleAbsolute(id, toggleValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
+        return toggle;
     }
 
     public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, bool updateLayout = true)
@@ -934,7 +941,7 @@ public class LayoutEngine
     }
 
     // Add the spacing parameter to the method signature
-    public void BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
+    public ScrollView BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
     {
         bool found = layoutScrollViews.ContainsKey(id);
         if (!found)
@@ -995,6 +1002,7 @@ public class LayoutEngine
         parentStack.Push(defaultParent);
         defaultParent = svc;
         activeScrollViews.Push(id);
+        return svc;
     }
 
     public void EndScrollView()
@@ -1048,7 +1056,7 @@ public class LayoutEngine
 
     // ==================== BINDABLE DRAWING METHODS ====================
 
-    public void DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
+    public Toggle DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
     {
         bool found = layoutToggles.ContainsKey(id);
         if (!found)
@@ -1079,17 +1087,19 @@ public class LayoutEngine
 
         layoutToggles[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutToggles[id].UIElement.Render();
+        return layoutToggles[id].UIElement;
     }
 
-    public void BindableToggle(int id, BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
+    public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
-        DrawBindableToggleAbsolute(id, dataModel, label, (int)pos.X, (int)pos.Y, width, height);
+        Toggle toggle = DrawBindableToggleAbsolute(id, dataModel, label, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return toggle;
     }
 
-    public void DrawBindableInputFieldStringAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldStringAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)
@@ -1119,17 +1129,19 @@ public class LayoutEngine
 
         layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutInputFields[id].UIElement.Render();
+        return layoutInputFields[id].UIElement;
     }
 
-    public void BindableInputFieldString(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
+    public InputField BindableInputFieldString(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
-        DrawBindableInputFieldStringAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        InputField field = DrawBindableInputFieldStringAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return field;
     }
 
-    public void DrawBindableInputFieldIntAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldIntAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)
@@ -1159,17 +1171,19 @@ public class LayoutEngine
 
         layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutInputFields[id].UIElement.Render();
+        return layoutInputFields[id].UIElement;
     }
 
-    public void BindableInputFieldInt(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    public InputField BindableInputFieldInt(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
-        DrawBindableInputFieldIntAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        InputField field = DrawBindableInputFieldIntAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return field;
     }
 
-    public void DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)
@@ -1199,17 +1213,19 @@ public class LayoutEngine
 
         layoutInputFields[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutInputFields[id].UIElement.Render();
+        return layoutInputFields[id].UIElement;
     }
 
-    public void BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
+    public InputField BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
-        DrawBindableInputFieldFloatAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        InputField field = DrawBindableInputFieldFloatAbsolute(id, placeholderText, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return field;
     }
 
-    public void DrawBindableSelectableAbsolute(int id, BindableValueBase<bool> valueTarget, string selectableText, int posX, int posY, int width, int height)
+    public Selectable DrawBindableSelectableAbsolute(int id, BindableValueBase<bool> valueTarget, string selectableText, int posX, int posY, int width, int height)
     {
         bool found = layoutSelectables.ContainsKey(id);
 
@@ -1245,20 +1261,22 @@ public class LayoutEngine
 
         layoutSelectables[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutSelectables[id].UIElement.Render();
+        return layoutSelectables[id].UIElement;
     }
 
-    public void BindableSelectable(int id, BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
+    public Selectable BindableSelectable(int id, BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         
         if (defaultParent != null)
             pos -= defaultParent.Position;
 
-        DrawBindableSelectableAbsolute(id, dataModel, selectableText, (int)pos.X, (int)pos.Y, width, height);
+        Selectable sel = DrawBindableSelectableAbsolute(id, dataModel, selectableText, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return sel;
     }
 
-    public void DrawBindableDropdownAbsolute(int id, string[] options, BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    public Dropdown DrawBindableDropdownAbsolute(int id, string[] options, BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutDropdowns.ContainsKey(id);
         if (!found)
@@ -1288,13 +1306,15 @@ public class LayoutEngine
 
         layoutDropdowns[id].UIElement.RelativePosition = new Vector2(posX, posY);
         layoutDropdowns[id].UIElement.Render();
+        return layoutDropdowns[id].UIElement;
     }
 
-    public void BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    public Dropdown BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
-        DrawBindableDropdownAbsolute(id, options, dataModel, (int)pos.X, (int)pos.Y, width, height);
+        Dropdown dropdown = DrawBindableDropdownAbsolute(id, options, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
+        return dropdown;
     }
 }

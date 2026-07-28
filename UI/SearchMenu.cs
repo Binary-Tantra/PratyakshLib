@@ -29,19 +29,15 @@ public class SearchMenu : UILayoutBase
         layout.SectionEx("", layoutWidth, layoutHeight, new Color(), new Color((byte)45, (byte)45, (byte)45, (byte)255), new Color(), 0.0f, false);
 
         // Search Input Field
-        layout.InputField(searchInputId, "Search...", searchQuery, layoutWidth, 30, (inputField) =>
+        InputField inputField = layout.InputField(searchInputId, "Search...", searchQuery, layoutWidth, 30, (field) =>
         {
-            searchQuery = inputField.InputFieldText;
+            searchQuery = field.InputFieldText;
         });
 
         if (firstFrame)
         {
-            InputField? inputField = layout.GetInputField(searchInputId);
-            if (inputField != null)
-            {
-                inputField.SetFocus();
-                firstFrame = false;
-            }
+            inputField.SetFocus();
+            firstFrame = false;
         }
 
         layout.BeginHorizontal(0);
