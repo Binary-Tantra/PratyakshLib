@@ -1,8 +1,12 @@
-using System;
-
 namespace RaylibNodeLibrary.DataBinding;
 
-public abstract class BinderBase<T>
+public abstract class BinderBase
+{
+    public abstract void Bind(bool unbindCheck = true);
+    public abstract void Unbind();
+}
+
+public abstract class BinderBase<T> : BinderBase
 {
     protected bool isBound = false;
     public bool IsBound => isBound;
@@ -23,12 +27,21 @@ public class Binder<BindValueTarget, BindUITarget, BindValueType> : BinderBase<B
     public override BindableValueBase<BindValueType>? GetBoundValObject() => bindValueTarget;
     public override BindableUIBase<BindValueType>? GetBoundUIObject() => bindUITarget;
 
-    public virtual void Bind(BindValueTarget valTarget, BindUITarget uiTarget)
+    public void SetBindTargets(BindValueTarget valTarget, BindUITarget uiTarget)
     {
-        if (isBound) Unbind();
-
         bindValueTarget = valTarget;
         bindUITarget = uiTarget;
+    }
+
+    public override void Bind(bool unbindCheck = true)
+    {
+        if (unbindCheck && isBound) Unbind();
+
+        if (bindValueTarget == null || bindUITarget == null)
+        {
+            Console.WriteLine($"Invalid binding targets: ValueTarget: {bindValueTarget}, UITarget: {bindUITarget}");
+            return;
+        }
 
         bindValueTarget.SetBinder(this);
         bindUITarget.SetBinder(this);
@@ -41,7 +54,15 @@ public class Binder<BindValueTarget, BindUITarget, BindValueType> : BinderBase<B
         isBound = true;
     }
 
-    public virtual void Unbind()
+    public virtual void Bind(BindValueTarget valTarget, BindUITarget uiTarget)
+    {
+        if (isBound) Unbind();
+
+        SetBindTargets(valTarget, uiTarget);
+        Bind(false);
+    }
+
+    public override void Unbind()
     {
         if (!isBound) return;
 
@@ -54,27 +75,34 @@ public class Binder<BindValueTarget, BindUITarget, BindValueType> : BinderBase<B
         isBound = false;
 
         bindUITarget?.SetDefaultNoNotify();
-
-        bindValueTarget = null;
-        bindUITarget = null;
     }
 
     public override void NotifyBoundValOfChange(BindValueType newVal)
     {
-        if (!isBound || bindValueTarget == null) return;
-        bindValueTarget.Set(newVal, false);
-        bindValueTarget.onBoundUIChange?.Invoke(newVal);
+        if (!isBound)
+        {
+            Console.WriteLine("Tried to set bound value...but not bound! Bound value was: " + newVal + " of type " + typeof(BindValueType) + " in " + GetType() + " " + this);
+            return;
+        }
+
+        bindValueTarget?.Set(newVal, false);
+        bindValueTarget?.onBoundUIChange?.Invoke(newVal);
     }
 
     public override void NotifyBoundUIOfChange(BindValueType newVal)
     {
-        if (!isBound || bindUITarget == null) return;
-        bindUITarget.Set(newVal, false);
-        bindUITarget.onBoundValueChange?.Invoke(newVal);
+        if (!isBound)
+        {
+            Console.WriteLine("Tried to set bound value...but not bound! Bound value was: " + newVal + " of type " + typeof(BindValueType) + " in " + GetType() + " " + this);
+            return;
+        }
+
+        bindUITarget?.Set(newVal, false);
+        bindUITarget?.onBoundValueChange?.Invoke(newVal);
     }
 
     public override string ToString()
     {
-        return $"{GetType().Name} ({bindValueTarget}, {bindUITarget})";
+        return base.ToString() + " (" + bindValueTarget + ", " + bindUITarget + ")";
     }
 }

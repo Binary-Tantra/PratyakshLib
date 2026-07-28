@@ -2,10 +2,10 @@ using System.Numerics;
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
-using RaylibNodeLibrary;
-using RaylibNodeLibrary.UI;
+using RaylibNodeLibrary.DataBinding;
+using System.Runtime.CompilerServices;
 
-namespace LibLayoutEngine;
+namespace RaylibNodeLibrary.UI;
 
 public enum LayoutOpType
 {
@@ -20,6 +20,31 @@ public struct LayoutOperation
     public int PosModifiedCount { get; set; }
 }
 
+public struct ElementInfo<UIType> where UIType : UIBase
+{
+    public UIType UIElement { get; set; }
+    public bool IsActiveThisFrame { get; set; }
+    public BinderBase? DataBinder { get; set; }
+
+    public ElementInfo(UIType uiElement, BinderBase? dataBinder)
+    {
+        UIElement = uiElement;
+        DataBinder = dataBinder;
+    }
+
+    public ElementInfo<UIType> Activate()
+    {
+        IsActiveThisFrame = true;
+        return this;
+    }
+
+    public ElementInfo<UIType> Deactivate()
+    {
+        IsActiveThisFrame = false;
+        return this;
+    }
+}
+
 public class LayoutEngine
 {
     private LayoutOperation[] layoutOps = new LayoutOperation[20];
@@ -30,8 +55,8 @@ public class LayoutEngine
 
     private static Font textFont;
 
-    private Dictionary<int, Button> layoutButtons = [];
-    private Dictionary<int, Selectable> layoutSelectables = [];
+    private Dictionary<int, ElementInfo<Button>> layoutButtons = [];
+    private Dictionary<int, ElementInfo<Selectable>> layoutSelectables = [];
     private Dictionary<int, InputField> layoutInputFields = [];
     private Dictionary<int, Toggle> layoutToggles = [];
     private Dictionary<int, ScrollView> layoutScrollViews = [];
@@ -41,16 +66,13 @@ public class LayoutEngine
     private Dictionary<int, StatusBadge> layoutStatusBadges = [];
     private Dictionary<int, AlertBanner> layoutAlertBanners = [];
 
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.BoolToggleBinder> layoutToggleBinders = [];
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.StringInputBinder> layoutInputFieldStringBinders = [];
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.IntInputBinder> layoutInputFieldIntBinders = [];
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.FloatInputBinder> layoutInputFieldFloatBinders = [];
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.BoolSelectableBinder> layoutSelectableBinders = [];
-    private Dictionary<int, RaylibNodeLibrary.DataBinding.IntDropdownBinder> layoutDropdownBinders = [];
+    private Dictionary<int, BoolToggleBinder> layoutToggleBinders = [];
+    private Dictionary<int, StringInputBinder> layoutInputFieldStringBinders = [];
+    private Dictionary<int, IntInputBinder> layoutInputFieldIntBinders = [];
+    private Dictionary<int, FloatInputBinder> layoutInputFieldFloatBinders = [];
+    private Dictionary<int, IntDropdownBinder> layoutDropdownBinders = [];
 
     private HashSet<int> activeInputFields = [];
-    private HashSet<int> activeButtons = [];
-    private HashSet<int> activeSelectables = [];
     private HashSet<int> activeToggles = [];
     private HashSet<int> activeScrollViewSet = [];
     private HashSet<int> activeDropdowns = [];
@@ -60,8 +82,6 @@ public class LayoutEngine
     private HashSet<int> activeAlertBanners = [];
 
     private HashSet<int> buildingActiveInputFields = [];
-    private HashSet<int> buildingActiveButtons = [];
-    private HashSet<int> buildingActiveSelectables = [];
     private HashSet<int> buildingActiveToggles = [];
     private HashSet<int> buildingActiveScrollViewSet = [];
     private HashSet<int> buildingActiveDropdowns = [];
@@ -70,11 +90,66 @@ public class LayoutEngine
     private HashSet<int> buildingActiveStatusBadges = [];
     private HashSet<int> buildingActiveAlertBanners = [];
 
+    private Stack<EditorObject?> parentStack = new();
+    private Stack<int> activeScrollViews = new();
+
+    EditorObject? defaultParent = null;
+
+    private static void ActivateElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
+    {
+        foreach (var kvp in targetDict)
+            targetDict[kvp.Key] = targetDict[kvp.Key].Activate();
+    }
+
+    private static void DeactivateElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
+    {
+        foreach (var kvp in targetDict)
+            targetDict[kvp.Key] = targetDict[kvp.Key].Deactivate();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void DeleteElement<T>(int id, Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
+    {
+        targetDict[id].DataBinder?.Unbind();
+        targetDict[id].UIElement.Delete();
+        targetDict.Remove(id);
+    }
+
+    private static void DeleteElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
+    {
+        foreach (var kvp in targetDict)
+        {
+            targetDict[kvp.Key].DataBinder?.Unbind();
+            targetDict[kvp.Key].UIElement.Delete();
+        }
+
+        targetDict.Clear();
+    }
+
+    private static void UpdateActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
+    {
+        foreach (var kvp in targetDict)
+        {
+            if (targetDict[kvp.Key].IsActiveThisFrame)
+                targetDict[kvp.Key].UIElement.Update();
+        }
+    }
+
+    private static void HitTestActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
+    {
+        foreach (var kvp in targetDict)
+        {
+            if (targetDict[kvp.Key].IsActiveThisFrame)
+                targetDict[kvp.Key].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
+        }
+    }
+
     public void BeginFrame()
     {
+        DeactivateElements(layoutButtons);
+        DeactivateElements(layoutSelectables);
+        
         buildingActiveInputFields.Clear();
-        buildingActiveButtons.Clear();
-        buildingActiveSelectables.Clear();
         buildingActiveToggles.Clear();
         buildingActiveScrollViewSet.Clear();
         buildingActiveDropdowns.Clear();
@@ -95,8 +170,6 @@ public class LayoutEngine
         }
 
         activeInputFields = [.. buildingActiveInputFields];
-        activeButtons = [.. buildingActiveButtons];
-        activeSelectables = [.. buildingActiveSelectables];
         activeToggles = [.. buildingActiveToggles];
         activeScrollViewSet = [.. buildingActiveScrollViewSet];
         activeDropdowns = [.. buildingActiveDropdowns];
@@ -105,11 +178,6 @@ public class LayoutEngine
         activeStatusBadges = [.. buildingActiveStatusBadges];
         activeAlertBanners = [.. buildingActiveAlertBanners];
     }
-
-    private Stack<EditorObject?> parentStack = new();
-    private Stack<int> activeScrollViews = new();
-
-    EditorObject? defaultParent = null;
 
     public static void InitSLEDefaultFont(Font font)
     {
@@ -139,27 +207,16 @@ public class LayoutEngine
         foreach (var b in layoutInputFieldFloatBinders.Values) b.Unbind();
         layoutInputFieldFloatBinders.Clear();
 
-        foreach (var b in layoutSelectableBinders.Values) b.Unbind();
-        layoutSelectableBinders.Clear();
 
         foreach (var b in layoutDropdownBinders.Values) b.Unbind();
         layoutDropdownBinders.Clear();
 
-        List<Button> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
-        
-        for (int i = 0; i < lbs.Count; i++)
-            lbs[i].Delete();
+        foreach (var kvp in layoutButtons)
+            layoutButtons[kvp.Key].UIElement.Delete();
 
         layoutButtons.Clear();
 
-
-        List<Selectable> lss = [.. layoutSelectables.Select((kvp) => kvp.Value)];
-
-        for (int i = 0; i < lss.Count; i++)
-            lss[i].Delete();
-
-        layoutSelectables.Clear();
-
+        DeleteElements(layoutSelectables);
 
         List<InputField> lifs = [.. layoutInputFields.Select((kvp) => kvp.Value)];
 
@@ -219,13 +276,8 @@ public class LayoutEngine
 
     public void UpdateLayoutElements()
     {
-        List<Button> lbs = [.. layoutButtons.Where(kvp => activeButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lbs.Count; i++)
-            lbs[i].Update();
-
-        List<Selectable> lss = [.. layoutSelectables.Where(kvp => activeSelectables.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = 0; i < lss.Count; i++)
-            lss[i].Update();
+        UpdateActiveElements(layoutButtons);
+        UpdateActiveElements(layoutSelectables);
 
         List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = 0; i < lifs.Count; i++)
@@ -262,17 +314,12 @@ public class LayoutEngine
 
     public void RemoveLayoutButton(int id)
     {
-        _ = layoutButtons.Remove(id);
+        DeleteElement(id, layoutButtons);
     }
 
     public void RemoveLayoutSelectable(int id)
     {
-        if (layoutSelectableBinders.TryGetValue(id, out var binder))
-        {
-            binder.Unbind();
-            layoutSelectableBinders.Remove(id);
-        }
-        _ = layoutSelectables.Remove(id);
+        DeleteElement(id, layoutSelectables);
     }
 
     public void RemoveLayoutInputField(int id)
@@ -371,19 +418,14 @@ public class LayoutEngine
             if (hit != null) return hit;
         }
 
-        List<Button> lbs = [.. layoutButtons.Where(kvp => activeButtons.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
+        List<ElementInfo<Button>> lbs = [.. layoutButtons.Select((kvp) => kvp.Value)];
         for (int i = lbs.Count - 1; i >= 0; i--)
         {
-            var hit = lbs[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            var hit = lbs[i].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        List<Selectable> lss = [.. layoutSelectables.Where(kvp => activeSelectables.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
-        for (int i = lss.Count - 1; i >= 0; i--)
-        {
-            var hit = lss[i].HitTest(mouseScreenPosition, mouseWorldPosition);
-            if (hit != null) return hit;
-        }
+        HitTestActiveElements(layoutButtons, mouseScreenPosition, mouseWorldPosition);
 
         List<InputField> lifs = [.. layoutInputFields.Where(kvp => activeInputFields.Contains(kvp.Key)).Select((kvp) => kvp.Value)];
         for (int i = lifs.Count - 1; i >= 0; i--)
@@ -596,73 +638,88 @@ public class LayoutEngine
 
     private void DrawButtonAbsolute(Button button, int posX, int posY)
     {
-        buildingActiveButtons.Add(button.Id);
-        if (!layoutButtons.TryGetValue(button.Id, out Button? cachedButton))
+        bool found = layoutButtons.TryGetValue(button.Id, out ElementInfo<Button> cachedButton);
+
+        if (!found)
         {
-            cachedButton = button;
+            cachedButton = new ElementInfo<Button>(button, null);
             layoutButtons.Add(button.Id, cachedButton);
         }
 
-        cachedButton.RelativePosition = new Vector2(posX, posY);
-        cachedButton.Render();
+        layoutButtons[button.Id] = layoutButtons[button.Id].Activate();
+
+        cachedButton.UIElement.RelativePosition = new Vector2(posX, posY);
+        cachedButton.UIElement.Render();
     }
 
     private void DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color? fillColor = null, Color? borderColor = null, Color? textColor = null)
     {
-        buildingActiveButtons.Add(id);
-        if (!layoutButtons.TryGetValue(id, out Button? cachedButton))
+        bool found = layoutButtons.TryGetValue(id, out ElementInfo<Button> cachedButton);
+
+        if (!found)
         {
-            cachedButton = new Button(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+            Button b = new(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+            cachedButton = new ElementInfo<Button>(b, null);
             layoutButtons.Add(id, cachedButton);
         }
         else
         {
-            cachedButton.ButtonText = buttonText;
-            if (fillColor.HasValue) cachedButton.FillColor = fillColor;
-            if (borderColor.HasValue) cachedButton.BorderColor = borderColor;
-            if (textColor.HasValue) cachedButton.TextColor = textColor;
+            cachedButton.UIElement.ButtonText = buttonText;
+            if (fillColor.HasValue) cachedButton.UIElement.FillColor = fillColor;
+            if (borderColor.HasValue) cachedButton.UIElement.BorderColor = borderColor;
+            if (textColor.HasValue) cachedButton.UIElement.TextColor = textColor;
         }
 
-        cachedButton.RelativePosition = new Vector2(posX, posY);
-        cachedButton.Render();
+        layoutButtons[id] = layoutButtons[id].Activate();
+
+        cachedButton.UIElement.RelativePosition = new Vector2(posX, posY);
+        cachedButton.UIElement.Render();
     }
 
     private void DrawSelectableAbsolute(Selectable selectable, int posX, int posY)
     {
-        buildingActiveSelectables.Add(selectable.Id);
-        if (!layoutSelectables.TryGetValue(selectable.Id, out Selectable? cachedSelectable))
+        int id = selectable.Id;
+        bool found = layoutSelectables.ContainsKey(id);
+
+        if (!found)
         {
-            cachedSelectable = selectable;
-            layoutSelectables.Add(selectable.Id, cachedSelectable);
+            ElementInfo<Selectable> elem = new(selectable, null);
+            layoutSelectables.Add(id, elem);
         }
 
-        cachedSelectable.RelativePosition = new Vector2(posX, posY);
-        cachedSelectable.Render();
+        layoutSelectables[id] = layoutSelectables[id].Activate();
+
+        layoutSelectables[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutSelectables[id].UIElement.Render();
     }
 
     private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
     {
-        buildingActiveSelectables.Add(id);
-        if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
+        bool found = layoutSelectables.ContainsKey(id);
+
+        if (!found)
         {
-            cachedSelectable = new Selectable(selectableText, isSelected, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
-            layoutSelectables.Add(id, cachedSelectable);
+            Selectable sel = new(selectableText, isSelected, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
+            ElementInfo<Selectable> elem = new(sel, null);
+            layoutSelectables.Add(id, elem);
         }
         else
         {
-            if (isSelected != cachedSelectable.IsSelected)
+            if (isSelected != layoutSelectables[id].UIElement.IsSelected)
             {
-                if (isSelected) cachedSelectable.Select(false);
-                else cachedSelectable.Deselect(false);
+                if (isSelected) layoutSelectables[id].UIElement.Select(false);
+                else layoutSelectables[id].UIElement.Deselect(false);
             }
 
-            cachedSelectable.SelectableText = selectableText;
+            layoutSelectables[id].UIElement.SelectableText = selectableText;
         }
 
-        cachedSelectable.RelativePosition = new Vector2(posX, posY);
-        cachedSelectable.Render();
+        layoutSelectables[id] = layoutSelectables[id].Activate();
 
-        return cachedSelectable;
+        layoutSelectables[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutSelectables[id].UIElement.Render();
+
+        return layoutSelectables[id].UIElement;
     }
 
     private void DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
@@ -1170,7 +1227,7 @@ public class LayoutEngine
 
     // ==================== BINDABLE DRAWING METHODS ====================
 
-    public void DrawBindableToggleAbsolute(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
+    public void DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
     {
         buildingActiveToggles.Add(id);
         if (!layoutToggles.TryGetValue(id, out Toggle? cachedToggle))
@@ -1178,8 +1235,8 @@ public class LayoutEngine
             cachedToggle = new Toggle(dataModel.Get(), label, toggleWidth, toggleHeight, null, id, 15, defaultParent);
             layoutToggles.Add(id, cachedToggle);
 
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLToggleUI(cachedToggle);
-            var binder = new RaylibNodeLibrary.DataBinding.BoolToggleBinder();
+            var uiWrapper = new RLToggleUI(cachedToggle);
+            var binder = new BoolToggleBinder();
             binder.Bind(dataModel, uiWrapper);
             layoutToggleBinders.Add(id, binder);
         }
@@ -1200,7 +1257,7 @@ public class LayoutEngine
         cachedToggle.Render();
     }
 
-    public void BindableToggle(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
+    public void BindableToggle(int id, BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
@@ -1311,7 +1368,7 @@ public class LayoutEngine
         cachedField.Render();
     }
 
-    public void BindableInputFieldFloat(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
+    public void BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
@@ -1319,45 +1376,56 @@ public class LayoutEngine
         if (updateLayout) DrawAny(width, height);
     }
 
-    public void DrawBindableSelectableAbsolute(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string selectableText, int posX, int posY, int width, int height)
+    public void DrawBindableSelectableAbsolute(int id, BindableValueBase<bool> valueTarget, string selectableText, int posX, int posY, int width, int height)
     {
-        buildingActiveSelectables.Add(id);
-        if (!layoutSelectables.TryGetValue(id, out Selectable? cachedSelectable))
-        {
-            cachedSelectable = new Selectable(selectableText, dataModel.Get(), posX, posY, width, height, null, id, 15, Color.Gray, Color.Blue, Color.White, defaultParent);
-            layoutSelectables.Add(id, cachedSelectable);
+        bool found = layoutSelectables.ContainsKey(id);
 
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLSelectableUI(cachedSelectable);
-            var binder = new RaylibNodeLibrary.DataBinding.BoolSelectableBinder();
-            binder.Bind(dataModel, uiWrapper);
-            layoutSelectableBinders.Add(id, binder);
+        if (!found)
+        {
+            Selectable sel = new(selectableText, valueTarget.Get(), posX, posY, width, height, (sel) => { }, id, 15, Color.Gray, Color.Blue, Color.White, defaultParent);
+
+            RLSelectableUI uiTarget = new(sel);
+            BoolSelectableBinder binder = new();
+            binder.Bind(valueTarget, uiTarget);
+
+            ElementInfo<Selectable> elem = new(sel, binder);
+
+            layoutSelectables.Add(id, elem);
         }
         else
         {
-            cachedSelectable.SelectableText = selectableText;
-            if (layoutSelectableBinders.TryGetValue(id, out var binder))
+            layoutSelectables[id].UIElement.SelectableText = selectableText;
+
+            if (layoutSelectables[id].DataBinder is BoolSelectableBinder selBinder)
             {
-                if (binder.GetBoundValObject() != dataModel)
+                if (selBinder.GetBoundValObject() != valueTarget)
                 {
-                    binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLSelectableUI)binder.GetBoundUIObject()!);
+                    selBinder.Unbind();
+
+                    if (selBinder.GetBoundUIObject() is RLSelectableUI uiTarget)
+                        selBinder.Bind(valueTarget, uiTarget);
                 }
             }
         }
 
-        cachedSelectable.RelativePosition = new Vector2(posX, posY);
-        cachedSelectable.Render();
+        layoutSelectables[id] = layoutSelectables[id].Activate();
+
+        layoutSelectables[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutSelectables[id].UIElement.Render();
     }
 
-    public void BindableSelectable(int id, RaylibNodeLibrary.DataBinding.BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
+    public void BindableSelectable(int id, BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
-        if (defaultParent != null) pos -= defaultParent.Position;
+        
+        if (defaultParent != null)
+            pos -= defaultParent.Position;
+
         DrawBindableSelectableAbsolute(id, dataModel, selectableText, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
     }
 
-    public void DrawBindableDropdownAbsolute(int id, string[] options, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    public void DrawBindableDropdownAbsolute(int id, string[] options, BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
         buildingActiveDropdowns.Add(id);
         if (!layoutDropdowns.TryGetValue(id, out Dropdown? cachedDropdown))
@@ -1365,8 +1433,8 @@ public class LayoutEngine
             cachedDropdown = new Dropdown(options, dataModel.Get(), posX, posY, width, height, null, id, 15, defaultParent);
             layoutDropdowns.Add(id, cachedDropdown);
 
-            var uiWrapper = new RaylibNodeLibrary.DataBinding.RLDropdownUI(cachedDropdown);
-            var binder = new RaylibNodeLibrary.DataBinding.IntDropdownBinder();
+            var uiWrapper = new RLDropdownUI(cachedDropdown);
+            var binder = new IntDropdownBinder();
             binder.Bind(dataModel, uiWrapper);
             layoutDropdownBinders.Add(id, binder);
         }
@@ -1377,7 +1445,7 @@ public class LayoutEngine
                 if (binder.GetBoundValObject() != dataModel)
                 {
                     binder.Unbind();
-                    binder.Bind(dataModel, (RaylibNodeLibrary.DataBinding.RLDropdownUI)binder.GetBoundUIObject()!);
+                    binder.Bind(dataModel, (RLDropdownUI)binder.GetBoundUIObject()!);
                 }
             }
         }
@@ -1386,7 +1454,7 @@ public class LayoutEngine
         cachedDropdown.Render();
     }
 
-    public void BindableDropdown(int id, string[] options, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    public void BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
