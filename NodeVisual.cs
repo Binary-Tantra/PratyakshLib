@@ -250,7 +250,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public bool OnDragStart(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         InteractionManager.CapturePointer(this);
@@ -269,7 +269,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         isDragging = false;
@@ -311,8 +311,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public void UIConnectionCanceled(PortVisual source)
     {
-        if (potConnectionStartPortUI != source)
-            Console.WriteLine($"Error: UI Connection started with port {potConnectionStartPortUI} and aborted with {source}!");
+        //if (potConnectionStartPortUI != source)
+            //Console.WriteLine($"Error: UI Connection started with port {potConnectionStartPortUI} and aborted with {source}!");
 
         potConnectionStartPortUI = null;
         CleanupWire();

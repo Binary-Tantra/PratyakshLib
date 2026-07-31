@@ -74,13 +74,13 @@ public class AlertBanner : UIBase, IPointerInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left || isDismissed) return false;
+        if (evt.MouseButton != MouseButton.Left || isDismissed) return false;
         return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left || isDismissed) return false;
+        if (evt.MouseButton != MouseButton.Left || isDismissed) return false;
 
         if (isDismissible)
         {

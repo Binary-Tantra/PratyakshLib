@@ -75,7 +75,7 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.MouseButton != MouseButton.Left) return false;
 
         if (contentSize.Y > Size.Y)
         {
@@ -127,7 +127,7 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (isScrollBarDragging && evt.mouseButton == MouseButton.Left)
+        if (isScrollBarDragging && evt.MouseButton == MouseButton.Left)
         {
             isScrollBarDragging = false;
             InteractionManager.ReleasePointer();

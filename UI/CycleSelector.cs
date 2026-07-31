@@ -125,13 +125,13 @@ public class CycleSelector : UIBase, IPointerInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.MouseButton != MouseButton.Left) return false;
         return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.MouseButton != MouseButton.Left) return false;
 
         if (options.Length > 0)
         {

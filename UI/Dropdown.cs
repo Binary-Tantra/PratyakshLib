@@ -93,7 +93,7 @@ public class Dropdown : UIBase, IPointerInteractable
 
     private void OnClickOff(PointerInteractEventData evt, EditorObject? target)
     {
-        if (IsOpen && evt.mouseButton == MouseButton.Left)
+        if (IsOpen && evt.MouseButton == MouseButton.Left)
         {
             // Close if clicked outside the dropdown header and options
             bool clickedInside = target == this || optionSelectables.Contains(target as Selectable);
@@ -165,14 +165,14 @@ public class Dropdown : UIBase, IPointerInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.MouseButton != MouseButton.Left) return false;
         IsOpen = !IsOpen;
         return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        return evt.mouseButton == MouseButton.Left;
+        return evt.MouseButton == MouseButton.Left;
     }
 
     public void SetOnSelectionChanged(Action<Dropdown> onSelectionChanged)

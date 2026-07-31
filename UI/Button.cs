@@ -96,7 +96,7 @@ public class Button : UIBase, IPointerInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         pressed = true;
@@ -105,7 +105,7 @@ public class Button : UIBase, IPointerInteractable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         onButtonPressed?.Invoke(this);

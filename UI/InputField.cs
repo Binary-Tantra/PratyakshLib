@@ -172,7 +172,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         SetFocus();
@@ -188,7 +188,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         return true;

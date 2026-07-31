@@ -75,7 +75,7 @@ public class VariablePanel : UILayoutBase
 
     private void OnAnyPointerInput(PointerInteractEventData evt, EditorObject? target)
     {
-        if (evt.mouseButton == MouseButton.Left && currentSelected != null)
+        if (evt.MouseButton == MouseButton.Left && currentSelected != null)
         {
             if (target != null)
             {

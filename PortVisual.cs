@@ -173,7 +173,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public bool OnDragStart(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         InteractionManager.CapturePointer(this);

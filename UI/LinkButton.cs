@@ -39,7 +39,7 @@ public class LinkButton : UIBase, IPointerInteractable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         return true;
@@ -47,7 +47,7 @@ public class LinkButton : UIBase, IPointerInteractable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         if (onClick != null)

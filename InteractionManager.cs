@@ -3,21 +3,6 @@ using Raylib_cs;
 
 namespace RaylibNodeLibrary;
 
-public interface IInteractable
-{
-    public Rectangle GetInteractableRect();
-}
-
-public interface IClippable
-{
-    public Rectangle GetScissorRect();
-}
-
-public enum InputDevice
-{
-    Mouse, Keyboard, Other
-}
-
 public class InputContext
 {
     public bool isLMBCurrentlyHeld = false;
@@ -45,16 +30,6 @@ public class InputContext
 
     public bool isCtrlDown = false;
     public bool isShiftDown = false;
-}
-
-// Down: Pointer Down.
-// Up: Both pointer up and drag end.
-// Double click: ...double click...
-// DragStart: When drag is started. Different from pointer up so that deferred detect if input was drag or click and we dont set pointer down to objects who have not subscribed to pointer down, rather, they need drag start.
-// Drag: .............drag...
-public enum PointerEventType
-{
-    Down, Up, DoubleClick, DragStart, Drag
 }
 
 public static class InteractionManager
@@ -190,9 +165,11 @@ public static class InteractionManager
         {
             EditorObject oldFocus = currentlyFocused;
             currentlyFocused = null;
+            
             if (oldFocus is IKeyInteractable keyable)
                 keyable.OnFocusLost();
         }
+        
         currentlyFocused = target;
     }
 
@@ -202,6 +179,7 @@ public static class InteractionManager
         {
             EditorObject oldFocus = currentlyFocused;
             currentlyFocused = null;
+            
             if (oldFocus is IKeyInteractable keyable)
                 keyable.OnFocusLost();
         }
@@ -234,7 +212,7 @@ public static class InteractionManager
         {
             bool checkCompleted = true;
 
-            if (clickedEO is IPointerInteractable handler)
+            if (clickedEO is IPointerInteractable handler && handler.IsSelfInteractable())
             {
                 if (pointerEventType == PointerEventType.Down)
                 {
@@ -252,8 +230,9 @@ public static class InteractionManager
                 }
                 else checkCompleted = false;
             }
+            else checkCompleted = false;
             
-            if (!checkCompleted && clickedEO is IScrollable scrollHandler)
+            if (!checkCompleted && clickedEO is IScrollable scrollHandler && scrollHandler.IsSelfInteractable())
             {
                 if ((pointerEventType == PointerEventType.Up || pointerEventType == PointerEventType.Down) && eventData is ScrollEventData sed)
                 {
@@ -262,8 +241,9 @@ public static class InteractionManager
                 }
                 else checkCompleted = false;
             }
+            else checkCompleted = false;
 
-            if (!checkCompleted && clickedEO is IDoubleClickable doubleClickHandler)
+            if (!checkCompleted && clickedEO is IDoubleClickable doubleClickHandler && doubleClickHandler.IsSelfInteractable())
             {
                 if (pointerEventType == PointerEventType.DoubleClick)
                 {
@@ -272,8 +252,9 @@ public static class InteractionManager
                 }
                 else checkCompleted = false;
             }
-            
-            if (!checkCompleted && clickedEO is IDragable dragHandler)
+            else checkCompleted = false;
+
+            if (!checkCompleted && clickedEO is IDragable dragHandler && dragHandler.IsSelfInteractable())
             {
                 if (pointerEventType == PointerEventType.DragStart)
                 {
@@ -287,14 +268,15 @@ public static class InteractionManager
                 }
                 else checkCompleted = false;
             }
+            else checkCompleted = false;
 
             if (bubble) clickedEO = (clickedEO.Parent is EditorObject) ? clickedEO.Parent as EditorObject : null;
             else clickedEO = null;
         }
 
-        if (/*bubble && */clickedEO == null) // Always send as global event, even if not bubbled.
+        if (clickedEO == null)
         {
-            Engine.HandleGlobalPointerEvent(eventData, pointerEventType);
+            Engine.HandleGlobalPointerEvent(eventData, pointerEventType, bubble);
         }
 
         return false;
@@ -333,7 +315,7 @@ public static class InteractionManager
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
                 WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = pressedButton
+                MouseButton = pressedButton
             };
 
             DispatchPointer(currentTarget, dcEvt, PointerEventType.DoubleClick);
@@ -373,7 +355,7 @@ public static class InteractionManager
                     WorldPosition = inputContext.mouseWorldPosition,
                     ScreenDelta = inputContext.mouseScreenDelta,
                     WorldDelta = inputContext.mouseWorldDelta,
-                    mouseButton = pendingGesture.Button
+                    MouseButton = pendingGesture.Button
                 };
 
                 // Fire the delayed DragStart since drag is confirmed.
@@ -390,7 +372,7 @@ public static class InteractionManager
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
                 WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = pendingGesture.Button
+                MouseButton = pendingGesture.Button
             };
 
             DispatchPointer(pendingGesture.Target, evt, PointerEventType.Up); // Should we use currently hovered for up? Because underlying object could have changed between down and up! But then pendingGesture.Target would not receive up!
@@ -418,25 +400,25 @@ public static class InteractionManager
 
         if (wasLMBPressed)
         {
-            potentialPied.mouseButton = MouseButton.Left;
+            potentialPied.MouseButton = MouseButton.Left;
             DispatchPointer(targetObject, potentialPied, PointerEventType.Down);
         }
 
         if (wasLMBReleased)
         {
-            potentialPied.mouseButton = MouseButton.Left;
+            potentialPied.MouseButton = MouseButton.Left;
             DispatchPointer(targetObject, potentialPied, PointerEventType.Up);
         }
 
         if (wasRMBPressed)
         {
-            potentialPied.mouseButton = MouseButton.Right;
+            potentialPied.MouseButton = MouseButton.Right;
             DispatchPointer(targetObject, potentialPied, PointerEventType.Down);
         }
 
         if (wasRMBReleased)
         {
-            potentialPied.mouseButton = MouseButton.Right;
+            potentialPied.MouseButton = MouseButton.Right;
             DispatchPointer(targetObject, potentialPied, PointerEventType.Up);
         }
 
@@ -448,7 +430,7 @@ public static class InteractionManager
                 WorldPosition = inputContext.mouseWorldPosition,
                 ScreenDelta = inputContext.mouseScreenDelta,
                 WorldDelta = inputContext.mouseWorldDelta,
-                mouseButton = MouseButton.Middle,
+                MouseButton = MouseButton.Middle,
                 MouseWheel = new Vector2(0, mouseWheel)
             };
 
@@ -517,7 +499,7 @@ public static class InteractionManager
                 {
                     ScreenPosition = inputContext.mouseScreenPosition,
                     WorldPosition = inputContext.mouseWorldPosition,
-                    mouseButton = mousePressed.Value
+                    MouseButton = mousePressed.Value
                 };
 
                 Engine.NotifyAnyPointerDown(globalDownEvt, currentlyHit);
@@ -534,7 +516,7 @@ public static class InteractionManager
                 {
                     ScreenPosition = inputContext.mouseScreenPosition,
                     WorldPosition = inputContext.mouseWorldPosition,
-                    mouseButton = mousePressed.Value
+                    MouseButton = mousePressed.Value
                 };
 
                 DispatchPointer(ambiguousGestureCache.Target, downEvt, PointerEventType.Down);

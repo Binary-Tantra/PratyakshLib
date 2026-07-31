@@ -84,7 +84,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     public bool OnDragStart(PointerInteractEventData evt)
     {
-        if (evt.mouseButton == MouseButton.Left)
+        if (evt.MouseButton == MouseButton.Left)
         {
             isDragging = true;
             dragOffset = new Vector2(evt.ScreenPosition.X - RelativePosition.X, evt.ScreenPosition.Y - RelativePosition.Y);
@@ -105,7 +105,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton == MouseButton.Left)
+        if (evt.MouseButton == MouseButton.Left)
         {
             isDragging = false;
             InteractionManager.ReleasePointer();

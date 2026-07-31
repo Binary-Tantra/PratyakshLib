@@ -87,10 +87,10 @@ public class Canvas : UIBase, IPointerInteractable
             current = current.Parent as EditorObject;
         }
 
-        if (contextMenu != null && !clickedInsideCtx && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
+        if (contextMenu != null && !clickedInsideCtx && (evt.MouseButton == MouseButton.Left || evt.MouseButton == MouseButton.Right))
             RemoveCtxMenu();
 
-        if (searchMenu != null && !clickedInsideSearch && (evt.mouseButton == MouseButton.Left || evt.mouseButton == MouseButton.Right))
+        if (searchMenu != null && !clickedInsideSearch && (evt.MouseButton == MouseButton.Left || evt.MouseButton == MouseButton.Right))
             RemoveSearchMenu();
     }
 
@@ -157,7 +157,7 @@ public class Canvas : UIBase, IPointerInteractable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Right)
+        if (evt.MouseButton != MouseButton.Right)
             return false;
 
         RemoveCtxMenu();

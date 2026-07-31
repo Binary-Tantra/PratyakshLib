@@ -696,15 +696,15 @@ public class Engine
         }
     }
 
-    public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet)
+    public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
     {
-        if (pet == PointerEventType.Up && (evt.mouseButton == MouseButton.Right || evt.mouseButton == MouseButton.Left))
+        if (pet == PointerEventType.Up && (evt.MouseButton == MouseButton.Right || evt.MouseButton == MouseButton.Left))
             canvas.OnMouseUp(evt);
 
-        if (pet == PointerEventType.DragStart && evt.mouseButton == MouseButton.Right)
+        if (pet == PointerEventType.DragStart && evt.MouseButton == MouseButton.Right)
             camera.OnDragStart(evt);
 
-        if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.mouseButton == MouseButton.Middle && evt is ScrollEventData sed)
+        if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.MouseButton == MouseButton.Middle && evt is ScrollEventData sed)
             camera.OnScroll(sed);
     }
 

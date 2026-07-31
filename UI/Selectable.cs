@@ -73,7 +73,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     private void OnClickOff(PointerInteractEventData evt, EditorObject? target)
     {
-        if (evt.mouseButton == MouseButton.Left && target != this)
+        if (evt.MouseButton == MouseButton.Left && target != this)
             Deselect();
     }
 
@@ -148,7 +148,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         Select();
@@ -158,7 +158,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left)
+        if (evt.MouseButton != MouseButton.Left)
             return false;
 
         return true;
@@ -166,7 +166,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public bool OnDoubleClick(PointerInteractEventData eventData)
     {
-        if (eventData.mouseButton != MouseButton.Left)
+        if (eventData.MouseButton != MouseButton.Left)
             return false;
 
         isBeingEdited = true;

@@ -95,6 +95,11 @@ public abstract class EditorObject : Drawable, IInteractable
         return worldSpace;
     }
 
+    public bool IsSelfInteractable()
+    {
+        return selfInteractable;
+    }
+
     public Rectangle GetInteractableRect()
     {
         Rectangle finalRect = InteractionRect;

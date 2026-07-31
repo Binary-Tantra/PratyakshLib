@@ -129,6 +129,9 @@ public class Graph
 
     public bool AddConnection(int sourceNodeId, int sourcePortId, int targetNodeId, int targetPortId)
     {
+        if (graphConnections.ContainsKey((sourcePortId, targetPortId)))
+            return false;
+
         Node? n = GetNode(sourceNodeId);
 
         if (n == null)

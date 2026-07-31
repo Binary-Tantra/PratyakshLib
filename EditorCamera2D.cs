@@ -82,7 +82,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
 
     public bool OnDragStart(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Right)
+        if (evt.MouseButton != MouseButton.Right)
             return false;
 
         InteractionManager.CapturePointer(this);
@@ -98,7 +98,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Right)
+        if (evt.MouseButton != MouseButton.Right)
             return false;
 
         panning = false;
