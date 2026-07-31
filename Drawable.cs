@@ -4,19 +4,62 @@ namespace RaylibNodeLibrary;
 
 public abstract class Drawable
 {
-    private Drawable? parent;
+    protected Drawable? parent;
     private bool shouldDraw = true;
     
-    protected Vector2 relativePosition;
+    private Vector2 relativePosition;
 
     public bool ShouldDraw { get => shouldDraw; }
-    public Vector2 RelativePosition { get => relativePosition; set => relativePosition = value; }
-    public Vector2 Position { get => (parent?.Position ?? Vector2.Zero) + relativePosition; }
-    public Drawable? Parent { get => parent; }
+    
+    public virtual Vector2 RelativePosition { get => relativePosition; set => relativePosition = value; }
+
+    public virtual Vector2 Position
+    {
+        get
+        {
+            Vector2 parentPos = parent?.Position ?? Vector2.Zero;
+            return parentPos + relativePosition;
+        }
+        set
+        {
+            Vector2 required = value;
+            Vector2 diff = required - parent?.Position ?? Vector2.Zero;
+            relativePosition = diff;
+        }
+    }
+    
+    public Drawable? Parent
+    {
+        get => parent;
+        set
+        {
+            if (value == parent)
+                return;
+
+            OnSetParent(value, parent, true);
+        }
+    }
 
     public Drawable(Drawable? parent = null)
     {
         this.parent = parent;
+    }
+
+    public void SetParent(Drawable? newParent, bool preservePosition)
+    {
+        if (newParent == parent)
+            return;
+
+        OnSetParent(newParent, parent, preservePosition);
+    }
+
+    protected virtual void OnSetParent(Drawable? newParent, Drawable? oldParent, bool preservePosition)
+    {
+        Vector2 currAbsPos = Position;
+        parent = newParent;
+
+        if (preservePosition) Position = currAbsPos;    // Recalculate relative position based on new parent
+        else relativePosition = Vector2.Zero;           // Reset relative position if not preserving
     }
 
     public void Show()

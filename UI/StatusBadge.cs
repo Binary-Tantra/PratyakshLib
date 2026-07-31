@@ -1,5 +1,5 @@
-using Raylib_cs;
 using System.Numerics;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -23,18 +23,17 @@ public class StatusBadge : UIBase
     public StatusType Type { get => statusType; set => statusType = value; }
     public Color CustomColor { get => customColor; set => customColor = value; }
 
-    public StatusBadge(string text, StatusType statusType = StatusType.Idle, Color? customColor = null, int fontSize = 13, Drawable? parent = null) : base(parent)
+    public StatusBadge(int posX, int posY, string text, StatusType statusType = StatusType.Idle, Color? customColor = null, int fontSize = 13, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 0, 0, parent, parentBasis)
     {
+        int w = LayoutEngine.MeasureTextW(text, fontSize) + 24;
+        int h = fontSize + 8;
+
+        Size = new Vector2(w, h);
+
         this.text = text;
         this.statusType = statusType;
         this.customColor = customColor ?? Color.Gray;
         this.fontSize = fontSize;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        int textW = LayoutEngine.MeasureTextW(text, fontSize);
-        return new Rectangle(Position.X, Position.Y, textW + 24, fontSize + 8);
     }
 
     protected override void OnDraw()
@@ -49,25 +48,22 @@ public class StatusBadge : UIBase
             _ => Color.Gray
         };
 
-        int textW = LayoutEngine.MeasureTextW(text, fontSize);
-        int badgeWidth = textW + 24;
-        int badgeHeight = fontSize + 8;
-
         // Draw pill background (semi-transparent)
-        Color bgPill = new Color(badgeColor.R, badgeColor.G, badgeColor.B, (byte)40);
-        Rectangle rect = new Rectangle(Position.X, Position.Y, badgeWidth, badgeHeight);
+        Color bgPill = new(badgeColor.R, badgeColor.G, badgeColor.B, (byte)40);
+        Rectangle rect = new(Position.X, Position.Y, Width, Height);
+
         Raylib.DrawRectangleRounded(rect, 0.5f, 6, bgPill);
         Raylib.DrawRectangleRoundedLinesEx(rect, 0.5f, 6, 1f, badgeColor);
 
         // Draw status dot
         int dotRadius = 4;
         int dotX = (int)Position.X + 8;
-        int dotY = (int)Position.Y + badgeHeight / 2;
+        int dotY = (int)Position.Y + Height / 2;
         Raylib.DrawCircle(dotX, dotY, dotRadius, badgeColor);
 
         // Draw text
         int textX = dotX + 8;
-        int textY = (int)(Position.Y + (badgeHeight - fontSize) / 2f);
+        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
         LayoutEngine.DrawTextAbsolute(text, textX, textY, Color.White, fontSize, Vector2.Zero);
     }
 }

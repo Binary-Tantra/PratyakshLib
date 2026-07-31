@@ -9,7 +9,7 @@ public class ChildLayout : UILayoutBase
 
     private int maxWidthCoverage;
 
-    public ChildLayout(List<(UIElementType type, UIElementDescription desc)> uiElements, int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent) : base(posX, posY, layoutWidth, layoutHeight, parent)
+    public ChildLayout(List<(UIElementType type, UIElementDescription desc)> uiElements, int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {
         selfInteractable = false;
         this.uiElements = uiElements;
@@ -70,7 +70,7 @@ public class ChildLayout : UILayoutBase
                 case UIElementType.Toggle:
                     ToggleDesc togDesc = (ToggleDesc)desc;
                     payload = ids[i][j].payload ?? togDesc.startingState;
-                    layout.Toggle(id, (bool)payload, togDesc.text, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
+                    layout.Toggle(id, (bool)payload, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
                     {
                         ids[i][j] = (ids[i][j].id, tog.Value);
                         togDesc.onToggle?.Invoke(tog);
@@ -87,7 +87,7 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.BindableToggle:
                     BindableToggleDesc bTogDesc = (BindableToggleDesc)desc;
-                    layout.BindableToggle(id, bTogDesc.dataModel, bTogDesc.text, bTogDesc.width ?? maxWidthCoverage, bTogDesc.height ?? 20);
+                    layout.BindableToggle(id, bTogDesc.dataModel, bTogDesc.width ?? maxWidthCoverage, bTogDesc.height ?? 20);
                     break;
                 case UIElementType.BindableInputField_String:
                     BindableInputFieldStringDesc bIfStrDesc = (BindableInputFieldStringDesc)desc;
@@ -117,13 +117,13 @@ public class ChildLayout : UILayoutBase
             if (uiElements[i].elemType == UIElementType.Group)
             {
                 HorizontalGroupDesc gDesc = (HorizontalGroupDesc)uiElements[i].elemDesc;
-                maxWidthCoverage = (int)((float)layoutWidth / gDesc.uiElements.Count);
+                maxWidthCoverage = (int)((float)Width / gDesc.uiElements.Count);
 
                 layout.BeginHorizontal(gDesc.spacing);
                 {
                     for (int j = 0; j < gDesc.uiElements.Count; j++)
                     {
-                        maxWidthCoverage = (int)((float)(layoutWidth - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
+                        maxWidthCoverage = (int)((float)(Width - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
 
                         (int id, object? payload) = ids[i][j];
                         DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, i, j);
@@ -134,7 +134,7 @@ public class ChildLayout : UILayoutBase
             }
             else
             {
-                maxWidthCoverage = layoutWidth;
+                maxWidthCoverage = Width;
                 DrawAccType(ids[i][0].id, uiElements[i].elemType, uiElements[i].elemDesc, i, 0);
             }
         }

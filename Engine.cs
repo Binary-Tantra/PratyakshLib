@@ -198,6 +198,8 @@ public class Engine
         graph.Types.RegisterDefaultTypes();
         SetupDefaultTypeColors();
 
+        Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
+
         Raylib.InitWindow(screenWidth, screenHeight, "Raylib Node Library");
 
         defaultFont = Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
@@ -243,7 +245,7 @@ public class Engine
             (UIElementType.Text, new TextDesc("A + B", Color.White))
         ]));
 
-        canvas = new Canvas(null, (payload, editorObj) =>
+        canvas = new Canvas(screenWidth, screenHeight, null, (payload, editorObj) =>
         {
             if (payload is NodeTemplate template)
             {
@@ -423,6 +425,18 @@ public class Engine
 
     private static void Update()
     {
+        int sw = Raylib.GetScreenWidth();
+        int sh = Raylib.GetScreenHeight();
+
+        if (screenWidth != sw || screenHeight != sh)
+        {
+            screenWidth = sw;
+            screenHeight = sh;
+
+            canvas.Size = new Vector2(screenWidth, screenHeight);
+            camera.SetScreenSize(screenWidth, screenHeight);
+        }
+
         camera.Update();
 
         InputContext inputContext = new()

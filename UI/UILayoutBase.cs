@@ -7,33 +7,22 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 {
     protected LayoutEngine layout;
 
-    protected int layoutWidth;
-    protected int layoutHeight;
-
     private bool isDragging = false;
     private Vector2 dragOffset;
 
     protected int mainVerticalSpacing = 0;
     protected int horizontalPadding = 0;
 
-    public int LayoutWidth { get => layoutWidth; }
-    public int LayoutHeight { get => layoutHeight; }
-
-    public UILayoutBase(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent) : base(parent)
+    public UILayoutBase(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {
         selfInteractable = true;
-        RelativePosition = new Vector2(posX, posY);
-
-        this.layoutWidth = layoutWidth;
-        this.layoutHeight = layoutHeight;
-
         layout = new LayoutEngine(this);
     }
 
     protected override void OnDraw()
     {
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
-        Rectangle finalRect = new(Position.X, Position.Y, layoutWidth, layoutHeight);
+        Rectangle finalRect = new(Position.X, Position.Y, Width, Height);
 
         if (worldSpace)
             finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
@@ -50,9 +39,9 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
                 {
                     OnDrawLayout();
                 }
-                layout.EndVertical(layoutWidth);
+                layout.EndVertical(Width);
             }
-            layout.EndHorizontal(layoutHeight);
+            layout.EndHorizontal(Height);
         }
         Raylib.EndScissorMode();
 
@@ -79,18 +68,13 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     public Rectangle GetScissorRect()
     {
-        Rectangle rect = new Rectangle(Position.X, Position.Y, layoutWidth, layoutHeight);
+        Rectangle rect = new(Position.X, Position.Y, Width, Height);
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
 
         if (worldSpace)
             rect = Engine.Camera.GetWorldToScreenRect(rect);
 
         return rect;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, layoutWidth, layoutHeight);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -116,10 +100,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
     public void OnDrag(PointerInteractEventData evt)
     {
         if (isDragging)
-        {
-            relativePosition.X = evt.ScreenPosition.X - dragOffset.X;
-            relativePosition.Y = evt.ScreenPosition.Y - dragOffset.Y;
-        }
+            RelativePosition = new Vector2(evt.ScreenPosition.X - dragOffset.X, evt.ScreenPosition.Y - dragOffset.Y);
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)

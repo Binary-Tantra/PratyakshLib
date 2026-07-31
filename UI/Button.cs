@@ -5,7 +5,6 @@ namespace RaylibNodeLibrary.UI;
 
 public class Button : UIBase, IPointerInteractable
 {
-    private System.Numerics.Vector2 dimensions;
     private string buttonText;
     
     private int fontSize;
@@ -18,14 +17,12 @@ public class Button : UIBase, IPointerInteractable
     private Action<Button> onButtonPressed;
 
     public string ButtonText 
-    { 
+    {
         get => buttonText; 
         set => buttonText = value; 
     }
-    public object Payload { get => payload; }
 
-    public float Width { get => dimensions.X; }
-    public float Height { get => dimensions.Y; }
+    public object Payload { get => payload; }
 
     private Color? customFillColor;
     private Color? customBorderColor;
@@ -35,15 +32,17 @@ public class Button : UIBase, IPointerInteractable
     public Color? BorderColor { get => customBorderColor; set => customBorderColor = value; }
     public Color? TextColor { get => customTextColor; set => customTextColor = value; }
 
-    public Button(float width, float height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Color? fillColor = null, Color? borderColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
+    public Button(int posX, int posY, int width, int height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Color? fillColor = null, Color? borderColor = null, Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         selfInteractable = true;
 
-        dimensions.X = Raylib.MeasureText(buttonText, fontSize);
-        if (width > dimensions.X) dimensions.X = width;
+        float sizeX = Raylib.MeasureText(buttonText, fontSize);
+        if (width > sizeX) sizeX = width;
 
-        dimensions.Y = fontSize + 5;
-        if (height > dimensions.Y) dimensions.Y = height;
+        float sizeY = fontSize + 5;
+        if (height > sizeY) sizeY = height;
+
+        Size = new Vector2(sizeX, sizeY);
 
         this.onButtonPressed = onButtonPressed;
         this.payload = payload;
@@ -54,11 +53,6 @@ public class Button : UIBase, IPointerInteractable
         this.customFillColor = fillColor;
         this.customBorderColor = borderColor;
         this.customTextColor = textColor;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, dimensions.X, dimensions.Y);
     }
 
     protected override void OnDraw()
@@ -86,16 +80,16 @@ public class Button : UIBase, IPointerInteractable
         Color currentBorder = hovered ? borderHover : borderNorm;
 
         // BG
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)dimensions.X, (int)dimensions.Y, currentFill);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)Size.X, (int)Size.Y, currentFill);
 
         // Border
         if (hasBorder)
-            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, dimensions.X, dimensions.Y), 1f, currentBorder);
+            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, Size.X, Size.Y), 1f, currentBorder);
 
         // Text (centered)
         int textW = Raylib.MeasureText(buttonText, fontSize);
-        int textX = (int)(Position.X + (dimensions.X - textW) / 2f);
-        int textY = (int)(Position.Y + (dimensions.Y - fontSize) / 2f);
+        int textX = (int)(Position.X + (Size.X - textW) / 2f);
+        int textY = (int)(Position.Y + (Size.Y - fontSize) / 2f);
 
         LayoutEngine.DrawTextAbsolute(buttonText, textX, textY, labelColor, fontSize, Vector2.Zero);
     }

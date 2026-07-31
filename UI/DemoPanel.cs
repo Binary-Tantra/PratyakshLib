@@ -35,7 +35,9 @@ public class DemoPanel : UILayoutBase
 
     private Selectable? previousSelected = null;
 
-    public DemoPanel(int posX, int posY, Drawable? parent = null) : base(posX, posY, 410, 480, parent)
+    public string PanelName => "DemoPanel";
+
+    public DemoPanel(int posX, int posY, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 410, 480, parent, parentBasis)
     {
         scrollViewId = IdGen.GetNewID();
         buttonIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
@@ -68,8 +70,6 @@ public class DemoPanel : UILayoutBase
         statusBadgeId2 = IdGen.GetNewID();
         alertBannerId = IdGen.GetNewID();
     }
-
-    public string PanelName => "DemoPanel";
 
     public Dictionary<string, object?> GetSaveData()
     {
@@ -149,17 +149,17 @@ public class DemoPanel : UILayoutBase
     public override void OnDrawLayout()
     {
         // 1. Draw the main Section background and header
-        layout.SectionEx("Layout Engine Showcase", layoutWidth, layoutHeight,
+        layout.SectionEx("Layout Engine Showcase", Width, Height,
             Raylib.Fade(Color.DarkBlue, 0.7f),
             Raylib.Fade(Color.Gray, 0.65f),
             Color.White, 0.08f, false);
 
-        layout.BeginScrollView(scrollViewId, layoutWidth, 440, 40, 10);
+        layout.BeginScrollView(scrollViewId, Width, 440, 40, 10);
         {
             layout.AddSpace(5);
             
             // --- Alert Banner Demonstration ---
-            layout.AlertBanner(alertBannerId, "System Status: All services operational", AlertType.Success, layoutWidth - 30, 28);
+            layout.AlertBanner(alertBannerId, "System Status: All services operational", AlertType.Success, Width - 30, 28);
             
             layout.AddSpace(10);
 
@@ -238,7 +238,7 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Nested Selectables & Dropdown ---
-            layout.TextPanelPro("Dropdown & Custom Selectables", layoutWidth - 30, 25, Color.DarkGreen, Color.White);
+            layout.TextPanelPro("Dropdown & Custom Selectables", Width - 30, 25, Color.DarkGreen, Color.White);
 
             layout.AddSpace(10);
 

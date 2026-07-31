@@ -14,9 +14,15 @@ public abstract class EditorObject : Drawable, IInteractable
 
     public Action OnDeleteObject;
 
+    public virtual Rectangle InteractionRect
+    {
+        get => new(Position.X, Position.Y, 0, 0);
+    }
+
     public EditorObject(Drawable? parent) : base(parent)
     {
         id = IdGen.GetNewID();
+        OnDeleteObject = () => { };
     }
 
     public virtual Drawable? HitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
@@ -52,11 +58,6 @@ public abstract class EditorObject : Drawable, IInteractable
     }
 
     protected virtual Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) { return null; }
-
-    protected virtual Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, 0, 0);
-    }
 
     public void Update()
     {
@@ -96,7 +97,7 @@ public abstract class EditorObject : Drawable, IInteractable
 
     public Rectangle GetInteractableRect()
     {
-        Rectangle finalRect = OnGetInteractionRect();
+        Rectangle finalRect = InteractionRect;
 
         if (!InteractionUseWorldPos()) // Only check if self doesn't use world space. If self does use world space...dont check in that case, as that would be wrong.
         {

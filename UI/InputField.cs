@@ -5,11 +5,17 @@ namespace RaylibNodeLibrary.UI;
 
 public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 {
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool CloseClipboard();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetClipboardData(uint uFormat);
+
     private string placeholderText;
     private string inputFieldText;
-
-    private int width;
-    private int height;
 
     private int fontSize;
 
@@ -26,17 +32,15 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         get => inputFieldText;
         set
         {
-            if (inputFieldText == value) return;
+            if (inputFieldText == value)
+                return;
+
             inputFieldText = value;
             isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
-            if (notifyTextChanged) OnTextChanged?.Invoke(this);
-        }
-    }
 
-    public void SetTextWithoutNotify(string text)
-    {
-        inputFieldText = text ?? string.Empty;
-        isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
+            if (notifyTextChanged)
+                OnTextChanged?.Invoke(this);
+        }
     }
 
     private bool isMasked = false;
@@ -45,7 +49,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
     public bool IsMasked { get => isMasked; set => isMasked = value; }
     public char MaskChar { get => maskChar; set => maskChar = value; }
 
-    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, bool isMasked = false, Drawable? parent = null) : base(parent)
+    public bool IsFocused => isFocused;
+
+    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, bool isMasked = false, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         selfInteractable = true;
 
@@ -56,27 +62,22 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
             placeholderText = "Enter text";
 
         notifyTextChanged = false;
-        this.placeholderText = placeholderText;
-        this.isMasked = isMasked;
-        InputFieldText = inputFieldText;
+        {
+            this.placeholderText = placeholderText;
+            this.isMasked = isMasked;
+
+            InputFieldText = inputFieldText;
+        }
         notifyTextChanged = true;
-
-        RelativePosition = new Vector2(posX, posY);
-
-        this.width = width;
-        this.height = height;
 
         this.fontSize = fontSize;
     }
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool CloseClipboard();
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern IntPtr GetClipboardData(uint uFormat);
+    public void SetTextWithoutNotify(string text)
+    {
+        inputFieldText = text ?? string.Empty;
+        isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
+    }
 
     private static string GetClipboardTextSafe()
     {
@@ -130,13 +131,13 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         Color cursorCol = new((byte)190, (byte)190, (byte)190, (byte)255);
 
         const int textPadX = 6;
-        int textY = (int)(Position.Y + (height - fontSize) / 2f);   // vertically center the text
+        int textY = (int)(Position.Y + (Height - fontSize) / 2f);   // vertically center the text
 
         // BG
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, fillColor);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fillColor);
 
         // Border
-        Rectangle borderRect = new(Position.X, Position.Y, width, height);
+        Rectangle borderRect = new(Position.X, Position.Y, Width, Height);
         
         if (isFocused)
             Raylib.DrawRectangleLinesEx(borderRect, 2f, borderFocused);
@@ -164,14 +165,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
                 int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(displayText, fontSize);
                 int cursorX = (int)Position.X + textPadX + textW + 1;
 
-                Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + height - 7, cursorCol);
+                Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + Height - 7, cursorCol);
             }
         }
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, width, height);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -182,8 +178,6 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         SetFocus();
         return true;
     }
-
-    public bool IsFocused => isFocused;
 
     public bool SetFocus()
     {
@@ -206,7 +200,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
             return false;
 
         // Check for Ctrl + V (Paste)
-        if (kvt.Key == KeyboardKey.V && (Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.IsKeyDown(KeyboardKey.RightControl)))
+        if (kvt.Key == KeyboardKey.V && kvt.IsCtrlDown)
         {
             PasteFromClipboard();
             return true;
@@ -265,10 +259,14 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     private void EndFocus()
     {
-        if (!isFocused) return;
+        if (!isFocused)
+            return;
+
         isFocused = false;
+
         if (InteractionManager.CurrentlyFocused == this)
             InteractionManager.ReleaseFocus();
+
         OnFocusEnd?.Invoke(this);
     }
 

@@ -47,6 +47,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     private List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements;
 
+    public override Rectangle InteractionRect => rect;
+
     public NodeVisual(int nodeId,
                       List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
                       string title, float posX, float posY, Drawable? parent = null) : base(parent)
@@ -59,8 +61,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         this.title = title;
 
-        relativePosition.X = posX;
-        relativePosition.Y = posY;
+        RelativePosition = new Vector2(posX, posY);
         
         this.bodyUIElements = bodyUIElements;
 
@@ -162,8 +163,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             outputPorts.Add(pv);
         }
 
-        rect = new Rectangle(relativePosition.X, relativePosition.Y, width, height);
-        headerRect = new Rectangle(relativePosition.X, relativePosition.Y, headerWidth, headerHeight);
+        rect = new Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
+        headerRect = new Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight);
 
         nodeBodyLayout = new ChildLayout(bodyUIElements,
                                             bodyHPaddingInputSide,
@@ -187,11 +188,6 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         }
 
         return nodeBodyLayout.HitTest(mouseScreenPosition, mouseWorldPosition);
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return rect;
     }
 
     protected override void OnUpdate()
@@ -268,10 +264,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     public void OnDrag(PointerInteractEventData evt)
     {
         if (isDragging)
-        {
-            relativePosition.X = evt.WorldPosition.X - dragOffset.X;
-            relativePosition.Y = evt.WorldPosition.Y - dragOffset.Y;
-        }
+            RelativePosition = new Vector2(evt.WorldPosition.X - dragOffset.X, evt.WorldPosition.Y - dragOffset.Y);
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)

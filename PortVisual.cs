@@ -37,7 +37,10 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     {
         get => parentNodeUI == null ? -1 : parentNodeUI.NodeId;
     }
+
     public int PortTSize { get => portTSize; }
+
+    public override Rectangle InteractionRect => new Rectangle(Position.X + portInteractionRelativeRect.X, Position.Y + portInteractionRelativeRect.Y, portInteractionRelativeRect.Width, portInteractionRelativeRect.Height);
 
     public static int GetPortTSize(string name)
     {
@@ -94,7 +97,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
         selfInteractable = true;
 
-        relativePosition = portRelativeLocation;
+        RelativePosition = portRelativeLocation;
         
         this.portName = portName;
 
@@ -105,11 +108,6 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
         int hoverRectFlowOffset = portFlowType == PortFlowType.Input ? 0 : -(portTSize + 5);
         portInteractionRelativeRect = new(-portSize + hoverRectFlowOffset, -portSize - 2, portTSize + portSize * 2 + 10, portSize * 2 + 5);
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X + portInteractionRelativeRect.X, Position.Y + portInteractionRelativeRect.Y, portInteractionRelativeRect.Width, portInteractionRelativeRect.Height); ;
     }
 
     protected override void OnDraw()

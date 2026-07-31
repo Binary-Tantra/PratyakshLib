@@ -6,10 +6,6 @@ public class Toggle : UIBase, IPointerInteractable
 {
     private bool isOn;
     private float knobT; // interpolating knob position for sliding anim: 0 = off, 1 = on, 0.5 = middle, etc.
-    private int trackWidth;
-    private int trackHeight;
-    private string label;
-    private int fontSize;
     private object payload;
 
     private Action<Toggle>? onToggleChanged;
@@ -27,21 +23,14 @@ public class Toggle : UIBase, IPointerInteractable
         }
     }
 
-    public string Label { get => label; set => label = value; }
-
-    public Toggle(bool toggleValue, string label, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null) : base(parent)
+    public Toggle(int posX, int posY, bool toggleValue, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, trackWidth, trackHeight, parent, parentBasis)
     {
         selfInteractable = true;
 
         isOn = toggleValue;
         knobT = toggleValue ? 1f : 0f;
-        this.label = label;
 
-        this.trackWidth = trackWidth;
-        this.trackHeight = trackHeight;
-        this.fontSize = fontSize;
         this.payload = payload;
-
         this.onToggleChanged = onToggleChanged;
     }
 
@@ -88,30 +77,18 @@ public class Toggle : UIBase, IPointerInteractable
                                  : (hovered ? trackOffHover : trackOff);
         Color trackBorder = isOn ? borderOn : borderOff;
 
-        var trackRect = new Rectangle(tx, ty, trackWidth, trackHeight);
+        var trackRect = new Rectangle(tx, ty, Width, Height);
         Raylib.DrawRectangleRounded(trackRect, 1.0f, 8, trackFill);
         Raylib.DrawRectangleRoundedLinesEx(trackRect, 1.0f, 8, 1f, trackBorder);
 
         // Knob
-        int knobRadius = trackHeight / 2 - 3;
-        int knobMinCX = tx + 3 + knobRadius;                    // fully-left centre
-        int knobMaxCX = tx + trackWidth - 3 - knobRadius;       // fully-right centre
+        int knobRadius = Height / 2 - 3;
+        int knobMinCX = tx + 3 + knobRadius;            // fully-left centre
+        int knobMaxCX = tx + Width - 3 - knobRadius;    // fully-right centre
         int knobCX = (int)(knobMinCX + (knobMaxCX - knobMinCX) * knobT);
-        int knobCY = ty + trackHeight / 2;
+        int knobCY = ty + Height / 2;
 
         Raylib.DrawCircle(knobCX, knobCY, knobRadius, knobColor);
-
-        // Label
-        if (!string.IsNullOrEmpty(label))
-        {
-            int textY = ty + (trackHeight - fontSize) / 2;
-            Raylib.DrawText(label, tx + trackWidth + 8, textY, fontSize, labelColor);
-        }
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, trackWidth, trackHeight);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

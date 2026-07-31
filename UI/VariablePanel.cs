@@ -18,7 +18,7 @@ public class VariablePanel : UILayoutBase
 
     private int scrollId;
 
-    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null) : base(posX, posY, 220, 300, parent)
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 220, 300, parent, parentBasis)
     {
         this.onSelectVariable = onSelectVariable;
         this.onRenameVariable = onRenameVariable;
@@ -27,13 +27,13 @@ public class VariablePanel : UILayoutBase
 
         scrollId = IdGen.GetNewID();
 
-        addButton = new Button(50, 20, "Add", (addBtn) =>
+        addButton = new Button(0, 0, 50, 20, "Add", (addBtn) =>
         {
             onAddNewVariable?.Invoke();
             Deselect();
         }, 0, parent: this);
 
-        removeButton = new Button(50, 20, "Remove", (remBtn) =>
+        removeButton = new Button(0, 0, 50, 20, "Remove", (remBtn) =>
         {
             if (currentSelected != null)
             {
@@ -56,8 +56,8 @@ public class VariablePanel : UILayoutBase
     private void Deselect()
     {
         currentSelected?.Deselect();
-        if (currentSelected != null)
-            currentSelected.OnTextEdited = null;
+        currentSelected?.OnTextEdited = (sel) => { };
+        
         currentSelected = null;
     }
 
@@ -122,13 +122,13 @@ public class VariablePanel : UILayoutBase
         Dictionary<int, Variable> variables = Engine.Graph.Variables;
         List<int> varIds = [.. variables.Keys];
 
-        layout.SectionEx("Variables", layoutWidth, layoutHeight - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
+        layout.SectionEx("Variables", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
 
         layout.BeginHorizontal(0);
         {
             layout.AddSpace(10);
 
-            layout.BeginScrollView(scrollId, layoutWidth - 10, layoutHeight - 50 - 40, 40, 5);
+            layout.BeginScrollView(scrollId, Width - 10, Height - 50 - 40, 40, 5);
             {
                 List<DataType> dataTypes = Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
                 string[] dataTypeNames = dataTypes.Select(t => t.Name).ToArray();
@@ -141,7 +141,7 @@ public class VariablePanel : UILayoutBase
                         string selectableText = v.VarName;
                         bool isSelected = currentSelected != null && currentSelected.Payload is int selectedId && selectedId == v.Id;
 
-                        layout.Selectable(v.Id, isSelected, selectableText, layoutWidth - 120, 24, OnVarUISelected, v.Id);
+                        layout.Selectable(v.Id, isSelected, selectableText, Width - 120, 24, OnVarUISelected, v.Id);
 
                         layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                         {
@@ -160,7 +160,7 @@ public class VariablePanel : UILayoutBase
             }
             layout.EndScrollView();
         }
-        layout.EndHorizontal(layoutHeight - 50);
+        layout.EndHorizontal(Height - 50);
 
         layout.AddSpace(10);
 

@@ -391,6 +391,16 @@ public class LayoutEngine
         return (int)MeasureTextEx(textFont, text, fontSize, 0.5f).X;
     }
 
+    public static int MeasureTextH(string text, float fontSize)
+    {
+        return (int)MeasureTextEx(textFont, text, fontSize, 0.5f).Y;
+    }
+
+    public static Vector2 MeasureText(string text, float fontSize)
+    {
+        return MeasureTextEx(textFont, text, fontSize, 0.5f);
+    }
+
     public static void DrawTextAbsolute(string text, int posX, int posY, Color fontColor, float fontSize, Vector2 offset)
     {
         DrawTextPro(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), Vector2.Zero, 0, fontSize, 0.5f, fontColor);
@@ -449,7 +459,7 @@ public class LayoutEngine
 
         if (!found)
         {
-            Button b = new(buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+            Button b = new(posX, posY, buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
             ElementInfo<Button>  elem = new(b, null);
             layoutButtons.Add(id, elem);
         }
@@ -544,19 +554,18 @@ public class LayoutEngine
         return layoutInputFields[id].UIElement;
     }
 
-    private Toggle DrawToggleAbsolute(int id, bool toggleValue, string label, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
+    private Toggle DrawToggleAbsolute(int id, bool toggleValue, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
     {
         bool found = layoutToggles.ContainsKey(id);
         if (!found)
         {
-            Toggle cachedToggle = new Toggle(toggleValue, label, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+            Toggle cachedToggle = new(posX, posY, toggleValue, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
             ElementInfo<Toggle> elem = new(cachedToggle, null);
             layoutToggles.Add(id, elem);
         }
         else
         {
             layoutToggles[id].UIElement.Value = toggleValue;
-            layoutToggles[id].UIElement.Label = label;
             layoutToggles[id].UIElement.SetOnToggleChanged(onToggleChanged);
         }
 
@@ -621,7 +630,7 @@ public class LayoutEngine
         bool found = layoutLinkButtons.ContainsKey(id);
         if (!found)
         {
-            LinkButton cachedLink = new LinkButton(text, url, onClick, fontSize, defaultParent);
+            LinkButton cachedLink = new(posX, posY, text, url, onClick, fontSize, defaultParent);
             ElementInfo<LinkButton> elem = new(cachedLink, null);
             layoutLinkButtons.Add(id, elem);
         }
@@ -643,7 +652,7 @@ public class LayoutEngine
         bool found = layoutStatusBadges.ContainsKey(id);
         if (!found)
         {
-            StatusBadge cachedBadge = new StatusBadge(text, statusType, customColor, fontSize, defaultParent);
+            StatusBadge cachedBadge = new(posX, posY, text, statusType, customColor, fontSize, defaultParent);
             ElementInfo<StatusBadge> elem = new(cachedBadge, null);
             layoutStatusBadges.Add(id, elem);
         }
@@ -666,7 +675,7 @@ public class LayoutEngine
         bool found = layoutAlertBanners.ContainsKey(id);
         if (!found)
         {
-            AlertBanner cachedBanner = new AlertBanner(message, alertType, width, height, isDismissible, fontSize, defaultParent);
+            AlertBanner cachedBanner = new(posX, posY, message, alertType, width, height, isDismissible, fontSize, defaultParent);
             ElementInfo<AlertBanner> elem = new(cachedBanner, null);
             layoutAlertBanners.Add(id, elem);
         }
@@ -807,14 +816,15 @@ public class LayoutEngine
         return field;
     }
 
-    public Toggle Toggle(int id, bool toggleValue, string label, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
+    public Toggle Toggle(int id, bool toggleValue, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
-        Toggle toggle = DrawToggleAbsolute(id, toggleValue, label, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        Toggle toggle = DrawToggleAbsolute(id, toggleValue, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
+        
         if (updateLayout) DrawAny(toggleWidth, toggleHeight);
         return toggle;
     }
@@ -896,7 +906,7 @@ public class LayoutEngine
                 {
                     len--;
                 }
-                truncatedStr = text.Substring(0, len) + ellipsis;
+                truncatedStr = string.Concat(text.AsSpan(0, len), ellipsis);
             }
             else
             {
@@ -954,7 +964,7 @@ public class LayoutEngine
         layoutScrollViews[id] = layoutScrollViews[id].Activate();
         ScrollView svc = layoutScrollViews[id].UIElement;
 
-        svc.SetViewSize(new Vector2(viewWidth, viewHeight));
+        svc.Size = new Vector2(viewWidth, viewHeight);
         svc.RelativePosition = new Vector2(PosX_Dynamic(), PosY_Dynamic() + startYOffset);
 
         if (defaultParent != null)
@@ -972,8 +982,9 @@ public class LayoutEngine
         if (defaultParent != null)
         {
             // TODO: Using interactable rect's width/height instead of visual's! For now it works.
-            defaultParentEndX = defaultParent.Position.X + defaultParent.GetInteractableRect().Width;
-            defaultParentEndY = defaultParent.Position.Y + defaultParent.GetInteractableRect().Height;
+            Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect();
+            defaultParentEndX = defaultParent.Position.X + defaultParentIntrRect.Width;
+            defaultParentEndY = defaultParent.Position.Y + defaultParentIntrRect.Height;
         }
         else defaultParentEndX = defaultParentEndY = float.PositiveInfinity;
 
@@ -1015,7 +1026,7 @@ public class LayoutEngine
         int contentWidth = PosX() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
         int contentHeight = PosY() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
 
-        svc.SetContentSize(new Vector2(Math.Max(svc.ViewSize.X, contentWidth), Math.Max(svc.ViewSize.Y, contentHeight)));
+        svc.SetContentSize(new Vector2(Math.Max(svc.Size.X, contentWidth), Math.Max(svc.Size.Y, contentHeight)));
 
         EndVertical(contentWidth);
         EndHorizontal(contentHeight);
@@ -1032,7 +1043,7 @@ public class LayoutEngine
         }
 
         svc.Render();
-        DrawAny((int)svc.ViewSize.X, (int)svc.ViewSize.Y);
+        DrawAny((int)svc.Size.X, (int)svc.Size.Y);
     }
 
     public void AddSpace(int space)
@@ -1056,22 +1067,21 @@ public class LayoutEngine
 
     // ==================== BINDABLE DRAWING METHODS ====================
 
-    public Toggle DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, string label, int posX, int posY, int toggleWidth, int toggleHeight)
+    public Toggle DrawBindableToggleAbsolute(int id, BindableValueBase<bool> dataModel, int posX, int posY, int toggleWidth, int toggleHeight)
     {
         bool found = layoutToggles.ContainsKey(id);
         if (!found)
         {
-            Toggle cachedToggle = new Toggle(dataModel.Get(), label, toggleWidth, toggleHeight, null, id, 15, defaultParent);
-            RLToggleUI uiWrapper = new RLToggleUI(cachedToggle);
-            BoolToggleBinder binder = new BoolToggleBinder();
+            Toggle cachedToggle = new(posX, posY, dataModel.Get(), toggleWidth, toggleHeight, null, id, 15, defaultParent);
+            RLToggleUI uiWrapper = new(cachedToggle);
+            BoolToggleBinder binder = new();
             binder.Bind(dataModel, uiWrapper);
 
-            ElementInfo<Toggle> elem = new ElementInfo<Toggle>(cachedToggle, binder);
+            ElementInfo<Toggle> elem = new(cachedToggle, binder);
             layoutToggles.Add(id, elem);
         }
         else
         {
-            layoutToggles[id].UIElement.Label = label;
             if (layoutToggles[id].DataBinder is BoolToggleBinder binder)
             {
                 if (binder.GetBoundValObject() != dataModel)
@@ -1090,11 +1100,14 @@ public class LayoutEngine
         return layoutToggles[id].UIElement;
     }
 
-    public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, string label, int width, int height, bool updateLayout = true)
+    public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
-        if (defaultParent != null) pos -= defaultParent.Position;
-        Toggle toggle = DrawBindableToggleAbsolute(id, dataModel, label, (int)pos.X, (int)pos.Y, width, height);
+
+        if (defaultParent != null)
+            pos -= defaultParent.Position;
+
+        Toggle toggle = DrawBindableToggleAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
         return toggle;
     }

@@ -7,9 +7,6 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 {
     private string selectableText;
 
-    private int width;
-    private int height;
-
     private int fontSize;
 
     private Action<Selectable> onSelectableSelect;
@@ -36,8 +33,6 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         }
     }
 
-    public int Width { get => width; }
-    public int Height { get => height; }
     public object Payload { get => payload; }
     public bool IsSelected { get => isSelected; }
 
@@ -46,18 +41,13 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public Action<Selectable> OnTextEdited;
 
-    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Color? bgColor = null, Color? bgSelectionColor = null, Color? textColor = null, Drawable? parent = null) : base(parent)
+    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Color? bgColor = null, Color? bgSelectionColor = null, Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         selfInteractable = true;
 
         this.selectableText = selectableText;
 
-        RelativePosition = new Vector2(posX, posY);
-
         this.isSelected = isSelected;
-
-        this.width = width;
-        this.height = height;
 
         this.onSelectableSelect = onSelectableSelect;
         this.payload = payload;
@@ -70,7 +60,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         Engine.OnAnyPointerDown += OnClickOff;
 
-        editIF = new InputField("", selectableText, 0, 0, width, height, null, null, parent: this);
+        editIF = new InputField("", selectableText, 0, 0, Width, Height, null, null, parent: this);
 
         editIF.OnTextChanged += (inpField) => this.selectableText = inpField.InputFieldText;
         editIF.OnFocusEnd += (inpField) =>
@@ -108,14 +98,14 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         // BG fill according to selection.
         Color fill = isSelected ? fillSelected : (hovered ? fillHover : fillNormal);
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, width, height, fill);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fill);
 
         // Left accent bar (when selected)
         if (isSelected)
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, height, accentBar);
+            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, Height, accentBar);
 
         // Text
-        int textY = (int)(Position.Y + (height - fontSize) / 2f);
+        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
         LayoutEngine.DrawTextAbsolute(selectableText, (int)Position.X + textPadX, textY, isSelected ? textSelected : textNormal, fontSize, Vector2.Zero);
     }
 
@@ -149,17 +139,6 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         editIF.Delete();
 
         Engine.OnAnyPointerDown -= OnClickOff;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(Position.X, Position.Y, width, height);
-    }
-
-    public void SetDimensions(int width, int height)
-    {
-        this.width = width;
-        this.height = height;
     }
 
     public void SetOnSelect(Action<Selectable>? onSelectableSelect)

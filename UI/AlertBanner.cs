@@ -1,5 +1,5 @@
-using Raylib_cs;
 using System.Numerics;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -15,8 +15,6 @@ public class AlertBanner : UIBase, IPointerInteractable
 {
     private string message;
     private AlertType alertType;
-    private int width;
-    private int height;
     private int fontSize;
     private bool isDismissible;
     private bool isDismissed;
@@ -25,21 +23,18 @@ public class AlertBanner : UIBase, IPointerInteractable
     public AlertType Type { get => alertType; set => alertType = value; }
     public bool IsDismissed => isDismissed;
 
-    public AlertBanner(string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, int fontSize = 13, Drawable? parent = null) : base(parent)
+    public AlertBanner(int posX, int posY, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, int fontSize = 13, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         selfInteractable = true;
+
         this.message = message;
         this.alertType = alertType;
-        this.width = width;
-        this.height = height;
+        
         this.isDismissible = isDismissible;
-        this.fontSize = fontSize;
-        this.isDismissed = false;
-    }
 
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return isDismissed ? new Rectangle(0, 0, 0, 0) : new Rectangle(Position.X, Position.Y, width, height);
+        this.fontSize = fontSize;
+        
+        isDismissed = false;
     }
 
     protected override void OnDraw()
@@ -56,23 +51,23 @@ public class AlertBanner : UIBase, IPointerInteractable
         };
 
         // Draw background box
-        Rectangle rect = new Rectangle(Position.X, Position.Y, width, height);
+        Rectangle rect = new Rectangle(Position.X, Position.Y, Width, Height);
         Raylib.DrawRectangleRec(rect, bgColor);
         Raylib.DrawRectangleLinesEx(rect, 1f, accentColor);
 
         // Draw left accent bar
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, 4, height, accentColor);
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, 4, Height, accentColor);
 
         // Draw text
         int textX = (int)Position.X + 12;
-        int textY = (int)(Position.Y + (height - fontSize) / 2f);
+        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
         LayoutEngine.DrawTextAbsolute(message, textX, textY, Color.White, fontSize, Vector2.Zero);
 
         // Draw dismiss "X" button
         if (isDismissible)
         {
-            int closeX = (int)Position.X + width - 20;
-            int closeY = (int)Position.Y + (height - fontSize) / 2;
+            int closeX = (int)Position.X + Width - 20;
+            int closeY = (int)Position.Y + (Height - fontSize) / 2;
             LayoutEngine.DrawTextAbsolute("x", closeX, closeY, hovered ? Color.White : Color.Gray, fontSize, Vector2.Zero);
         }
     }
@@ -90,7 +85,7 @@ public class AlertBanner : UIBase, IPointerInteractable
         if (isDismissible)
         {
             float clickX = evt.ScreenPosition.X - Position.X;
-            if (clickX >= width - 25)
+            if (clickX >= Width - 25)
             {
                 isDismissed = true;
             }

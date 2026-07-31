@@ -1,6 +1,6 @@
-using Raylib_cs;
 using System.Numerics;
 using System.Diagnostics;
+using Raylib_cs;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -14,19 +14,14 @@ public class LinkButton : UIBase, IPointerInteractable
     public string Text { get => text; set => text = value; }
     public string Url { get => url; set => url = value; }
 
-    public LinkButton(string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, Drawable? parent = null) : base(parent)
+    public LinkButton(int posX, int posY, string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, LayoutEngine.MeasureTextW(text, fontSize), LayoutEngine.MeasureTextH(text, fontSize), parent, parentBasis)
     {
         selfInteractable = true;
+
         this.text = text;
         this.url = url;
         this.onClick = onClick;
         this.fontSize = fontSize;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        int textW = LayoutEngine.MeasureTextW(text, fontSize);
-        return new Rectangle(Position.X, Position.Y, textW, fontSize + 4);
     }
 
     protected override void OnDraw()
@@ -35,23 +30,25 @@ public class LinkButton : UIBase, IPointerInteractable
         Color hoverColor = new((byte)120, (byte)190, (byte)255, (byte)255);
         Color drawColor = hovered ? hoverColor : normalColor;
 
-        int textW = LayoutEngine.MeasureTextW(text, fontSize);
         LayoutEngine.DrawTextAbsolute(text, (int)Position.X, (int)Position.Y, drawColor, fontSize, Vector2.Zero);
 
         // Draw Underline
         int lineY = (int)Position.Y + fontSize + 1;
-        Raylib.DrawLine((int)Position.X, lineY, (int)Position.X + textW, lineY, drawColor);
+        Raylib.DrawLine((int)Position.X, lineY, (int)Position.X + Width, lineY, drawColor);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
+
         return true;
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (evt.mouseButton != MouseButton.Left) return false;
+        if (evt.mouseButton != MouseButton.Left)
+            return false;
 
         if (onClick != null)
         {
@@ -67,7 +64,10 @@ public class LinkButton : UIBase, IPointerInteractable
                     UseShellExecute = true
                 });
             }
-            catch { /* Process start failed */ }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occurred while trying to open URL: {ex.Message}");
+            }
         }
 
         return true;

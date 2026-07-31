@@ -14,13 +14,13 @@ public class Canvas : UIBase, IPointerInteractable
     private SearchMenu? searchMenu;
     public Action<object, EditorObject?> onContextBtnPressed;
 
-    public Canvas(Drawable? parent, Action<object, EditorObject?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue) : base(parent)
+    public Canvas(int viewportWidth, int viewportHeight, Drawable? parent, Action<object, EditorObject?> onContextBtnPressed, Action<int?> onSelectVariable, Action onAddNewVar, Action<int> onRemoveVar, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue) : base(0, 0, viewportWidth, viewportHeight, parent)
     {
         this.onContextBtnPressed = onContextBtnPressed;
 
-        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable, onChangeVariableType, OpenSearchMenu);
-        inspectorPanel = new InspectorPanel(Engine.ScreenWidth - 200 - 10, 20, onRenameVariable, onChangeVariableType, onChangeVariableValue, OpenSearchMenu);
-        demoPanel = new DemoPanel(60, 70);
+        variablePanel = new VariablePanel(10, 20, onSelectVariable, onAddNewVar, onRemoveVar, onRenameVariable, onChangeVariableType, OpenSearchMenu, this);
+        inspectorPanel = new InspectorPanel(-200 - 10, 20, onRenameVariable, onChangeVariableType, onChangeVariableValue, OpenSearchMenu, this, ParentBasis.TopRight);
+        demoPanel = new DemoPanel(60, 70, this);
 
         Engine.OnAnyPointerDown += HandleGlobalClickAway;
     }
@@ -61,11 +61,6 @@ public class Canvas : UIBase, IPointerInteractable
         if (hit != null) return hit;
 
         return null;
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(0, 0, 0, 0);
     }
 
     public override bool InteractionUseWorldPos()
@@ -169,6 +164,9 @@ public class Canvas : UIBase, IPointerInteractable
 
         string deleteStr = "Delete";
 
+        int posX = (int)evt.ScreenPosition.X;
+        int posY = (int)evt.ScreenPosition.Y;
+
         if (InteractionManager.CurrentlyHit == null)
         {
             List<(string, object)> mis = [];
@@ -176,18 +174,15 @@ public class Canvas : UIBase, IPointerInteractable
             {
                 mis.Add((template.Name, template));
             }
-            OpenSearchMenu((int)evt.ScreenPosition.X, (int)evt.ScreenPosition.Y, mis, (payload) => {
-                OnCtxBtnPressed(payload, null);
-            });
+            
+            OpenSearchMenu(posX, posY, mis, (payload) => OnCtxBtnPressed(payload, null));
         }
         else if (InteractionManager.CurrentlyHit is NodeVisual nui)
         {
-            ContextMenu cm = new([(deleteStr, 0)], (button) => OnCtxBtnPressed(deleteStr, nui), null);
+            ContextMenu cm = new(posX, posY, [(deleteStr, 0)], (button) => OnCtxBtnPressed(deleteStr, nui), null);
             Engine.UIElements.Add(cm);
             contextMenu = cm;
         }
-
-        contextMenu?.RelativePosition = evt.ScreenPosition;
 
         if (contextMenu == null)
             return false;

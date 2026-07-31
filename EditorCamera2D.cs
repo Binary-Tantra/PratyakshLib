@@ -15,10 +15,18 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
 
     private bool panning;
 
+    private int screenWidth;
+    private int screenHeight;
+
     public Camera2D RaylibCam2D { get => rCam2D; }
+
+    public override Rectangle InteractionRect => new(0, 0, screenWidth, screenHeight);
 
     public EditorCamera2D(int screenWidth, int screenHeight, Drawable? parent = null) : base(parent)
     {
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+
         rCam2D = new Camera2D
         {
             Target = Vector2.Zero,
@@ -26,6 +34,12 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
             Rotation = 0.0f,
             Zoom = 1.0f
         };
+    }
+
+    public void SetScreenSize(int width, int height)
+    {
+        screenWidth = width;
+        screenHeight = height;
     }
 
     private void SetCamTarget(Vector2 newCT)
@@ -54,11 +68,6 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
 
             SetCamTarget(rCam2D.Target + worldBefore - worldAfter);
         }
-    }
-
-    protected override Rectangle OnGetInteractionRect()
-    {
-        return new Rectangle(0, 0, 0, 0);
     }
 
     public override bool InteractionUseWorldPos()
