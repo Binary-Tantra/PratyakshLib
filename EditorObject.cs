@@ -146,4 +146,17 @@ public abstract class EditorObject : Drawable, IInteractable
     {
         return obj is EditorObject eo && eo.IsAncestorType<T>();
     }
+
+    public static bool IsCurrFocusedChildOfEO(EditorObject root)
+    {
+        EditorObject? cur = InteractionManager.CurrentlyFocused;
+
+        while (cur != null)
+        {
+            if (cur == root) return true;
+            cur = cur.Parent as EditorObject;
+        }
+
+        return false;
+    }
 }

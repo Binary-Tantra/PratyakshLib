@@ -103,7 +103,7 @@ public class Canvas : UIBase, IPointerInteractable
     {
         if (contextMenu != null)
         {
-            if (IsFocusedChildOf(contextMenu))
+            if (IsCurrFocusedChildOfEO(contextMenu))
                 InteractionManager.ReleaseFocus();
 
             contextMenu.Delete();
@@ -116,24 +116,13 @@ public class Canvas : UIBase, IPointerInteractable
     {
         if (searchMenu != null)
         {
-            if (IsFocusedChildOf(searchMenu))
+            if (IsCurrFocusedChildOfEO(searchMenu))
                 InteractionManager.ReleaseFocus();
 
             searchMenu.Delete();
             Engine.UIElements.Remove(searchMenu);
             searchMenu = null;
         }
-    }
-
-    private static bool IsFocusedChildOf(EditorObject root)
-    {
-        EditorObject? cur = InteractionManager.CurrentlyFocused;
-        while (cur != null)
-        {
-            if (cur == root) return true;
-            cur = cur.Parent as EditorObject;
-        }
-        return false;
     }
 
     public void OpenSearchMenu(int x, int y, List<(string name, object payload)> items, Action<object> onItemSelected)
