@@ -1,4 +1,5 @@
 using System.Numerics;
+using Pratyaksh.Core.DataBinding;
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
@@ -1112,7 +1113,7 @@ public class LayoutEngine
         return toggle;
     }
 
-    public InputField DrawBindableInputFieldStringAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldStringAbsolute(int id, string placeholderText, BindableValueBase<string> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)
@@ -1145,7 +1146,7 @@ public class LayoutEngine
         return layoutInputFields[id].UIElement;
     }
 
-    public InputField BindableInputFieldString(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
+    public InputField BindableInputFieldString(int id, string placeholderText, BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
@@ -1154,7 +1155,7 @@ public class LayoutEngine
         return field;
     }
 
-    public InputField DrawBindableInputFieldIntAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldIntAbsolute(int id, string placeholderText, BindableValueBase<int> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)
@@ -1187,7 +1188,7 @@ public class LayoutEngine
         return layoutInputFields[id].UIElement;
     }
 
-    public InputField BindableInputFieldInt(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    public InputField BindableInputFieldInt(int id, string placeholderText, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
@@ -1196,7 +1197,7 @@ public class LayoutEngine
         return field;
     }
 
-    public InputField DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, RaylibNodeLibrary.DataBinding.BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
+    public InputField DrawBindableInputFieldFloatAbsolute(int id, string placeholderText, BindableValueBase<float> dataModel, int posX, int posY, int width, int height)
     {
         bool found = layoutInputFields.ContainsKey(id);
         if (!found)

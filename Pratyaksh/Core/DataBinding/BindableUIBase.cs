@@ -1,6 +1,4 @@
-using System;
-
-namespace RaylibNodeLibrary.DataBinding;
+namespace Pratyaksh.Core.DataBinding;
 
 public abstract class BindableUIBase<T> : BindableBase<T>
 {

@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataBinding;
+namespace Pratyaksh.Core.DataBinding;
 
 public abstract class BindableBase { }
 
