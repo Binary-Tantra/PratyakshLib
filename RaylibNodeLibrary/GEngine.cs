@@ -442,6 +442,7 @@ public class GEngine : Engine
     {
         Raylib_cs.Raylib.SetConfigFlags(Raylib_cs.ConfigFlags.ResizableWindow);
         Raylib_cs.Raylib.InitWindow((int)ScreenWidth, (int)ScreenHeight, "Raylib Node Library");
+        Raylib_cs.Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
 
         defaultFont = Raylib_cs.Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
         LayoutEngine.InitSLEDefaultFont(defaultFont);

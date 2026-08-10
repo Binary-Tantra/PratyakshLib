@@ -140,7 +140,7 @@ public class Canvas : UIBase, IPointerInteractable
             (UILayoutBase? panelRef, bool saveable, _) = panels[i];
 
             if (!saveable || panelRef == null)
-                return result;
+                continue;
 
             var panelData = panelRef.GetSaveData();
             result[panelRef.PanelSaveName] = System.Text.Json.JsonSerializer.SerializeToElement(panelData);
