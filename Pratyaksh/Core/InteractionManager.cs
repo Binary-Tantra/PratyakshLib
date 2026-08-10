@@ -11,14 +11,20 @@ public enum MouseButton
 
 public enum KeyboardKey
 {
-    a, b, c, d, e, f, g, h, i, j, k, l, m,
-    n, o, p, q, r, s, t, u, v, w, x, y, z,
-    A, B, C, D, E, F, G, H, I, J, K, L, M,
-    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    Zero, One, Two, Three, Four,
+    Backspace = 8,
+
+    Zero = 48, One, Two, Three, Four,
     Five, Six, Seven, Eight, Nine,
+
+    A = 65, B, C, D, E, F, G, H, I, J, K, L, M,
+    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+
+    a = 97, b, c, d, e, f, g, h, i, j, k, l, m,
+    n, o, p, q, r, s, t, u, v, w, x, y, z,
+
     KPZero, KPOne, KPTwo, KPThree, KPFour,
     KPFive, KPSix, KPSeven, KPEight, KPNine,
+
     KPDecimal, KPPlus, KPMinus, KPMultiply, KPDivide,
     Minus,
     Comma,
@@ -31,7 +37,7 @@ public enum KeyboardKey
     RightAlt,
     Space,
     Enter,
-    Backspace,
+    
     Tab,
     CapsLock,
     LeftArrow,
@@ -73,9 +79,9 @@ public class InputContext
 public class InteractionManager
 {
     private IWorldToScreenTransformer worldToScreenTransformer;
-    private Action<PointerInteractEventData, PointerEventType, bool> globalPointerEvent;
-    private Action<KeyInteractEventData> globalKBEvent;
-    private Action<PointerInteractEventData, EditorObject?> anyPointerEvent;
+    private event Action<PointerInteractEventData, PointerEventType, bool>? globalPointerEvent;
+    private event Action<KeyInteractEventData>? globalKBEvent;
+    private event Action<PointerInteractEventData, EditorObject?>? anyPointerEvent;
 
     private EditorObject? currentlyHit = null;
     private EditorObject? currentlyHovered = null;
@@ -113,9 +119,6 @@ public class InteractionManager
     public InteractionManager(IWorldToScreenTransformer spaceTransformer)
     {
         worldToScreenTransformer = spaceTransformer;
-        globalPointerEvent = delegate { };
-        globalKBEvent = delegate { };
-        anyPointerEvent = delegate { };
     }
 
     public void UpdateInputContext(InputContext ipC)

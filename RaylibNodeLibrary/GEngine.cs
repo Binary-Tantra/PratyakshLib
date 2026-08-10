@@ -9,9 +9,6 @@ using System.Numerics;
 
 public class GEngine : Engine
 {
-    private static int screenWidth;
-    private static int screenHeight;
-
     public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
     private static EditorCamera2D camera;
@@ -31,13 +28,10 @@ public class GEngine : Engine
 
     private static Raylib_cs.Font defaultFont;
 
-    public static int ScreenWidth { get => screenWidth; }
-    public static int ScreenHeight { get => screenHeight; }
+    public float ScreenWidth { get => InteractionManager.WorldToScreenTransformer.GetWidth(); }
+    public float ScreenHeight { get => InteractionManager.WorldToScreenTransformer.GetHeight(); }
     public static Raylib_cs.Camera2D RCamera { get => camera.RaylibCam2D; }
     public static Graph Graph { get => graph; }
-    public List<EditorObject> EditorObjects { get => editorObjects; }
-    public List<Actor> Actors { get => actors; }
-    public List<UIBase> UIElements { get => uiElements; }
     public static EditorCamera2D Camera { get => camera; }
     public static Canvas Canvas { get => canvas; }
     public static ConnectionVisualManager ConnectionUIManager { get => connectionUIManager; }
@@ -48,21 +42,56 @@ public class GEngine : Engine
     public static NodeRegistry NodeRegistry { get; private set; }
     public static Raylib_cs.Font DefaultFont { get => defaultFont; }
 
-    public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
-    public static event Action OnHandleInputComplete;
     public static event Action<int?> OnGlobalSelectionChanged;
 
     private static List<(Rectangle rect, Raylib_cs.Color color)> deferredRects = new();
 
-    public GEngine(int sw, int sh) : base()
+    public GEngine(int screenWidth, int screenHeight) : base()
     {
-        camera = new(1024, 576);
+        camera = new(screenWidth, screenHeight);
         InteractionManager itm = new(camera);
 
         Init(itm);
 
-        screenWidth = sw;
-        screenHeight = sh;
+        InteractionManager.GlobalPointerEvent += HandleGlobalPointerEvent;
+        InteractionManager.GlobalKBEvent += HandleGlobalKBEvents;
+    }
+
+    public void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
+    {
+        if (pet == PointerEventType.Up && (evt.MouseButton == MouseButton.Right || evt.MouseButton == MouseButton.Left))
+            canvas.OnMouseUp(evt);
+
+        if (pet == PointerEventType.DragStart && evt.MouseButton == MouseButton.Right)
+            camera.OnDragStart(evt);
+
+        if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.MouseButton == MouseButton.Middle && evt is ScrollEventData sed)
+            camera.OnScroll(sed);
+    }
+
+    public void HandleGlobalKBEvents(KeyInteractEventData keyEvent)
+    {
+        // No object is focused. Handle global Editor Hotkeys here.
+        // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
+        if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
+        {
+            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId, canvas);
+            File.WriteAllText("save.json", json);
+            Console.WriteLine("Saved graph to save.json");
+        }
+        else if (keyEvent.Key == KeyboardKey.L && InteractionManager.InputContext.isCtrlDown)
+        {
+            if (File.Exists("save.json"))
+            {
+                string json = File.ReadAllText("save.json");
+                var data = DataModel.Serialization.GraphSerializer.Deserialize(json);
+                if (data != null)
+                {
+                    ReconstructGraph(data);
+                    Console.WriteLine("Loaded graph from save.json");
+                }
+            }
+        }
     }
 
     public static void NotifyAddVar(int varId)
@@ -162,13 +191,6 @@ public class GEngine : Engine
 
         actors.Remove(nodeVis);
         nodeVis.Delete();
-    }
-
-    public void Start()
-    {
-        Setup();
-        Run();
-        Cleanup();
     }
 
     private void SetupDefaultTypeColors()
@@ -313,14 +335,15 @@ public class GEngine : Engine
 
     private bool OpenSearchMenu(int x, int y, List<(string, object)> items, Action<object> onItemSelected)
     {
-        return canvas.OpenTransPanel<SearchMenu>(searchMenuIdx, x, y, 200, 300, items, onItemSelected) != null;
+        return canvas.OpenTransPanel<SearchMenu>(searchMenuIdx, x, y, 200, 300, items, onItemSelected, canvas, null) != null;
     }
 
     private bool OpenContextMenu(int x, int y, EditorObject? potentialTarget)
     {
         List<(string name, object payload)> menuItems = [("Delete", 0)];
         Action<Button> onButtonPressed = (button) => OnCanvasCtxMenuItemSelected(button, potentialTarget);
-        return canvas.OpenTransPanel<ContextMenu>(contextMenuIdx, x, y, menuItems, onButtonPressed, canvas) != null;
+
+        return canvas.OpenTransPanel<ContextMenu>(contextMenuIdx, x, y, menuItems, onButtonPressed, canvas, null) != null;
     }
 
     private void OnCanvasSearchMenuItemSelected(object payload)
@@ -345,9 +368,9 @@ public class GEngine : Engine
         canvas.CloseTransPanel(searchMenuIdx);
     }
 
-    private void OnCanvasCtxMenuItemSelected(object payload, EditorObject? editorObj)
+    private void OnCanvasCtxMenuItemSelected(Button button, EditorObject? editorObj)
     {
-        if (payload is not string payloadStr || payloadStr != "Delete")
+        if (button.Payload is int intP && intP != 0) // 0 = Delete
             return;
 
         if (editorObj != null)
@@ -415,16 +438,10 @@ public class GEngine : Engine
         return success;
     }
 
-    private void Setup()
+    protected override void Setup()
     {
-        graph = new Graph();
-        
-        graph.Types.RegisterDefaultTypes();
-        SetupDefaultTypeColors();
-
         Raylib_cs.Raylib.SetConfigFlags(Raylib_cs.ConfigFlags.ResizableWindow);
-
-        Raylib_cs.Raylib.InitWindow(screenWidth, screenHeight, "Raylib Node Library");
+        Raylib_cs.Raylib.InitWindow((int)ScreenWidth, (int)ScreenHeight, "Raylib Node Library");
 
         defaultFont = Raylib_cs.Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
         LayoutEngine.InitSLEDefaultFont(defaultFont);
@@ -433,10 +450,12 @@ public class GEngine : Engine
         portToPortUIDict = [];
         varToNodeUIsDict = [];
 
-        actors = [];
-        uiElements = [];
-        editorObjects = [];
+        graph = new Graph();
+        
+        graph.Types.RegisterDefaultTypes();
+        SetupDefaultTypeColors();
 
+        camera.Setup();
         editorObjects.Add(camera);
 
         connectionUIManager = new(null);
@@ -468,7 +487,7 @@ public class GEngine : Engine
             (UIElementType.Text, new TextDesc("A + B", Raylib_cs.Color.White))
         ]));
 
-        canvas = new Canvas(screenWidth, screenHeight, OnCanvasContextClick);
+        canvas = new Canvas((int)ScreenWidth, (int)ScreenHeight, OnCanvasContextClick);
         searchMenuIdx = canvas.AddPanel(null, false, true);
         contextMenuIdx = canvas.AddPanel(null, false, true);
 
@@ -487,37 +506,25 @@ public class GEngine : Engine
         actors.Add(connectionUIManager);
     }
 
-    private void Run()
+    protected override bool IsCloseRequested()
     {
-        while (!Raylib_cs.Raylib.WindowShouldClose())
-        {
-            Update();
-
-            Raylib_cs.Raylib.BeginDrawing();
-            {
-                Raylib_cs.Raylib.ClearBackground(new Raylib_cs.Color((byte)30, (byte)30, (byte)30));
-                Render();
-            }
-            Raylib_cs.Raylib.EndDrawing();
-        }
+        return Raylib_cs.Raylib.WindowShouldClose();
     }
 
-    private void Update()
+    protected override void UpdateScreen()
     {
         int sw = Raylib_cs.Raylib.GetScreenWidth();
         int sh = Raylib_cs.Raylib.GetScreenHeight();
 
-        if (screenWidth != sw || screenHeight != sh)
+        if (ScreenWidth != sw || ScreenHeight != sh)
         {
-            screenWidth = sw;
-            screenHeight = sh;
-
-            canvas.Size = new Vector2(screenWidth, screenHeight);
-            camera.SetScreenSize(screenWidth, screenHeight);
+            InteractionManager.WorldToScreenTransformer.SetScreenSize(new Vector2(sw, sh));
+            canvas.Size = new Vector2(sw, sh);
         }
+    }
 
-        camera.Update();
-
+    protected override InputContext Input()
+    {
         InputContext inputContext = new()
         {
             isLMBCurrentlyHeld = Raylib_cs.Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.Left),
@@ -539,29 +546,56 @@ public class GEngine : Engine
 
         int keycode;
         while ((keycode = Raylib_cs.Raylib.GetKeyPressed()) != 0)
-            inputContext.keyboardKeysDown.Add((KeyboardKey)keycode);
+        {
+            Raylib_cs.KeyboardKey rkey = (Raylib_cs.KeyboardKey)keycode;
 
-        Instance.InteractionManager.UpdateInputContext(inputContext);
+            KeyboardKey key;
 
-        Instance.InteractionManager.HandleInput();
-        OnHandleInputComplete?.Invoke();
+            if (rkey == Raylib_cs.KeyboardKey.Backspace)
+                key = KeyboardKey.Backspace;
+            else if (rkey == Raylib_cs.KeyboardKey.Minus)
+                key = KeyboardKey.Minus;
+            else if (rkey == Raylib_cs.KeyboardKey.Comma)
+                key = KeyboardKey.Comma;
+            else if (rkey == Raylib_cs.KeyboardKey.Escape)
+                key = KeyboardKey.Escape;
+            else if (rkey == Raylib_cs.KeyboardKey.Space)
+                key = KeyboardKey.Space;
+            else if (rkey == Raylib_cs.KeyboardKey.Enter)
+                key = KeyboardKey.Enter;
+            else if (rkey == Raylib_cs.KeyboardKey.Tab)
+                key = KeyboardKey.Tab;
+            else if (rkey == Raylib_cs.KeyboardKey.CapsLock)
+                key = KeyboardKey.CapsLock;
+            else if (rkey == Raylib_cs.KeyboardKey.Left)
+                key = KeyboardKey.LeftArrow;
+            else if (rkey == Raylib_cs.KeyboardKey.Right)
+                key = KeyboardKey.RightArrow;
+            else if (rkey == Raylib_cs.KeyboardKey.Up)
+                key = KeyboardKey.UpArrow;
+            else if (rkey == Raylib_cs.KeyboardKey.Down)
+                key = KeyboardKey.DownArrow;
+            else
+                key = (KeyboardKey)keycode;
 
-        for (int i = 0; i < editorObjects.Count; i++)
-            editorObjects[i].Update();
+            inputContext.keyboardKeysDown.Add(key);
+        }
 
-        for (int i = 0; i < actors.Count; i++)
-            actors[i].Update();
-
-        for (int i = 0; i < uiElements.Count; i++)
-            uiElements[i].Update();
+        return inputContext;
     }
 
-    private void Render()
+    protected override void Render()
     {
-        RenderWorld();
-        RenderUI();
-        RenderEditorObjects();
-        RenderDeferred();
+        Raylib_cs.Raylib.BeginDrawing();
+        {
+            Raylib_cs.Raylib.ClearBackground(new Raylib_cs.Color((byte)30, (byte)30, (byte)30));
+
+            RenderWorld();
+            RenderUI();
+            RenderEditorObjects();
+            RenderDeferred();
+        }
+        Raylib_cs.Raylib.EndDrawing();
     }
 
     private void RenderWorld()
@@ -576,7 +610,7 @@ public class GEngine : Engine
 
     private void RenderUI()
     {
-        Raylib_cs.Raylib.DrawFPS(screenWidth - 150, 10);
+        Raylib_cs.Raylib.DrawFPS((int)InteractionManager.WorldToScreenTransformer.GetWidth() - 150, 10);
 
         for (int i = 0; i < uiElements.Count; i++)
             uiElements[i].Render();
@@ -608,7 +642,7 @@ public class GEngine : Engine
         deferredRects.Add((rect, color));
     }
 
-    public void Cleanup()
+    protected override void Cleanup()
     {
         Raylib_cs.Raylib.UnloadFont(defaultFont);
         Raylib_cs.Raylib.CloseWindow();
@@ -771,47 +805,5 @@ public class GEngine : Engine
         {
             canvas.RestorePanelsSaveData(data.Panels);
         }
-    }
-
-    public void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
-    {
-        if (pet == PointerEventType.Up && (evt.MouseButton == MouseButton.Right || evt.MouseButton == MouseButton.Left))
-            canvas.OnMouseUp(evt);
-
-        if (pet == PointerEventType.DragStart && evt.MouseButton == MouseButton.Right)
-            camera.OnDragStart(evt);
-
-        if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.MouseButton == MouseButton.Middle && evt is ScrollEventData sed)
-            camera.OnScroll(sed);
-    }
-
-    public void HandleGlobalKBEvents(KeyInteractEventData keyEvent)
-    {
-        // No object is focused. Handle global Editor Hotkeys here.
-        // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
-        if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
-        {
-            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId, canvas);
-            File.WriteAllText("save.json", json);
-            Console.WriteLine("Saved graph to save.json");
-        }
-        else if (keyEvent.Key == KeyboardKey.L && InteractionManager.InputContext.isCtrlDown)
-        {
-            if (File.Exists("save.json"))
-            {
-                string json = File.ReadAllText("save.json");
-                var data = DataModel.Serialization.GraphSerializer.Deserialize(json);
-                if (data != null)
-                {
-                    ReconstructGraph(data);
-                    Console.WriteLine("Loaded graph from save.json");
-                }
-            }
-        }
-    }
-
-    public static void NotifyAnyPointerDown(PointerInteractEventData evt, EditorObject? target)
-    {
-        OnAnyPointerDown?.Invoke(evt, target);
     }
 }

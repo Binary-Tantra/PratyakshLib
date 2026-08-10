@@ -54,7 +54,7 @@ public class VariablePanel : UILayoutBase
         }, 0, parent: this);
 
         Engine.Instance.InteractionManager.AnyPointerEvent += OnAnyPointerInput;
-        GEngine.OnHandleInputComplete += OnHandleInputComplete;
+        Engine.Instance.OnHandleInputComplete += OnHandleInputComplete;
     }
 
     private void Deselect()
@@ -74,7 +74,7 @@ public class VariablePanel : UILayoutBase
     protected override void OnDelete()
     {
         Engine.Instance.InteractionManager.AnyPointerEvent -= OnAnyPointerInput;
-        GEngine.OnHandleInputComplete -= OnHandleInputComplete;
+        Engine.Instance.OnHandleInputComplete -= OnHandleInputComplete;
     }
 
     private void OnAnyPointerInput(PointerInteractEventData evt, EditorObject? target)

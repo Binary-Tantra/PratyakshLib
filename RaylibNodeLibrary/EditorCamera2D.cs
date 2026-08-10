@@ -15,18 +15,23 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
 
     private bool panning;
 
-    private int screenWidth;
-    private int screenHeight;
+    private float screenWidth;
+    private float screenHeight;
 
     public Raylib_cs.Camera2D RaylibCam2D { get => rCam2D; }
 
     public override Rectangle InteractionRect => new(0, 0, screenWidth, screenHeight);
 
-    public EditorCamera2D(int screenWidth, int screenHeight, Drawable? parent = null) : base(parent)
+    public EditorCamera2D(float screenWidth, float screenHeight, Drawable? parent = null) : base(parent)
     {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
 
+        selfInteractable = true; // For camera drag
+    }
+
+    public void Setup()
+    {
         rCam2D = new Raylib_cs.Camera2D
         {
             Target = Vector2.Zero,
@@ -34,12 +39,6 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
             Rotation = 0.0f,
             Zoom = 1.0f
         };
-    }
-
-    public void SetScreenSize(int width, int height)
-    {
-        screenWidth = width;
-        screenHeight = height;
     }
 
     private void SetCamTarget(Vector2 newCT)
@@ -139,5 +138,26 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
     public Rectangle ScreenToWorld(Rectangle screenRect)
     {
         throw new NotImplementedException();
+    }
+
+    public float GetWidth()
+    {
+        return screenWidth;
+    }
+
+    public float GetHeight()
+    {
+        return screenHeight;
+    }
+
+    public Vector2 GetScreenSize()
+    {
+        return new Vector2(screenWidth, screenHeight);
+    }
+
+    public void SetScreenSize(Vector2 screenSize)
+    {
+        screenWidth = screenSize.X;
+        screenHeight = screenSize.Y;
     }
 }

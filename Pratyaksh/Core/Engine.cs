@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 
 namespace Pratyaksh.Core;
 
@@ -16,6 +17,8 @@ public abstract class Engine
     protected List<Actor> actors;
     protected List<UIBase> uiElements;
 
+    public event Action? OnHandleInputComplete;
+
     public abstract float DeltaTime { get; }
     public List<EditorObject> EditorObjects { get => editorObjects; }
     public List<Actor> Actors { get => actors; }
@@ -24,6 +27,9 @@ public abstract class Engine
     public Engine()
     {
         instance = this;
+        actors = [];
+        uiElements = [];
+        editorObjects = [];
     }
 
     public void Init(InteractionManager intMan)
@@ -36,23 +42,54 @@ public abstract class Engine
         return Stopwatch.GetTimestamp() / freq;
     }
 
-    public void AddActor(Actor actor)
+    public void Start()
     {
-        actors.Add(actor);
+        Setup();
+        Run();
+        Cleanup();
     }
 
-    public void RemoveActor(Actor actor)
+    protected abstract void Setup();
+
+    protected void Run()
     {
-        actors.Remove(actor);
+        while (!IsCloseRequested())
+        {
+            UpdateScreen();
+
+            InputContext ipc = Input();
+
+            intMan.UpdateInputContext(ipc);
+            intMan.HandleInput();
+            OnHandleInputComplete?.Invoke();
+
+            Update();
+            Render();
+        }
     }
 
-    public void AddUI(UIBase ui)
+    protected abstract bool IsCloseRequested();
+
+    protected abstract void UpdateScreen();
+
+    protected abstract InputContext Input();
+
+    private void Update()
     {
-        uiElements.Add(ui);
+        if (InteractionManager.WorldToScreenTransformer is EditorObject editorObject)
+            editorObject.Update();
+
+        for (int i = 0; i < editorObjects.Count; i++)
+            editorObjects[i].Update();
+
+        for (int i = 0; i < actors.Count; i++)
+            actors[i].Update();
+
+        for (int i = 0; i < uiElements.Count; i++)
+            uiElements[i].Update();
     }
 
-    public void RemoveUI(UIBase ui)
-    {
-        uiElements.Remove(ui);
-    }
+    protected abstract void Render();
+
+    protected abstract void Cleanup();
 }

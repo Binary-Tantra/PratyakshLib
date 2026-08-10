@@ -9,6 +9,11 @@ public class InputEventData
 
 public interface IWorldToScreenTransformer
 {
+    public float GetWidth();
+    public float GetHeight();
+    public Vector2 GetScreenSize();
+    public void SetScreenSize(Vector2 screenSize);
+
     public Vector2 WorldToScreen(Vector2 worldPos);
     public Vector2 ScreenToWorld(Vector2 screenPos);
     public Rectangle WorldToScreen(Rectangle worldRect);
