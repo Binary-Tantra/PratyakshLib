@@ -19,7 +19,7 @@ public class Node : DataObject
     public Node(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
     {
         TemplateId = templateId;
-        Engine.NotifyAddNode(Id);
+        GEngine.NotifyAddNode(Id);
 
         inputPorts = [];
         outputPorts = [];
@@ -40,7 +40,7 @@ public class Node : DataObject
     public Node(int id, int templateId) : base(id)
     {
         TemplateId = templateId;
-        Engine.NotifyAddNode(Id);
+        GEngine.NotifyAddNode(Id);
 
         inputPorts = [];
         outputPorts = [];
@@ -72,14 +72,14 @@ public class Node : DataObject
         for (int i = 0; i < keys.Count; i++)
         {
             if (inputPorts.Remove(keys[i]))
-                Engine.NotifyRemovePort(keys[i]);
+                GEngine.NotifyRemovePort(keys[i]);
         }
 
         keys = [.. outputPorts.Keys];
         for (int i = 0; i < keys.Count; i++)
         {
             if (outputPorts.Remove(keys[i]))
-                Engine.NotifyRemovePort(keys[i]);
+                GEngine.NotifyRemovePort(keys[i]);
         }
     }
 
@@ -87,13 +87,13 @@ public class Node : DataObject
     {
         Port newI = new(dataType.Name, PortFlowType.Input, dataType);
         inputPorts.Add(newI.Id, newI);
-        Engine.NotifyUpdateNode(Id);
+        GEngine.NotifyUpdateNode(Id);
     }
 
     public void AddOutputPort(DataType dataType)
     {
         Port newO = new(dataType.Name, PortFlowType.Output, dataType);
         outputPorts.Add(newO.Id, newO);
-        Engine.NotifyUpdateNode(Id);
+        GEngine.NotifyUpdateNode(Id);
     }
 }

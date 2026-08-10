@@ -61,7 +61,7 @@ public class Graph
     public void AddVariableExplicit(Variable v)
     {
         graphVariables.Add(v.Id, v);
-        Engine.NotifyAddVar(v.Id);
+        GEngine.NotifyAddVar(v.Id);
     }
 
     public void RemoveNode(int id)
@@ -113,7 +113,7 @@ public class Graph
         graphNodes[id].RemovePorts();
 
         if (graphNodes.Remove(id))
-            Engine.NotifyRemoveNode(id);
+            GEngine.NotifyRemoveNode(id);
     }
 
     public Node? GetNode(int nodeId)
@@ -190,7 +190,7 @@ public class Graph
         sourcePort?.IsConnected = graphConnections.Keys.Any(k => k.Item1 == sourcePortId);
         targetPort?.IsConnected = graphConnections.Keys.Any(k => k.Item2 == targetPortId);
 
-        Engine.NotifyRemoveConnection(sourcePortId, targetPortId);
+        GEngine.NotifyRemoveConnection(sourcePortId, targetPortId);
     }
 
     public Connection? GetConnection(int sourcePortId, int targetPortId)
@@ -209,7 +209,7 @@ public class Graph
         Variable newV = new(name, type, value);
         graphVariables.Add(newV.Id, newV);
 
-        Engine.NotifyAddVar(newV.Id);
+        GEngine.NotifyAddVar(newV.Id);
     }
 
     public void RemoveVariable(int id)
@@ -221,7 +221,7 @@ public class Graph
         }
 
         graphVariables.Remove(id);
-        Engine.NotifyRemoveVar(id);
+        GEngine.NotifyRemoveVar(id);
     }
 
     public Variable? GetVariable(int varId)

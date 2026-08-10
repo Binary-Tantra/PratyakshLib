@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class Dropdown : UIBase, IPointerInteractable
 {
@@ -56,7 +56,7 @@ public class Dropdown : UIBase, IPointerInteractable
         this.fontSize = fontSize;
 
         // Subscribe to global clicks to close the dropdown if the user clicks outside
-        Engine.OnAnyPointerDown += OnClickOff;
+        Engine.Instance.InteractionManager.AnyPointerEvent += OnClickOff;
 
         RebuildOptions();
     }
@@ -106,16 +106,16 @@ public class Dropdown : UIBase, IPointerInteractable
 
     protected override void OnDraw()
     {
-        Color fillNormal = new((byte)38, (byte)38, (byte)38, (byte)255);
-        Color fillHover = new((byte)55, (byte)55, (byte)55, (byte)255);
-        Color fillOpen = new((byte)28, (byte)50, (byte)88, (byte)255);
-        Color borderNorm = new((byte)85, (byte)85, (byte)85, (byte)255);
-        Color textCol = new((byte)200, (byte)200, (byte)200, (byte)255);
+        Raylib_cs.Color fillNormal = new((byte)38, (byte)38, (byte)38, (byte)255);
+        Raylib_cs.Color fillHover = new((byte)55, (byte)55, (byte)55, (byte)255);
+        Raylib_cs.Color fillOpen = new((byte)28, (byte)50, (byte)88, (byte)255);
+        Raylib_cs.Color borderNorm = new((byte)85, (byte)85, (byte)85, (byte)255);
+        Raylib_cs.Color textCol = new((byte)200, (byte)200, (byte)200, (byte)255);
 
-        Color fill = IsOpen ? fillOpen : (hovered ? fillHover : fillNormal);
+        Raylib_cs.Color fill = IsOpen ? fillOpen : (hovered ? fillHover : fillNormal);
 
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, itemHeight, fill);
-        Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y, Width, itemHeight), 1f, borderNorm);
+        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, itemHeight, fill);
+        Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y, Width, itemHeight), 1f, borderNorm);
 
         int textY = (int)(Position.Y + (itemHeight - fontSize) / 2f);
         LayoutEngine.DrawTextAbsolute(SelectedOption, (int)Position.X + 8, textY, textCol, fontSize, Vector2.Zero);
@@ -124,13 +124,13 @@ public class Dropdown : UIBase, IPointerInteractable
         int iconX = (int)Position.X + Width - 15;
         if (IsOpen)
         {
-            Raylib.DrawLine(iconX, textY + 8, iconX + 4, textY + 2, textCol);
-            Raylib.DrawLine(iconX + 4, textY + 2, iconX + 8, textY + 8, textCol);
+            Raylib_cs.Raylib.DrawLine(iconX, textY + 8, iconX + 4, textY + 2, textCol);
+            Raylib_cs.Raylib.DrawLine(iconX + 4, textY + 2, iconX + 8, textY + 8, textCol);
         }
         else
         {
-            Raylib.DrawLine(iconX, textY + 2, iconX + 4, textY + 8, textCol);
-            Raylib.DrawLine(iconX + 4, textY + 8, iconX + 8, textY + 2, textCol);
+            Raylib_cs.Raylib.DrawLine(iconX, textY + 2, iconX + 4, textY + 8, textCol);
+            Raylib_cs.Raylib.DrawLine(iconX + 4, textY + 8, iconX + 8, textY + 2, textCol);
         }
     }
 
@@ -143,13 +143,13 @@ public class Dropdown : UIBase, IPointerInteractable
         }
     }
 
-    protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         if (IsOpen)
         {
             for (int i = optionSelectables.Count - 1; i >= 0; i--)
             {
-                var hit = optionSelectables[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+                var hit = optionSelectables[i].HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
                 if (hit != null) return hit;
             }
         }
@@ -159,7 +159,7 @@ public class Dropdown : UIBase, IPointerInteractable
 
     protected override void OnDelete()
     {
-        Engine.OnAnyPointerDown -= OnClickOff;
+        Engine.Instance.InteractionManager.AnyPointerEvent -= OnClickOff;
         foreach (var opt in optionSelectables) opt.Delete();
     }
 
@@ -193,7 +193,7 @@ public class Dropdown : UIBase, IPointerInteractable
     {
         if (IsOpen)
         {
-            Color borderNorm = new((byte)85, (byte)85, (byte)85, (byte)255);
+            Raylib_cs.Color borderNorm = new((byte)85, (byte)85, (byte)85, (byte)255);
 
             for (int i = 0; i < optionSelectables.Count; i++)
             {
@@ -201,7 +201,7 @@ public class Dropdown : UIBase, IPointerInteractable
                 optionSelectables[i].Render();
             }
 
-            Raylib.DrawRectangleLinesEx(new Rectangle(Position.X, Position.Y + itemHeight, Width, optionSelectables.Count * itemHeight), 1f, borderNorm);
+            Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y + itemHeight, Width, optionSelectables.Count * itemHeight), 1f, borderNorm);
         }
     }
 }

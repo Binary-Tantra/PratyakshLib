@@ -1,6 +1,6 @@
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI;
 
 public class ChildLayout : UILayoutBase
 {
@@ -8,6 +8,8 @@ public class ChildLayout : UILayoutBase
     private readonly List<List<(int id, object? payload)>> ids; // The third thing (object) is a payload for things like dropdown which need an extra thing (in its case, its selected option idx).
 
     private int maxWidthCoverage;
+
+    protected override string PanelName => parent?.GetType().Name + "ChildLayout";
 
     public ChildLayout(List<(UIElementType type, UIElementDescription desc)> uiElements, int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {

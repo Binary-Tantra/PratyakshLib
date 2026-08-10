@@ -1,6 +1,14 @@
 using System.Numerics;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Core;
+
+public record struct Rectangle(float X, float Y, float Width, float Height)
+{
+    public readonly bool Contains(Vector2 point)
+    {
+        return point.X >= X && point.X <= X + Width && point.Y >= Y && point.Y <= Y + Height;
+    }
+}
 
 public abstract class Drawable
 {
@@ -79,7 +87,7 @@ public abstract class Drawable
 
     public void Render()
     {
-        //Raylib_cs.Raylib.DrawRectangle((int)Position.X - 5, (int)Position.Y - 5, 10, 10, Raylib_cs.Color.Red);
+        //DrawRectangle((int)Position.X - 5, (int)Position.Y - 5, 10, 10, Color.Red);
         if (shouldDraw) OnDraw();
     }
 

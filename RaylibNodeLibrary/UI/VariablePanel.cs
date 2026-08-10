@@ -1,4 +1,6 @@
-using Raylib_cs;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
+using Pratyaksh.UI.UIElements;
 using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary.UI;
@@ -17,6 +19,8 @@ public class VariablePanel : UILayoutBase
     private bool sendSelectNull = false;
 
     private int scrollId;
+
+    protected override string PanelName => "VariablePanel";
 
     public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 220, 300, parent, parentBasis)
     {
@@ -49,8 +53,8 @@ public class VariablePanel : UILayoutBase
             }
         }, 0, parent: this);
 
-        Engine.OnAnyPointerDown += OnAnyPointerInput;
-        Engine.OnHandleInputComplete += OnHandleInputComplete;
+        Engine.Instance.InteractionManager.AnyPointerEvent += OnAnyPointerInput;
+        GEngine.OnHandleInputComplete += OnHandleInputComplete;
     }
 
     private void Deselect()
@@ -69,8 +73,8 @@ public class VariablePanel : UILayoutBase
 
     protected override void OnDelete()
     {
-        Engine.OnAnyPointerDown -= OnAnyPointerInput;
-        Engine.OnHandleInputComplete -= OnHandleInputComplete;
+        Engine.Instance.InteractionManager.AnyPointerEvent -= OnAnyPointerInput;
+        GEngine.OnHandleInputComplete -= OnHandleInputComplete;
     }
 
     private void OnAnyPointerInput(PointerInteractEventData evt, EditorObject? target)
@@ -85,7 +89,7 @@ public class VariablePanel : UILayoutBase
                 if (target == addButton || target == removeButton || target.IsAncestor(addButton) || target.IsAncestor(removeButton))
                     return;
 
-                if (target.IsAncestorType<SearchMenu>() || target.IsAncestorType<InspectorPanel>())
+                if (target.HasAncestorOfType<SearchMenu>() || target.HasAncestorOfType<InspectorPanel>())
                     return;
 
                 if (currentSelected.Payload is int selectedVarId && target is Button btn && btn.Payload is int btnVarId && btnVarId == selectedVarId)
@@ -119,10 +123,10 @@ public class VariablePanel : UILayoutBase
 
     public override void OnDrawLayout()
     {
-        Dictionary<int, Variable> variables = Engine.Graph.Variables;
+        Dictionary<int, Variable> variables = GEngine.Graph.Variables;
         List<int> varIds = [.. variables.Keys];
 
-        layout.SectionEx("Variables", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
+        layout.SectionEx("Variables", Width, Height - 50, Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkGray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.7f), 0.1f, false);
 
         layout.BeginHorizontal(0);
         {
@@ -130,7 +134,7 @@ public class VariablePanel : UILayoutBase
 
             layout.BeginScrollView(scrollId, Width - 10, Height - 50 - 40, 40, 5);
             {
-                List<DataType> dataTypes = Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
+                List<DataType> dataTypes = GEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
                 string[] dataTypeNames = dataTypes.Select(t => t.Name).ToArray();
 
                 for (int i = 0; i < varIds.Count; i++)
@@ -145,7 +149,7 @@ public class VariablePanel : UILayoutBase
 
                         layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                         {
-                            System.Numerics.Vector2 mp = Raylib.GetMousePosition();
+                            System.Numerics.Vector2 mp = Raylib_cs.Raylib.GetMousePosition();
                             List<(string name, object payload)> typeItems = dataTypes.Select(dt => (dt.Name, (object)dt)).ToList();
 
                             requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>

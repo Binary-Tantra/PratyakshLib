@@ -1,4 +1,5 @@
-﻿using RaylibNodeLibrary.DataModel;
+﻿using Pratyaksh.Core;
+using RaylibNodeLibrary.DataModel;
 
 namespace RaylibNodeLibrary;
 
@@ -22,15 +23,15 @@ public class ConnectionVisualManager : Actor
     {
         DeleteConnectionUIs();
 
-        Dictionary<(int, int), Connection> connections = Engine.Graph.Connections;
+        Dictionary<(int, int), Connection> connections = GEngine.Graph.Connections;
         List<(int, int)> connKeys = [.. connections.Keys];
 
         for (int i = 0; i < connKeys.Count; i++)
         {
             Connection c = connections[connKeys[i]];
 
-            PortVisual? sp = Engine.PortToPortUIDict[c.SourcePortId];
-            PortVisual? tp = Engine.PortToPortUIDict[c.TargetPortId];
+            PortVisual? sp = GEngine.PortToPortUIDict[c.SourcePortId];
+            PortVisual? tp = GEngine.PortToPortUIDict[c.TargetPortId];
 
             if (sp == null || tp == null)
             {

@@ -1,25 +1,25 @@
 namespace RaylibNodeLibrary;
 
-using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
+using Pratyaksh.UI.UIElements;
 using RaylibNodeLibrary.DataModel;
 using RaylibNodeLibrary.UI;
+using System.Numerics;
 
-public class Engine
+public class GEngine : Engine
 {
     private static int screenWidth;
     private static int screenHeight;
 
-    public static float DeltaTime => Raylib.GetFrameTime();
+    public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
     private static EditorCamera2D camera;
     private static Canvas canvas;
+    private static int searchMenuIdx;
+    private static int contextMenuIdx;
 
     private static ConnectionVisualManager connectionUIManager;
-
-    private static List<EditorObject> editorObjects;
-    private static List<Actor> actors;
-    private static List<UIBase> uiElements;
 
     private static Graph graph;
 
@@ -29,28 +29,41 @@ public class Engine
 
     private static int? currentlySelectedObjectId;
 
-    private static Font defaultFont;
+    private static Raylib_cs.Font defaultFont;
 
     public static int ScreenWidth { get => screenWidth; }
     public static int ScreenHeight { get => screenHeight; }
-    public static Camera2D RCamera { get => camera.RaylibCam2D; }
+    public static Raylib_cs.Camera2D RCamera { get => camera.RaylibCam2D; }
     public static Graph Graph { get => graph; }
-    public static List<EditorObject> EditorObjects { get => editorObjects; }
-    public static List<Actor> Actors { get => actors; }
-    public static List<UIBase> UIElements { get => uiElements; }
+    public List<EditorObject> EditorObjects { get => editorObjects; }
+    public List<Actor> Actors { get => actors; }
+    public List<UIBase> UIElements { get => uiElements; }
     public static EditorCamera2D Camera { get => camera; }
     public static Canvas Canvas { get => canvas; }
     public static ConnectionVisualManager ConnectionUIManager { get => connectionUIManager; }
     public static Dictionary<int, NodeVisual?> NodeToNodeUIDict { get => nodeToNodeUIDict; }
     public static Dictionary<int, PortVisual?> PortToPortUIDict { get => portToPortUIDict; }
     public static int? CurrentlySelectedObjectId { get => currentlySelectedObjectId; }
-    public static Dictionary<int, Color> DataTypeColors { get; private set; }
+    public static Dictionary<int, Raylib_cs.Color> DataTypeColors { get; private set; }
     public static NodeRegistry NodeRegistry { get; private set; }
-    public static Font DefaultFont { get => defaultFont; }
+    public static Raylib_cs.Font DefaultFont { get => defaultFont; }
 
     public static event Action<PointerInteractEventData, EditorObject?> OnAnyPointerDown;
     public static event Action OnHandleInputComplete;
     public static event Action<int?> OnGlobalSelectionChanged;
+
+    private static List<(Rectangle rect, Raylib_cs.Color color)> deferredRects = new();
+
+    public GEngine(int sw, int sh) : base()
+    {
+        camera = new(1024, 576);
+        InteractionManager itm = new(camera);
+
+        Init(itm);
+
+        screenWidth = sw;
+        screenHeight = sh;
+    }
 
     public static void NotifyAddVar(int varId)
     {
@@ -62,7 +75,7 @@ public class Engine
             if (v != null)
             {
                 NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
-                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
+                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
                 NodeRegistry.RegisterNode(t);
             }
         }
@@ -142,7 +155,7 @@ public class Engine
         connectionUIManager.OnRemoveConnection(sourceP, targetP);
     }
 
-    private static void RemoveNodeAndUI(NodeVisual nodeVis)
+    private void RemoveNodeAndUI(NodeVisual nodeVis)
     {
         int nodeId = nodeVis.NodeId;
         graph.RemoveNode(nodeId);
@@ -151,14 +164,14 @@ public class Engine
         nodeVis.Delete();
     }
 
-    public static void Start()
+    public void Start()
     {
         Setup();
         Run();
         Cleanup();
     }
 
-    private static void SetupDefaultTypeColors()
+    private void SetupDefaultTypeColors()
     {
         DataTypeColors = [];
 
@@ -170,39 +183,250 @@ public class Engine
         DataType? boolType = graph.Types.GetType("Bool");
 
         if (execType != null)
-            DataTypeColors.Add(execType.Id, Raylib.Fade(Color.White, 0.55f));
+            DataTypeColors.Add(execType.Id, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.55f));
         
         if (intType != null)
-            DataTypeColors.Add(intType.Id, Color.Green);
+            DataTypeColors.Add(intType.Id, Raylib_cs.Color.Green);
         
         if (floatType != null)
-            DataTypeColors.Add(floatType.Id, Color.DarkGreen);
+            DataTypeColors.Add(floatType.Id, Raylib_cs.Color.DarkGreen);
         
         if (numType != null)
-            DataTypeColors.Add(numType.Id, Color.DarkGreen);
+            DataTypeColors.Add(numType.Id, Raylib_cs.Color.DarkGreen);
         
         if (strType != null)
-            DataTypeColors.Add(strType.Id, Color.Pink);
+            DataTypeColors.Add(strType.Id, Raylib_cs.Color.Pink);
         
         if (boolType != null)
-            DataTypeColors.Add(boolType.Id, Color.Red);
+            DataTypeColors.Add(boolType.Id, Raylib_cs.Color.Red);
     }
 
-    private static void Setup()
+    private void OnSelectVar(int? varId)
     {
-        screenWidth = 1024;
-        screenHeight = 576;
+        // On Var select.
+        currentlySelectedObjectId = varId;
+        OnGlobalSelectionChanged?.Invoke(varId);
+    }
 
+    private void OnAddVar()
+    {
+        // On add var.
+        DataType? intT = graph.Types.GetType("Int");
+        if (intT != null) graph.AddVariable("New Var", intT, 0);
+    }
+
+    private void OnRemoveVar(int varId)
+    {
+        // On remove var.
+        if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? varNodesVisList))
+        {
+            for (int i = 0; i < varNodesVisList.Count; i++)
+                RemoveNodeAndUI(varNodesVisList[i]);
+        }
+        else Console.WriteLine("Error: Couldn't get var of id {varId} while removing from VarToNodeUIsDict!");
+
+        graph.RemoveVariable(varId);
+    }
+
+    private void OnRenameVariable(int varId, string newName)
+    {
+        // On rename var
+        if (graph.RenameVariable(varId, newName))
+        {
+            Variable? v = graph.GetVariable(varId);
+
+            if (v == null)
+            {
+                Console.WriteLine("Error: THIS SHOULD NEVER HAPPEN!");
+                return;
+            }
+            
+            NodeRegistry.UnregisterNodeByPayload(varId);
+            NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name],
+                [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
+            
+            NodeRegistry.RegisterNode(t);
+
+            if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
+            {
+                for (int i = 0; i<nodeVisList.Count; i++)
+                {
+                    nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
+                    nodeVisList[i].UpdateTitle($"Get {v.VarName}");
+                    
+                    Node? n = graph.GetNode(nodeVisList[i].NodeId);
+                    n?.TemplateId = t.Id;
+                }
+            }
+            else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
+        }
+        else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
+    }
+
+    private void OnChangeVarType(int varId, DataType newType)
+    {
+        // On change var type
+        graph.ChangeVariableType(varId, newType);
+
+        Variable? v = graph.GetVariable(varId);
+        if (v == null) return;
+
+        NodeRegistry.UnregisterNodeByPayload(varId);
+        NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name],
+            [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
+        NodeRegistry.RegisterNode(t);
+
+        if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
+        {
+            for (int i = 0; i < nodeVisList.Count; i++)
+            {
+                NodeVisual nui = nodeVisList[i];
+                nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
+
+                Node? n = graph.GetNode(nui.NodeId);
+                if (n != null)
+                {
+                    n.TemplateId = t.Id;
+                    if (n.OutputPorts.Count > 0)
+                    {
+                        int portId = n.OutputPortIds[0];
+                        Port p = n.OutputPorts[portId];
+
+                        p.DataType = newType;
+                        p.PortName = newType.Name;
+
+                        if (portToPortUIDict.TryGetValue(portId, out PortVisual? pui) && pui != null)
+                            pui.UpdateDataType(newType.Id, newType.Name);
+
+                        graph.DisconnectIncompatibleConnections(portId);
+                    }
+                }
+            }
+        }
+    }
+
+    private void OnChangeVarValue(int varId, object newValue)
+    {
+        Variable? v = graph.GetVariable(varId);
+        v?.VarValue = newValue;
+    }
+
+    private bool OpenSearchMenu(int x, int y, List<(string, object)> items, Action<object> onItemSelected)
+    {
+        return canvas.OpenTransPanel<SearchMenu>(searchMenuIdx, x, y, 200, 300, items, onItemSelected) != null;
+    }
+
+    private bool OpenContextMenu(int x, int y, EditorObject? potentialTarget)
+    {
+        List<(string name, object payload)> menuItems = [("Delete", 0)];
+        Action<Button> onButtonPressed = (button) => OnCanvasCtxMenuItemSelected(button, potentialTarget);
+        return canvas.OpenTransPanel<ContextMenu>(contextMenuIdx, x, y, menuItems, onButtonPressed, canvas) != null;
+    }
+
+    private void OnCanvasSearchMenuItemSelected(object payload)
+    {
+        if (payload is not NodeTemplate template)
+            return;
+        
+        Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
+        NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Id, mp);
+
+        if (visual != null)
+        {
+            actors.Add(visual);
+            if (template.Payload is int varId)
+            {
+                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? list))
+                    list.Add(visual);
+                else varToNodeUIsDict.Add(varId, [visual]);
+            }
+        }
+
+        canvas.CloseTransPanel(searchMenuIdx);
+    }
+
+    private void OnCanvasCtxMenuItemSelected(object payload, EditorObject? editorObj)
+    {
+        if (payload is not string payloadStr || payloadStr != "Delete")
+            return;
+
+        if (editorObj != null)
+        {
+            Actor ac = (Actor)editorObj;
+            NodeVisual? nui = (NodeVisual)ac;
+
+            if (nui == null)
+            {
+                Console.WriteLine("Didn't receive a not on ctx menu graph delete!");
+                return;
+            }
+
+            List<int> keys = [.. varToNodeUIsDict.Keys];
+            (int key, int idx)? marked = null;
+            for (int i = 0; i < keys.Count; i++)
+            {
+                List<NodeVisual> nodeViss = varToNodeUIsDict[keys[i]];
+
+                for (int j = 0; j < nodeViss.Count; j++)
+                {
+                    if (nodeViss[j] == nui)
+                    {
+                        marked = (keys[i], j);
+                        break;
+                    }
+                }
+
+                if (marked.HasValue)
+                {
+                    varToNodeUIsDict[marked.Value.key].RemoveAt(marked.Value.idx);
+                    break;
+                }
+            }
+
+            RemoveNodeAndUI(nui);
+        }
+
+        canvas.CloseTransPanel(contextMenuIdx);
+    }
+
+    private bool OnCanvasContextClick(PointerInteractEventData evt, EditorObject? target)
+    {
+        int posX = (int)evt.ScreenPosition.X;
+        int posY = (int)evt.ScreenPosition.Y;
+
+        bool success = false;
+
+        if (Instance.InteractionManager.CurrentlyHit == null)
+        {
+            List<(string, object)> mis = [];
+
+            foreach (var template in NodeRegistry.AllTemplates)
+            {
+                mis.Add((template.Name, template));
+            }
+
+            success = OpenSearchMenu(posX, posY, mis, OnCanvasSearchMenuItemSelected);
+        }
+        else if (Instance.InteractionManager.CurrentlyHit is NodeVisual nui)
+        {
+            success = OpenContextMenu(posX, posY, nui);
+        }
+
+        return success;
+    }
+
+    private void Setup()
+    {
         graph = new Graph();
         
         graph.Types.RegisterDefaultTypes();
         SetupDefaultTypeColors();
 
-        Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
+        Raylib_cs.Raylib.SetConfigFlags(Raylib_cs.ConfigFlags.ResizableWindow);
 
-        Raylib.InitWindow(screenWidth, screenHeight, "Raylib Node Library");
+        Raylib_cs.Raylib.InitWindow(screenWidth, screenHeight, "Raylib Node Library");
 
-        defaultFont = Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
+        defaultFont = Raylib_cs.Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
         LayoutEngine.InitSLEDefaultFont(defaultFont);
 
         nodeToNodeUIDict = [];
@@ -213,7 +437,6 @@ public class Engine
         uiElements = [];
         editorObjects = [];
 
-        camera = new(screenWidth, screenHeight);
         editorObjects.Add(camera);
 
         connectionUIManager = new(null);
@@ -221,7 +444,7 @@ public class Engine
         NodeRegistry = new NodeRegistry();
 
         NodeRegistry.RegisterNode(new NodeTemplate("Empty Node", "Basic", [], [], [
-            (UIElementType.Text, new TextDesc("Test Empty!", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.Text, new TextDesc("Test Empty!", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
             (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
             (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
             (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
@@ -230,177 +453,33 @@ public class Engine
         NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
             ["Execution", "String", "Int", "Number"], 
             ["Execution", "Int", "String"], [
-            (UIElementType.Text, new TextDesc("Enter Text:", Raylib.Fade(Color.White, 0.65f))),
+            (UIElementType.Text, new TextDesc("Enter Text:", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
             (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
             (UIElementType.Selectable, new SelectableDesc("Red", false, 150, 25, (sel) => { })),
             (UIElementType.Selectable, new SelectableDesc("Blue", false, 150, 25, (sel) => { })),
             (UIElementType.Group, new HorizontalGroupDesc("", 50,
-                [(UIElementType.Text, new TextDesc("Enter: ", Color.Red)),
+                [(UIElementType.Text, new TextDesc("Enter: ", Raylib_cs.Color.Red)),
                 (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
             (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))
         ]));
 
         NodeRegistry.RegisterNode(new NodeTemplate("Math Add", "Math",
             ["Float", "Float"], ["Float"], [
-            (UIElementType.Text, new TextDesc("A + B", Color.White))
+            (UIElementType.Text, new TextDesc("A + B", Raylib_cs.Color.White))
         ]));
 
-        canvas = new Canvas(screenWidth, screenHeight, null, (payload, editorObj) =>
-        {
-            if (payload is NodeTemplate template)
-            {
-                Vector2 mp = InteractionManager.InputContext.mouseWorldPosition;
-                NodeVisual? visual = NodeRegistry.SpawnNode(graph, template.Id, mp);
-                if (visual != null)
-                {
-                    actors.Add(visual);
-                    if (template.Payload is int varId)
-                    {
-                        if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? list))
-                            list.Add(visual);
-                        else varToNodeUIsDict.Add(varId, [visual]);
-                    }
-                }
-            }
-            else if (payload is string payloadStr && payloadStr == "Delete")
-            {
-                if (editorObj != null)
-                {
-                    Actor ac = (Actor)editorObj;
-                    NodeVisual? nui = (NodeVisual)ac;
+        canvas = new Canvas(screenWidth, screenHeight, OnCanvasContextClick);
+        searchMenuIdx = canvas.AddPanel(null, false, true);
+        contextMenuIdx = canvas.AddPanel(null, false, true);
 
-                    if (nui == null)
-                    {
-                        Console.WriteLine("Didn't receive a not on ctx menu graph delete!");
-                        return;
-                    }
-                    
-                    List<int> keys = [.. varToNodeUIsDict.Keys];
-                    (int key, int idx)? marked = null;
-                    for (int i = 0; i < keys.Count; i++)
-                    {
-                        List<NodeVisual> nodeViss = varToNodeUIsDict[keys[i]];
+        VariablePanel varPan = new(10, 20, OnSelectVar, OnAddVar, OnRemoveVar, OnRenameVariable, OnChangeVarType, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas);
+        canvas.AddPanel(varPan, false, false);
 
-                        for (int j = 0; j < nodeViss.Count; j++)
-                        {
-                            if (nodeViss[j] == nui)
-                            {
-                                marked = (keys[i], j);
-                                break;
-                            }
-                        }
+        InspectorPanel inPan = new(-200 - 10, 20, OnRenameVariable, OnChangeVarType, OnChangeVarValue, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas, ParentBasis.TopRight);
+        canvas.AddPanel(inPan, false, false);
 
-                        if (marked.HasValue)
-                        {
-                            varToNodeUIsDict[marked.Value.key].RemoveAt(marked.Value.idx);
-                            break;
-                        }
-                    }
-
-                    RemoveNodeAndUI(nui);
-                }
-            }
-        }, (varId) =>
-        {
-            // On Var select.
-            currentlySelectedObjectId = varId;
-            OnGlobalSelectionChanged?.Invoke(varId);
-        },
-        () =>
-        {
-            // On add var.
-            DataType? intT = graph.Types.GetType("Int");
-            if (intT != null) graph.AddVariable("New Var", intT, 0);
-        },
-        (varId) =>
-        {
-            // On remove var.
-            if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? varNodesVisList))
-            {
-                for (int i = 0; i < varNodesVisList.Count; i++)
-                    RemoveNodeAndUI(varNodesVisList[i]);
-            }
-            else Console.WriteLine("Error: Couldn't get var of id {varId} while removing from VarToNodeUIsDict!");
-
-            graph.RemoveVariable(varId);
-        },
-        (varId, newName) =>
-        {
-            if (graph.RenameVariable(varId, newName))
-            {
-                Variable? v = graph.GetVariable(varId);
-
-                if (v == null)
-                {
-                    Console.WriteLine("Error: THIS SHOULD NEVER HAPPEN!");
-                    return;
-                }
-
-                NodeRegistry.UnregisterNodeByPayload(varId);
-                NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
-                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
-                NodeRegistry.RegisterNode(t);
-
-                if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
-                {
-                    for (int i = 0; i < nodeVisList.Count; i++)
-                    {
-                        nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
-                        nodeVisList[i].UpdateTitle($"Get {v.VarName}");
-
-                        Node? n = graph.GetNode(nodeVisList[i].NodeId);
-                        if (n != null) n.TemplateId = t.Id;
-                    }
-                }
-                else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
-            }
-            else Console.WriteLine($"Error: Couldn't rename variable of id {varId}!");
-        },
-        (varId, newType) =>
-        {
-            graph.ChangeVariableType(varId, newType);
-
-            Variable? v = graph.GetVariable(varId);
-            if (v == null) return;
-
-            NodeRegistry.UnregisterNodeByPayload(varId);
-            NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
-                [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)))], varId);
-            NodeRegistry.RegisterNode(t);
-
-            if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
-            {
-                for (int i = 0; i < nodeVisList.Count; i++)
-                {
-                    NodeVisual nui = nodeVisList[i];
-                    nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib.Fade(Color.White, 0.65f)));
-
-                    Node? n = graph.GetNode(nui.NodeId);
-                    if (n != null)
-                    {
-                        n.TemplateId = t.Id;
-                        if (n.OutputPorts.Count > 0)
-                        {
-                            int portId = n.OutputPortIds[0];
-                            Port p = n.OutputPorts[portId];
-                            
-                            p.DataType = newType;
-                            p.PortName = newType.Name;
-
-                            if (portToPortUIDict.TryGetValue(portId, out PortVisual? pui) && pui != null)
-                                pui.UpdateDataType(newType.Id, newType.Name);
-
-                            graph.DisconnectIncompatibleConnections(portId);
-                        }
-                    }
-                }
-            }
-        },
-        (varId, newValue) =>
-        {
-            Variable? v = graph.GetVariable(varId);
-            v?.VarValue = newValue;
-        });
+        DemoPanel demoPanel = new(60, 70, canvas);
+        canvas.AddPanel(demoPanel, true, false);
 
         uiElements.Add(canvas);
 
@@ -408,25 +487,25 @@ public class Engine
         actors.Add(connectionUIManager);
     }
 
-    private static void Run()
+    private void Run()
     {
-        while (!Raylib.WindowShouldClose())
+        while (!Raylib_cs.Raylib.WindowShouldClose())
         {
             Update();
 
-            Raylib.BeginDrawing();
+            Raylib_cs.Raylib.BeginDrawing();
             {
-                Raylib.ClearBackground(new Color((byte)30, (byte)30, (byte)30));
+                Raylib_cs.Raylib.ClearBackground(new Raylib_cs.Color((byte)30, (byte)30, (byte)30));
                 Render();
             }
-            Raylib.EndDrawing();
+            Raylib_cs.Raylib.EndDrawing();
         }
     }
 
-    private static void Update()
+    private void Update()
     {
-        int sw = Raylib.GetScreenWidth();
-        int sh = Raylib.GetScreenHeight();
+        int sw = Raylib_cs.Raylib.GetScreenWidth();
+        int sh = Raylib_cs.Raylib.GetScreenHeight();
 
         if (screenWidth != sw || screenHeight != sh)
         {
@@ -441,30 +520,30 @@ public class Engine
 
         InputContext inputContext = new()
         {
-            isLMBCurrentlyHeld = Raylib.IsMouseButtonDown(MouseButton.Left),
-            isRMBCurrentlyHeld = Raylib.IsMouseButtonDown(MouseButton.Right),
+            isLMBCurrentlyHeld = Raylib_cs.Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.Left),
+            isRMBCurrentlyHeld = Raylib_cs.Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.Right),
 
-            wasLMBPressedOnceThisFrame = Raylib.IsMouseButtonPressed(MouseButton.Left),
-            wasRMBPressedOnceThisFrame = Raylib.IsMouseButtonPressed(MouseButton.Right),
-            wasLMBReleasedOnceThisFrame = Raylib.IsMouseButtonReleased(MouseButton.Left),
-            wasRMBReleasedOnceThisFrame = Raylib.IsMouseButtonReleased(MouseButton.Right),
+            wasLMBPressedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.Left),
+            wasRMBPressedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.Right),
+            wasLMBReleasedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.Left),
+            wasRMBReleasedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.Right),
 
-            mouseScreenPosition = Raylib.GetMousePosition(),
-            mouseWorldPosition = Raylib.GetScreenToWorld2D(Raylib.GetMousePosition(), RCamera),
+            mouseScreenPosition = Raylib_cs.Raylib.GetMousePosition(),
+            mouseWorldPosition = Raylib_cs.Raylib.GetScreenToWorld2D(Raylib_cs.Raylib.GetMousePosition(), RCamera),
 
-            mouseWheel = Raylib.GetMouseWheelMove(),
+            mouseWheel = Raylib_cs.Raylib.GetMouseWheelMove(),
 
-            isCtrlDown = Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.IsKeyDown(KeyboardKey.RightControl),
-            isShiftDown = Raylib.IsKeyDown(KeyboardKey.LeftShift) || Raylib.IsKeyDown(KeyboardKey.RightShift)
+            isCtrlDown = Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.LeftControl) || Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.RightControl),
+            isShiftDown = Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.LeftShift) || Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.RightShift)
         };
 
         int keycode;
-        while ((keycode = Raylib.GetKeyPressed()) != 0)
+        while ((keycode = Raylib_cs.Raylib.GetKeyPressed()) != 0)
             inputContext.keyboardKeysDown.Add((KeyboardKey)keycode);
 
-        InteractionManager.UpdateInputContext(inputContext);
+        Instance.InteractionManager.UpdateInputContext(inputContext);
 
-        InteractionManager.HandleInput();
+        Instance.InteractionManager.HandleInput();
         OnHandleInputComplete?.Invoke();
 
         for (int i = 0; i < editorObjects.Count; i++)
@@ -477,7 +556,7 @@ public class Engine
             uiElements[i].Update();
     }
 
-    private static void Render()
+    private void Render()
     {
         RenderWorld();
         RenderUI();
@@ -485,34 +564,34 @@ public class Engine
         RenderDeferred();
     }
 
-    private static void RenderWorld()
+    private void RenderWorld()
     {
-        Raylib.BeginMode2D(camera.RaylibCam2D);
+        Raylib_cs.Raylib.BeginMode2D(camera.RaylibCam2D);
 
         for (int i = 0; i < actors.Count; i++)
             actors[i].Render();
 
-        Raylib.EndMode2D();
+        Raylib_cs.Raylib.EndMode2D();
     }
 
-    private static void RenderUI()
+    private void RenderUI()
     {
-        Raylib.DrawFPS(screenWidth - 150, 10);
+        Raylib_cs.Raylib.DrawFPS(screenWidth - 150, 10);
 
         for (int i = 0; i < uiElements.Count; i++)
             uiElements[i].Render();
     }
 
-    private static void RenderEditorObjects()
+    private void RenderEditorObjects()
     {
         for (int i = 0; i < editorObjects.Count; i++)
             editorObjects[i].Render();
     }
 
-    private static void RenderDeferred()
+    private void RenderDeferred()
     {
         for (int i = 0; i < deferredRects.Count; i++)
-            Raylib.DrawRectangle(
+            Raylib_cs.Raylib.DrawRectangle(
                                 (int)deferredRects[i].rect.X,
                                 (int)deferredRects[i].rect.Y,
                                 (int)deferredRects[i].rect.Width,
@@ -524,20 +603,18 @@ public class Engine
         deferredRects.Clear();
     }
 
-    private static List<(Rectangle rect, Color color)> deferredRects = new();
-
-    public static void DrawDeferredWorldSpaceRect(Rectangle rect, Color color)
+    public void DrawDeferredWorldSpaceRect(Rectangle rect, Raylib_cs.Color color)
     {
         deferredRects.Add((rect, color));
     }
 
-    public static void Cleanup()
+    public void Cleanup()
     {
-        Raylib.UnloadFont(defaultFont);
-        Raylib.CloseWindow();
+        Raylib_cs.Raylib.UnloadFont(defaultFont);
+        Raylib_cs.Raylib.CloseWindow();
     }
 
-    public static void ClearWorkspace()
+    public void ClearWorkspace()
     {
         graph.Clear();
 
@@ -561,7 +638,7 @@ public class Engine
         varToNodeUIsDict.Clear();
     }
 
-    public static void ReconstructGraph(DataModel.Serialization.GraphSaveData data)
+    public void ReconstructGraph(DataModel.Serialization.GraphSaveData data)
     {
         ClearWorkspace();
 
@@ -696,7 +773,7 @@ public class Engine
         }
     }
 
-    public static void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
+    public void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
     {
         if (pet == PointerEventType.Up && (evt.MouseButton == MouseButton.Right || evt.MouseButton == MouseButton.Left))
             canvas.OnMouseUp(evt);
@@ -708,7 +785,7 @@ public class Engine
             camera.OnScroll(sed);
     }
 
-    public static void HandleGlobalKBEvents(KeyInteractEventData keyEvent)
+    public void HandleGlobalKBEvents(KeyInteractEventData keyEvent)
     {
         // No object is focused. Handle global Editor Hotkeys here.
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.

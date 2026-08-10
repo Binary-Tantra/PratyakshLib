@@ -1,12 +1,12 @@
-using Raylib_cs;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Core;
+using Pratyaksh.UI.UIElements;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI;
 
 public class DemoPanel : UILayoutBase
 {
     private int selectedSpace = 15;
-    private Color currentSelectedColor = Color.Black;
+    private Raylib_cs.Color currentSelectedColor = Raylib_cs.Color.Black;
 
     private int scrollViewId;
     private int[] buttonIds;
@@ -17,7 +17,7 @@ public class DemoPanel : UILayoutBase
     private int passwordFieldId;
     private string passwordText;
 
-    private (int id, bool isSelected, Color color)[] selectableIds;
+    private (int id, bool isSelected, Raylib_cs.Color color)[] selectableIds;
     private int scrollView2Id;
 
     private int dropdownId;
@@ -35,7 +35,7 @@ public class DemoPanel : UILayoutBase
 
     private Selectable? previousSelected = null;
 
-    public string PanelName => "DemoPanel";
+    protected override string PanelName => "DemoPanel";
 
     public DemoPanel(int posX, int posY, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 410, 480, parent, parentBasis)
     {
@@ -49,12 +49,12 @@ public class DemoPanel : UILayoutBase
         passwordText = "SecretPass123";
         
         selectableIds = [
-                         (IdGen.GetNewID(), false, Color.Red),
-                         (IdGen.GetNewID(), false, Color.SkyBlue),
-                         (IdGen.GetNewID(), false, Color.Orange),
-                         (IdGen.GetNewID(), false, Color.Green),
-                         (IdGen.GetNewID(), false, Color.Magenta),
-                         (IdGen.GetNewID(), false, Color.Yellow)
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.Red),
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.SkyBlue),
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.Orange),
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.Green),
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.Magenta),
+                         (IdGen.GetNewID(), false, Raylib_cs.Color.Yellow)
                         ];
         
         scrollView2Id = IdGen.GetNewID();
@@ -71,7 +71,7 @@ public class DemoPanel : UILayoutBase
         alertBannerId = IdGen.GetNewID();
     }
 
-    public Dictionary<string, object?> GetSaveData()
+    public override Dictionary<string, object?> GetSaveData()
     {
         return new Dictionary<string, object?>
         {
@@ -84,7 +84,7 @@ public class DemoPanel : UILayoutBase
         };
     }
 
-    public void RestoreSaveData(System.Text.Json.JsonElement data)
+    public override void RestoreSaveData(System.Text.Json.JsonElement data)
     {
         if (data.ValueKind != System.Text.Json.JsonValueKind.Object) return;
 
@@ -104,19 +104,19 @@ public class DemoPanel : UILayoutBase
             selectedSpace = ss.GetInt32();
 
         if (data.TryGetProperty("selectableStates", out var selArray) && selArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            int idx = 0;
+            foreach (var item in selArray.EnumerateArray())
             {
-                int idx = 0;
-                foreach (var item in selArray.EnumerateArray())
+                if (idx < selectableIds.Length && item.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False)
                 {
-                    if (idx < selectableIds.Length && item.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False)
-                    {
-                        bool isSel = item.GetBoolean();
-                        selectableIds[idx].isSelected = isSel;
-                        if (isSel) currentSelectedColor = selectableIds[idx].color;
-                    }
-                    idx++;
+                    bool isSel = item.GetBoolean();
+                    selectableIds[idx].isSelected = isSel;
+                    if (isSel) currentSelectedColor = selectableIds[idx].color;
                 }
+                idx++;
             }
+        }
     }
 
     // Callbacks for our interactive elements
@@ -136,7 +136,7 @@ public class DemoPanel : UILayoutBase
             selectableIds[prevIdx].isSelected = false;
         }
 
-        (int id, _, Color color) = selectableIds[(int)sel.Payload];
+        (int id, _, Raylib_cs.Color color) = selectableIds[(int)sel.Payload];
 
         selectableIds[(int)sel.Payload] = (id, sel.IsSelected, color);
         currentSelectedColor = color;
@@ -150,9 +150,9 @@ public class DemoPanel : UILayoutBase
     {
         // 1. Draw the main Section background and header
         layout.SectionEx("Layout Engine Showcase", Width, Height,
-            Raylib.Fade(Color.DarkBlue, 0.7f),
-            Raylib.Fade(Color.Gray, 0.65f),
-            Color.White, 0.08f, false);
+            Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.7f),
+            Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f),
+            Raylib_cs.Color.White, 0.08f, false);
 
         layout.BeginScrollView(scrollViewId, Width, 440, 40, 10);
         {
@@ -170,22 +170,22 @@ public class DemoPanel : UILayoutBase
                 layout.AddSpace(15);
                 layout.StatusBadge(statusBadgeId2, "Processing", StatusType.Processing);
                 layout.AddSpace(15);
-                layout.LinkButton(linkBtnId, "Open GitHub Repo", "https://github.com");
+                layout.LinkButton(linkBtnId, "Open GitHub Repo", "https://github.com/Binary-Tantra/PratyakshLib");
             }
             layout.EndHorizontal(24);
 
             layout.AddSpace(10);
             
             // --- A simple text element ---
-            layout.Text("Welcome to the Extended UI Demo Panel!", Color.Gold);
+            layout.Text("Welcome to the Extended UI Demo Panel!", Raylib_cs.Color.Gold);
             
             layout.AddSpace(5);
 
             // Colored Custom Buttons Demonstration
             layout.BeginHorizontalEx(10, (int)Position.X + 10);
             {
-                layout.Button(customBtnId1, "Primary", 85, 25, OnDemoButtonPressed, 15, new Color((byte)28, (byte)100, (byte)200, (byte)255), Color.SkyBlue, Color.White);
-                layout.Button(customBtnId2, "Danger", 85, 25, OnDemoButtonPressed, 30, new Color((byte)180, (byte)40, (byte)40, (byte)255), Color.Red, Color.White);
+                layout.Button(customBtnId1, "Primary", 85, 25, OnDemoButtonPressed, 15, new Raylib_cs.Color((byte)28, (byte)100, (byte)200, (byte)255), Raylib_cs.Color.SkyBlue, Raylib_cs.Color.White);
+                layout.Button(customBtnId2, "Danger", 85, 25, OnDemoButtonPressed, 30, new Raylib_cs.Color((byte)180, (byte)40, (byte)40, (byte)255), Raylib_cs.Color.Red, Raylib_cs.Color.White);
                 layout.Button(buttonIds[2], "Default", 85, 25, OnDemoButtonPressed, 45);
             }
             layout.EndHorizontal(25);
@@ -195,7 +195,7 @@ public class DemoPanel : UILayoutBase
             // --- Cycle Selector ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Theme Mode: ", Color.White);
+                layout.Text("Theme Mode: ", Raylib_cs.Color.White);
                 layout.AddSpace(15);
                 layout.CycleSelector(cycleSelectorId, ["Dark Mode", "Light Mode", "High Contrast", "Cyberpunk"], cycleSelectedIdx, 160, 24, (cs) => {
                     cycleSelectedIdx = cs.SelectedIndex;
@@ -208,7 +208,7 @@ public class DemoPanel : UILayoutBase
             // --- Form Inputs (Standard & Masked Password) ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("User Name: ", Color.White);
+                layout.Text("User Name: ", Raylib_cs.Color.White);
                 layout.AddSpace(10);
                 layout.InputField(inputFieldId, "Type name...", fieldText, 140, 24, (inpf) => fieldText = inpf.InputFieldText);
             }
@@ -218,7 +218,7 @@ public class DemoPanel : UILayoutBase
 
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Password:  ", Color.White);
+                layout.Text("Password:  ", Raylib_cs.Color.White);
                 layout.AddSpace(10);
                 layout.InputField(passwordFieldId, "Password...", passwordText, 140, 24, (inpf) => passwordText = inpf.InputFieldText, isMasked: true);
             }
@@ -229,23 +229,23 @@ public class DemoPanel : UILayoutBase
             // --- Text Truncation Demonstration ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Long Title: ", Color.Gray);
+                layout.Text("Long Title: ", Raylib_cs.Color.Gray);
                 layout.AddSpace(5);
-                layout.TextTruncated("This is a very long text string that will truncate nicely when exceeding width limit", 240, Color.LightGray);
+                layout.TextTruncated("This is a very long text string that will truncate nicely when exceeding width limit", 240, Raylib_cs.Color.LightGray);
             }
             layout.EndHorizontal(20);
 
             layout.AddSpace(10);
 
             // --- Nested Selectables & Dropdown ---
-            layout.TextPanelPro("Dropdown & Custom Selectables", Width - 30, 25, Color.DarkGreen, Color.White);
+            layout.TextPanelPro("Dropdown & Custom Selectables", Width - 30, 25, Raylib_cs.Color.DarkGreen, Raylib_cs.Color.White);
 
             layout.AddSpace(10);
 
             int height = 0;
             layout.BeginHorizontalEx(10, (int)Position.X + 10);
             {
-                layout.Text("Resolution: ", Color.White);
+                layout.Text("Resolution: ", Raylib_cs.Color.White);
                 layout.AddSpace(50);
                 height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 24, (dd) =>
                 {

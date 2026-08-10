@@ -1,7 +1,45 @@
 using System.Numerics;
-using Raylib_cs;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Core;
+
+public enum MouseButton
+{
+    Left,
+    Right,
+    Middle
+}
+
+public enum KeyboardKey
+{
+    a, b, c, d, e, f, g, h, i, j, k, l, m,
+    n, o, p, q, r, s, t, u, v, w, x, y, z,
+    A, B, C, D, E, F, G, H, I, J, K, L, M,
+    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    Zero, One, Two, Three, Four,
+    Five, Six, Seven, Eight, Nine,
+    KPZero, KPOne, KPTwo, KPThree, KPFour,
+    KPFive, KPSix, KPSeven, KPEight, KPNine,
+    KPDecimal, KPPlus, KPMinus, KPMultiply, KPDivide,
+    Minus,
+    Comma,
+    Escape,
+    LeftControl,
+    RightControl,
+    LeftShift,
+    RightShift,
+    LeftAlt,
+    RightAlt,
+    Space,
+    Enter,
+    Backspace,
+    Tab,
+    CapsLock,
+    LeftArrow,
+    RightArrow,
+    UpArrow,
+    DownArrow,
+    Period
+}
 
 public class InputContext
 {
@@ -32,12 +70,17 @@ public class InputContext
     public bool isShiftDown = false;
 }
 
-public static class InteractionManager
+public class InteractionManager
 {
-    private static EditorObject? currentlyHit = null;
-    private static EditorObject? currentlyHovered = null;
-    private static EditorObject? currentPointerHolder = null;
-    private static EditorObject? currentlyFocused = null;
+    private IWorldToScreenTransformer worldToScreenTransformer;
+    private Action<PointerInteractEventData, PointerEventType, bool> globalPointerEvent;
+    private Action<KeyInteractEventData> globalKBEvent;
+    private Action<PointerInteractEventData, EditorObject?> anyPointerEvent;
+
+    private EditorObject? currentlyHit = null;
+    private EditorObject? currentlyHovered = null;
+    private EditorObject? currentPointerHolder = null;
+    private EditorObject? currentlyFocused = null;
 
     private class PendingMouseGesture
     {
@@ -54,15 +97,28 @@ public static class InteractionManager
     private static MouseButton lastClickButton;
     private const double DOUBLE_CLICK_WAIT_TIME = 0.3; // 300 milliseconds
 
-    private static InputContext inputContext = new();
+    private InputContext inputContext = new();
 
-    public static InputContext InputContext { get => inputContext; }
-    public static EditorObject? CurrentlyHit { get => currentlyHit; }
-    public static EditorObject? CurrentlyHovered { get => currentlyHovered; }
-    public static EditorObject? CurrentlyPointerSelected { get => currentPointerHolder; }
-    public static EditorObject? CurrentlyFocused { get => currentlyFocused; }
+    public InputContext InputContext { get => inputContext; }
+    public EditorObject? CurrentlyHit { get => currentlyHit; }
+    public EditorObject? CurrentlyHovered { get => currentlyHovered; }
+    public EditorObject? CurrentlyPointerSelected { get => currentPointerHolder; }
+    public EditorObject? CurrentlyFocused { get => currentlyFocused; }
+    public IWorldToScreenTransformer WorldToScreenTransformer { get => worldToScreenTransformer; }
 
-    public static void UpdateInputContext(InputContext ipC)
+    public event Action<PointerInteractEventData, PointerEventType, bool> GlobalPointerEvent { add => globalPointerEvent += value; remove => globalPointerEvent -= value; }
+    public event Action<KeyInteractEventData> GlobalKBEvent { add => globalKBEvent += value; remove => globalKBEvent -= value; }
+    public event Action<PointerInteractEventData, EditorObject?> AnyPointerEvent { add => anyPointerEvent += value; remove => anyPointerEvent -= value; }
+
+    public InteractionManager(IWorldToScreenTransformer spaceTransformer)
+    {
+        worldToScreenTransformer = spaceTransformer;
+        globalPointerEvent = delegate { };
+        globalKBEvent = delegate { };
+        anyPointerEvent = delegate { };
+    }
+
+    public void UpdateInputContext(InputContext ipC)
     {
         if (inputContext.isLMBCurrentlyHeld && !ipC.isLMBCurrentlyHeld)
             inputContext.wasLMBDownLastFrame = true;
@@ -98,7 +154,7 @@ public static class InteractionManager
         inputContext.isMouseMoving = inputContext.mouseScreenDelta.LengthSquared() > 0;
     }
 
-    private static EditorObject? TryPointerVisitation(EditorObject? newHoveredInteractableEO)
+    private EditorObject? TryPointerVisitation(EditorObject? newHoveredInteractableEO)
     {
         bool wasCompleted = false;
 
@@ -146,7 +202,7 @@ public static class InteractionManager
         return null;
     }
 
-    public static void CapturePointer(EditorObject target)
+    public void CapturePointer(EditorObject target)
     {
         if (currentPointerHolder != null)
             Console.WriteLine("Warning: Current EditorObject Pointer holder was not null, but a new EditorObject now holds the pointer. Old: " + currentPointerHolder + ". New: " + target + ".");
@@ -154,12 +210,12 @@ public static class InteractionManager
         currentPointerHolder = target;
     }
 
-    public static void ReleasePointer()
+    public void ReleasePointer()
     {
         currentPointerHolder = null;
     }
 
-    public static void CaptureFocus(EditorObject target)
+    public void CaptureFocus(EditorObject target)
     {
         if (currentlyFocused != null && currentlyFocused != target)
         {
@@ -173,7 +229,7 @@ public static class InteractionManager
         currentlyFocused = target;
     }
 
-    public static void ReleaseFocus()
+    public void ReleaseFocus()
     {
         if (currentlyFocused != null)
         {
@@ -185,20 +241,18 @@ public static class InteractionManager
         }
     }
 
-    public static Drawable? FindDeepestHitObject(Vector2 mouseScreenPos, Vector2 mouseWorldPos)
+    public Drawable? FindDeepestHitObject(Vector2 mouseScreenPos, Vector2 mouseWorldPos)
     {
-        for (int i = Engine.UIElements.Count - 1; i >= 0; i--)
+        for (int i = Engine.Instance.UIElements.Count - 1; i >= 0; i--)
         {
-            Drawable? hit = Engine.UIElements[i].HitTest(mouseScreenPos, mouseWorldPos);
-
+            Drawable? hit = Engine.Instance.UIElements[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
             if (hit != null)
                 return hit;
         }
 
-        for (int i = Engine.Actors.Count - 1; i >= 0; i--)
+        for (int i = Engine.Instance.Actors.Count - 1; i >= 0; i--)
         {
-            Drawable? hit = Engine.Actors[i].HitTest(mouseScreenPos, mouseWorldPos);
-
+            Drawable? hit = Engine.Instance.Actors[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
             if (hit != null)
                 return hit;
         }
@@ -206,7 +260,7 @@ public static class InteractionManager
         return null;
     }
 
-    public static bool DispatchPointer(EditorObject? clickedEO, PointerInteractEventData eventData, PointerEventType pointerEventType, bool bubble = true)
+    public bool DispatchPointer(EditorObject? clickedEO, PointerInteractEventData eventData, PointerEventType pointerEventType, bool bubble = true)
     {
         while (clickedEO != null)
         {
@@ -275,14 +329,12 @@ public static class InteractionManager
         }
 
         if (clickedEO == null)
-        {
-            Engine.HandleGlobalPointerEvent(eventData, pointerEventType, bubble);
-        }
+            globalPointerEvent?.Invoke(eventData, pointerEventType, bubble);
 
         return false;
     }
 
-    private static void HandleKBInput()
+    private void HandleKBInput()
     {
         IKeyInteractable? keyable = (IKeyInteractable?)currentlyFocused;
 
@@ -297,13 +349,13 @@ public static class InteractionManager
 
             if (keyable != null && keyable.OnKeyDown(keyEvent))
                 continue;
-            else Engine.HandleGlobalKBEvents(keyEvent);
+            else globalKBEvent?.Invoke(keyEvent);
         }
     }
 
-    private static bool TryDoubleClick(MouseButton pressedButton, EditorObject? currentTarget)
+    private bool TryDoubleClick(MouseButton pressedButton, EditorObject? currentTarget)
     {
-        bool isFastEnough = (Raylib.GetTime() - lastClickTime) < DOUBLE_CLICK_WAIT_TIME;
+        bool isFastEnough = (Engine.Instance.GetTime() - lastClickTime) < DOUBLE_CLICK_WAIT_TIME;
         bool isSameTarget = currentTarget == lastClickTarget;
         bool isSameButton = pressedButton == lastClickButton;
 
@@ -329,7 +381,7 @@ public static class InteractionManager
         return false;
     }
 
-    private static bool TryResolveDragOrClick(PendingMouseGesture pendingGesture, bool isLMBDown, bool isRMBDown, bool wasLMBReleased, bool wasRMBReleased)
+    private bool TryResolveDragOrClick(PendingMouseGesture pendingGesture, bool isLMBDown, bool isRMBDown, bool wasLMBReleased, bool wasRMBReleased)
     {
         bool isStillDown = (pendingGesture.Button == MouseButton.Left && isLMBDown) ||
                           (pendingGesture.Button == MouseButton.Right && isRMBDown);
@@ -378,7 +430,7 @@ public static class InteractionManager
             DispatchPointer(pendingGesture.Target, evt, PointerEventType.Up); // Should we use currently hovered for up? Because underlying object could have changed between down and up! But then pendingGesture.Target would not receive up!
 
             // Record this click to test for potential Double-Clicks in later frames
-            lastClickTime = Raylib.GetTime();
+            lastClickTime = Engine.Instance.GetTime();
             lastClickTarget = pendingGesture.Target;
             lastClickButton = pendingGesture.Button;
 
@@ -388,7 +440,7 @@ public static class InteractionManager
         return false;
     }
 
-    private static void HandleVariousInput(EditorObject? targetObject, bool wasLMBPressed, bool wasLMBReleased, bool wasRMBPressed, bool wasRMBReleased, float mouseWheel)
+    private void HandleVariousInput(EditorObject? targetObject, bool wasLMBPressed, bool wasLMBReleased, bool wasRMBPressed, bool wasRMBReleased, float mouseWheel)
     {
         PointerInteractEventData potentialPied = new()
         {
@@ -438,7 +490,7 @@ public static class InteractionManager
         }
     }
 
-    private static void HandlePointerHolderDrag(EditorObject pointerSelected)
+    private void HandlePointerHolderDrag(EditorObject pointerSelected)
     {
         if (pointerSelected is IDragable && inputContext.isMouseMoving)
         {
@@ -454,7 +506,7 @@ public static class InteractionManager
         }
     }
 
-    public static void HandleInput()
+    public void HandleInput()
     {
         HandleKBInput();
 
@@ -502,7 +554,7 @@ public static class InteractionManager
                     MouseButton = mousePressed.Value
                 };
 
-                Engine.NotifyAnyPointerDown(globalDownEvt, currentlyHit);
+                anyPointerEvent?.Invoke(globalDownEvt, currentlyHit);
 
                 // If not double click, create new ambiguous gesture. Ambiguous because we don't know if it will be drag or click in the future.
                 ambiguousGestureCache = new PendingMouseGesture

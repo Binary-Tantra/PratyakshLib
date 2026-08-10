@@ -1,4 +1,4 @@
-﻿namespace RaylibNodeLibrary;
+﻿namespace Pratyaksh.Core;
 
 public abstract class Actor : EditorObject
 {

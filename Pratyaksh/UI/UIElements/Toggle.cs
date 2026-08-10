@@ -1,6 +1,6 @@
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class Toggle : UIBase, IPointerInteractable
 {
@@ -43,14 +43,14 @@ public class Toggle : UIBase, IPointerInteractable
 
         if (absoluteError > 0.01)
         {
-            if (absoluteError < 10 * Engine.DeltaTime)
+            if (absoluteError < 10 * Engine.Instance.DeltaTime)
             {
                 knobT = target;
             }
             else
             {
                 float normal = error / Math.Abs(error);
-                float delta = normal * 10 * Engine.DeltaTime;
+                float delta = normal * 10 * Engine.Instance.DeltaTime;
 
                 knobT += delta;
             }
@@ -60,26 +60,26 @@ public class Toggle : UIBase, IPointerInteractable
     protected override void OnDraw()
     {
         // Palette
-        Color trackOff = new((byte)52, (byte)52, (byte)52, (byte)255);
-        Color trackOffHover = new((byte)68, (byte)68, (byte)68, (byte)255);
-        Color trackOn = new((byte)28, (byte)88, (byte)175, (byte)255);
-        Color trackOnHover = new((byte)40, (byte)105, (byte)195, (byte)255);
-        Color borderOff = new((byte)80, (byte)80, (byte)80, (byte)255);
-        Color borderOn = new((byte)50, (byte)115, (byte)205, (byte)255);
-        Color knobColor = new((byte)220, (byte)220, (byte)220, (byte)255);
-        Color labelColor = new((byte)185, (byte)185, (byte)185, (byte)255);
+        Raylib_cs.Color trackOff = new((byte)52, (byte)52, (byte)52, (byte)255);
+        Raylib_cs.Color trackOffHover = new((byte)68, (byte)68, (byte)68, (byte)255);
+        Raylib_cs.Color trackOn = new((byte)28, (byte)88, (byte)175, (byte)255);
+        Raylib_cs.Color trackOnHover = new((byte)40, (byte)105, (byte)195, (byte)255);
+        Raylib_cs.Color borderOff = new((byte)80, (byte)80, (byte)80, (byte)255);
+        Raylib_cs.Color borderOn = new((byte)50, (byte)115, (byte)205, (byte)255);
+        Raylib_cs.Color knobColor = new((byte)220, (byte)220, (byte)220, (byte)255);
+        Raylib_cs.Color labelColor = new((byte)185, (byte)185, (byte)185, (byte)255);
 
         int tx = (int)Position.X;
         int ty = (int)Position.Y;
 
         // Track
-        Color trackFill = isOn ? (hovered ? trackOnHover : trackOn)
-                                 : (hovered ? trackOffHover : trackOff);
-        Color trackBorder = isOn ? borderOn : borderOff;
+        Raylib_cs.Color trackFill = isOn ? (hovered ? trackOnHover : trackOn)
+                                          : (hovered ? trackOffHover : trackOff);
+        Raylib_cs.Color trackBorder = isOn ? borderOn : borderOff;
 
-        var trackRect = new Rectangle(tx, ty, Width, Height);
-        Raylib.DrawRectangleRounded(trackRect, 1.0f, 8, trackFill);
-        Raylib.DrawRectangleRoundedLinesEx(trackRect, 1.0f, 8, 1f, trackBorder);
+        var trackRect = new Raylib_cs.Rectangle(tx, ty, Width, Height);
+        Raylib_cs.Raylib.DrawRectangleRounded(trackRect, 1.0f, 8, trackFill);
+        Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(trackRect, 1.0f, 8, 1f, trackBorder);
 
         // Knob
         int knobRadius = Height / 2 - 3;
@@ -88,7 +88,7 @@ public class Toggle : UIBase, IPointerInteractable
         int knobCX = (int)(knobMinCX + (knobMaxCX - knobMinCX) * knobT);
         int knobCY = ty + Height / 2;
 
-        Raylib.DrawCircle(knobCX, knobCY, knobRadius, knobColor);
+        Raylib_cs.Raylib.DrawCircle(knobCX, knobCY, knobRadius, knobColor);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

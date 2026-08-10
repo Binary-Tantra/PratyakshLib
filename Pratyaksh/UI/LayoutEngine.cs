@@ -1,12 +1,12 @@
 using System.Numerics;
-using Pratyaksh.Core.DataBinding;
-using Raylib_cs;
-using static Raylib_cs.Raylib;
-
-using RaylibNodeLibrary.DataBinding;
 using System.Runtime.CompilerServices;
 
-namespace RaylibNodeLibrary.UI;
+using Pratyaksh.Core;
+using Pratyaksh.Core.DataBinding;
+using Pratyaksh.UI.UIElements;
+using Pratyaksh.UI.DataBinding;
+
+namespace Pratyaksh.UI;
 
 public enum LayoutOpType
 {
@@ -54,7 +54,7 @@ public class LayoutEngine
     private int lastHorizontalIdx = -1;
     private int lastVerticalIdx = -1;
 
-    private static Font textFont;
+    private static Raylib_cs.Font textFont;
 
     private Dictionary<int, ElementInfo<Button>> layoutButtons = [];
     private Dictionary<int, ElementInfo<Selectable>> layoutSelectables = [];
@@ -70,7 +70,7 @@ public class LayoutEngine
     private Stack<EditorObject?> parentStack = new();
     private Stack<int> activeScrollViews = new();
 
-    EditorObject? defaultParent = null;
+    private EditorObject? defaultParent = null;
 
     private static void ActivateElements<T>(Dictionary<int, ElementInfo<T>> targetDict) where T : UIBase
     {
@@ -115,7 +115,7 @@ public class LayoutEngine
         }
     }
 
-    private static Drawable? HitTestActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
+    private static Drawable? HitTestActiveElements<T>(Dictionary<int, ElementInfo<T>> targetDict, IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
     {
         var keys = targetDict.Keys.ToArray();
         for (int i = keys.Length - 1; i >= 0; i--)
@@ -123,7 +123,7 @@ public class LayoutEngine
             int key = keys[i];
             if (targetDict[key].IsActiveThisFrame)
             {
-                var hit = targetDict[key].UIElement.HitTest(mouseScreenPosition, mouseWorldPosition);
+                var hit = targetDict[key].UIElement.HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
                 if (hit != null) return hit;
             }
         }
@@ -150,12 +150,12 @@ public class LayoutEngine
         {
             if (!layoutInputFields[kvp.Key].IsActiveThisFrame && layoutInputFields[kvp.Key].UIElement.IsFocused)
             {
-                InteractionManager.ReleaseFocus();
+                Engine.Instance.InteractionManager.ReleaseFocus();
             }
         }
     }
 
-    public static void InitSLEDefaultFont(Font font)
+    public static void InitSLEDefaultFont(Raylib_cs.Font font)
     {
         textFont = font;
     }
@@ -208,33 +208,33 @@ public class LayoutEngine
     public void RemoveLayoutStatusBadge(int id) => DeleteElement(id, layoutStatusBadges);
     public void RemoveLayoutAlertBanner(int id) => DeleteElement(id, layoutAlertBanners);
 
-    public Drawable? HitTestElements(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    public Drawable? HitTestElements(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        Drawable? hit = HitTestActiveElements(layoutAlertBanners, mouseScreenPosition, mouseWorldPosition);
+        Drawable? hit = HitTestActiveElements(layoutAlertBanners, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutDropdowns, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutDropdowns, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutCycleSelectors, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutCycleSelectors, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutLinkButtons, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutLinkButtons, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutButtons, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutButtons, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutSelectables, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutSelectables, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutInputFields, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutInputFields, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutToggles, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutToggles, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
-        hit = HitTestActiveElements(layoutScrollViews, mouseScreenPosition, mouseWorldPosition);
+        hit = HitTestActiveElements(layoutScrollViews, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
         return null;
@@ -389,41 +389,41 @@ public class LayoutEngine
 
     public static int MeasureTextW(string text, float fontSize)
     {
-        return (int)MeasureTextEx(textFont, text, fontSize, 0.5f).X;
+        return (int)Raylib_cs.Raylib.MeasureTextEx(textFont, text, fontSize, 0.5f).X;
     }
 
     public static int MeasureTextH(string text, float fontSize)
     {
-        return (int)MeasureTextEx(textFont, text, fontSize, 0.5f).Y;
+        return (int)Raylib_cs.Raylib.MeasureTextEx(textFont, text, fontSize, 0.5f).Y;
     }
 
     public static Vector2 MeasureText(string text, float fontSize)
     {
-        return MeasureTextEx(textFont, text, fontSize, 0.5f);
+        return Raylib_cs.Raylib.MeasureTextEx(textFont, text, fontSize, 0.5f);
     }
 
-    public static void DrawTextAbsolute(string text, int posX, int posY, Color fontColor, float fontSize, Vector2 offset)
+    public static void DrawTextAbsolute(string text, int posX, int posY, Raylib_cs.Color fontColor, float fontSize, Vector2 offset)
     {
-        DrawTextPro(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), Vector2.Zero, 0, fontSize, 0.5f, fontColor);
+        Raylib_cs.Raylib.DrawTextPro(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), Vector2.Zero, 0, fontSize, 0.5f, fontColor);
     }
 
-    public static void DrawTextAbsolute(string text, int posX, int posY, Color fontColor, Vector2 offset)
+    public static void DrawTextAbsolute(string text, int posX, int posY, Raylib_cs.Color fontColor, Vector2 offset)
     {
-        DrawTextEx(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), 15, 0.5f, fontColor);
+        Raylib_cs.Raylib.DrawTextEx(textFont, text, new Vector2(posX + (int)offset.X, posY + (int)offset.Y), 15, 0.5f, fontColor);
     }
 
-    public static void DrawPanelAbsolute(int posX, int posY, int width, int height, Color panelColor)
+    public static void DrawPanelAbsolute(int posX, int posY, int width, int height, Raylib_cs.Color panelColor)
     {
-        DrawRectangle(posX, posY, width, height, panelColor);
+        Raylib_cs.Raylib.DrawRectangle(posX, posY, width, height, panelColor);
     }
 
-    public static void DrawTextPanelAbsolute(string text, int posX, int posY, int panelWidth, int panelHeight, int textSize, Color panelColor, Color textColor, Vector2 textOffset)
+    public static void DrawTextPanelAbsolute(string text, int posX, int posY, int panelWidth, int panelHeight, int textSize, Raylib_cs.Color panelColor, Raylib_cs.Color textColor, Vector2 textOffset)
     {
         DrawPanelAbsolute(posX, posY, panelWidth, panelHeight, panelColor);
         DrawTextAbsolute(text, posX, posY, textColor, textSize, textOffset);
     }
 
-    public static void DrawSectionAbsolute(string heading, int posX, int posY, int width, int heigth, float headingPercent, int headingSize, Color headingBgColor, Color bodyBgColor, Color fontColor)
+    public static void DrawSectionAbsolute(string heading, int posX, int posY, int width, int heigth, float headingPercent, int headingSize, Raylib_cs.Color headingBgColor, Raylib_cs.Color bodyBgColor, Raylib_cs.Color fontColor)
     {
         int headingHeight = (int)(heigth * headingPercent);
 
@@ -432,7 +432,7 @@ public class LayoutEngine
         if (headingHeight != 0)
             DrawTextPanelAbsolute(heading, posX, posY, width, headingHeight, headingSize, headingBgColor, fontColor, new Vector2(5, 0));
         else
-            DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
+            Raylib_cs.Raylib.DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
     }
 
     private Button DrawButtonAbsolute(Button button, int posX, int posY)
@@ -454,7 +454,7 @@ public class LayoutEngine
         return layoutButtons[id].UIElement;
     }
 
-    private Button DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Color? fillColor = null, Color? borderColor = null, Color? textColor = null)
+    private Button DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null)
     {
         bool found = layoutButtons.ContainsKey(id);
 
@@ -497,7 +497,7 @@ public class LayoutEngine
         return layoutSelectables[id].UIElement;
     }
 
-    private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Color bgColor, Color bgSelectionColor, Color textColor)
+    private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Raylib_cs.Color bgColor, Raylib_cs.Color bgSelectionColor, Raylib_cs.Color textColor)
     {
         bool found = layoutSelectables.ContainsKey(id);
 
@@ -648,7 +648,7 @@ public class LayoutEngine
         return layoutLinkButtons[id].UIElement;
     }
 
-    private StatusBadge DrawStatusBadgeAbsolute(int id, string text, StatusType statusType, Color? customColor, int posX, int posY, int fontSize)
+    private StatusBadge DrawStatusBadgeAbsolute(int id, string text, StatusType statusType, Raylib_cs.Color? customColor, int posX, int posY, int fontSize)
     {
         bool found = layoutStatusBadges.ContainsKey(id);
         if (!found)
@@ -693,19 +693,19 @@ public class LayoutEngine
         return layoutAlertBanners[id].UIElement;
     }
 
-    public void Text(string text, Color fontColor, bool updateLayout = true)
+    public void Text(string text, Raylib_cs.Color fontColor, bool updateLayout = true)
     {
         DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
         if (updateLayout) DrawAny(text.Length * 2, 20);
     }
 
-    public void Panel(int width, int height, Color panelColor, bool updateLayout = true)
+    public void Panel(int width, int height, Raylib_cs.Color panelColor, bool updateLayout = true)
     {
         DrawPanelAbsolute(PosX_Dynamic(), PosY_Dynamic(), width, height, panelColor);
         if (updateLayout) DrawAny(width, height);
     }
 
-    public void TextPanelFixed(string text, int x, int y, int panelWidth, int panelHeight, Color panelColor, Color textColor, bool updateLayout = true)
+    public void TextPanelFixed(string text, int x, int y, int panelWidth, int panelHeight, Raylib_cs.Color panelColor, Raylib_cs.Color textColor, bool updateLayout = true)
     {
         PosX_Dynamic();
         PosY_Dynamic();
@@ -714,7 +714,7 @@ public class LayoutEngine
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
-    public void TextPanelPro(string text, int panelWidth, int panelHeight, Color panelColor, Color textColor, bool updateLayout = true)
+    public void TextPanelPro(string text, int panelWidth, int panelHeight, Raylib_cs.Color panelColor, Raylib_cs.Color textColor, bool updateLayout = true)
     {
         DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
         if (updateLayout) DrawAny(panelWidth, panelHeight);
@@ -722,17 +722,17 @@ public class LayoutEngine
 
     public void TextPanelEx(string text, int panelWidth, int panelHeight, Vector2 panelOffset, bool updateLayout = true)
     {
-        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Color.Gray, Color.LightGray, panelOffset);
+        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray, panelOffset);
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
     public void TextPanel(string text, int panelWidth, int panelHeight, bool updateLayout = true)
     {
-        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Color.LightGray, Color.DarkGray, new Vector2(5, 0));
+        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.LightGray, Raylib_cs.Color.DarkGray, new Vector2(5, 0));
         if (updateLayout) DrawAny(panelWidth, panelHeight);
     }
 
-    public void SectionEx(string heading, int width, int height, Color headingBgColor, Color bodyBgColor, Color fontColor, float headerPerc, bool updateLayout = true)
+    public void SectionEx(string heading, int width, int height, Raylib_cs.Color headingBgColor, Raylib_cs.Color bodyBgColor, Raylib_cs.Color fontColor, float headerPerc, bool updateLayout = true)
     {
         DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, height, headerPerc, 20, headingBgColor, bodyBgColor, fontColor);
         if (updateLayout) DrawAny(width, height);
@@ -740,7 +740,7 @@ public class LayoutEngine
 
     public void Section(string heading, int width, int heigth, float headerPerc, bool updateLayout = true)
     {
-        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, heigth, headerPerc, 20, Color.DarkGray, Color.Gray, Color.LightGray);
+        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, heigth, headerPerc, 20, Raylib_cs.Color.DarkGray, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray);
         if (updateLayout) DrawAny(width, heigth);
     }
 
@@ -768,7 +768,7 @@ public class LayoutEngine
         return b;
     }
 
-    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Color? fillColor, Color? borderColor = null, Color? textColor = null, bool updateLayout = true)
+    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Raylib_cs.Color? fillColor, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
@@ -799,7 +799,7 @@ public class LayoutEngine
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
         
-        Selectable selectable = DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Color((byte)38, (byte)38, (byte)38, (byte)255), new Color((byte)28, (byte)50, (byte)88, (byte)255), new Color((byte)200, (byte)200, (byte)200, (byte)255));
+        Selectable selectable = DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Raylib_cs.Color((byte)38, (byte)38, (byte)38, (byte)255), new Raylib_cs.Color((byte)28, (byte)50, (byte)88, (byte)255), new Raylib_cs.Color((byte)200, (byte)200, (byte)200, (byte)255));
         if (updateLayout) DrawAny(selectableWidth, selectableHeight);
 
         return selectable;
@@ -867,7 +867,7 @@ public class LayoutEngine
         return cached;
     }
 
-    public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Color? customColor = null, bool updateLayout = true)
+    public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, bool updateLayout = true)
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
         if (defaultParent != null) pos -= defaultParent.Position;
@@ -890,7 +890,7 @@ public class LayoutEngine
         return cached;
     }
 
-    public void TextTruncated(string text, int maxWidth, Color fontColor, int fontSize = 15, bool updateLayout = true)
+    public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
     {
         string truncatedStr = text;
         int measuredW = MeasureTextW(text, fontSize);
@@ -971,7 +971,7 @@ public class LayoutEngine
         if (defaultParent != null)
             svc.RelativePosition -= defaultParent.Position;
 
-        Rectangle scissorRect = svc.GetScissorRect();
+        Rectangle scissorRect = svc.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
 
         float scissorEndX = scissorRect.X + scissorRect.Width;
         float scissorEndY = scissorRect.Y + scissorRect.Height;
@@ -983,7 +983,7 @@ public class LayoutEngine
         if (defaultParent != null)
         {
             // TODO: Using interactable rect's width/height instead of visual's! For now it works.
-            Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect();
+            Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
             defaultParentEndX = defaultParent.Position.X + defaultParentIntrRect.Width;
             defaultParentEndY = defaultParent.Position.Y + defaultParentIntrRect.Height;
         }
@@ -1002,7 +1002,7 @@ public class LayoutEngine
         else
             scissorHeight = (int)scissorRect.Height;
 
-        Raylib.BeginScissorMode((int)scissorRect.X, (int)scissorRect.Y, scissorWidth, scissorHeight);
+        Raylib_cs.Raylib.BeginScissorMode((int)scissorRect.X, (int)scissorRect.Y, scissorWidth, scissorHeight);
 
         int startX = (int)svc.Position.X;
         int startY = (int)svc.Position.Y;
@@ -1032,15 +1032,15 @@ public class LayoutEngine
         EndVertical(contentWidth);
         EndHorizontal(contentHeight);
 
-        Raylib.EndScissorMode();
+        Raylib_cs.Raylib.EndScissorMode();
 
         defaultParent = parentStack.Pop();
 
         // Re-apply the parent's scissor rect to prevent leaking out of bounds
         if (defaultParent != null)
         {
-            Rectangle pRect = defaultParent.GetInteractableRect();
-            Raylib.BeginScissorMode((int)pRect.X, (int)pRect.Y, (int)pRect.Width, (int)pRect.Height);
+            Rectangle pRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+            Raylib_cs.Raylib.BeginScissorMode((int)pRect.X, (int)pRect.Y, (int)pRect.Width, (int)pRect.Height);
         }
 
         svc.Render();
@@ -1245,7 +1245,7 @@ public class LayoutEngine
 
         if (!found)
         {
-            Selectable sel = new(selectableText, valueTarget.Get(), posX, posY, width, height, (sel) => { }, id, 15, Color.Gray, Color.Blue, Color.White, defaultParent);
+            Selectable sel = new(selectableText, valueTarget.Get(), posX, posY, width, height, (sel) => { }, id, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.Blue, Raylib_cs.Color.White, defaultParent);
 
             RLSelectableUI uiTarget = new(sel);
             BoolSelectableBinder binder = new();

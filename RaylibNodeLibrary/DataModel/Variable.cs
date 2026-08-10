@@ -1,5 +1,5 @@
 using Pratyaksh.Core.DataBinding;
-using RaylibNodeLibrary.UI;
+using Pratyaksh.UI;
 
 namespace RaylibNodeLibrary.DataModel;
 

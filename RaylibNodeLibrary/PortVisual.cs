@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
 using RaylibNodeLibrary.DataModel;
-using RaylibNodeLibrary.UI;
 
 namespace RaylibNodeLibrary;
 
@@ -14,12 +14,12 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     private float portSize = 5f;
     private string portName;
 
-    private Color portColor = Raylib.Fade(Color.White, 0.55f);
-    public Color PortColor { get => portColor; }
+    private Raylib_cs.Color portColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.55f);
+    public Raylib_cs.Color PortColor { get => portColor; }
     
     private bool isExecution;
     public bool IsExecution { get => isExecution; }
-    private Color portTextColor = Raylib.Fade(Color.White, 0.65f);
+    private Raylib_cs.Color portTextColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f);
 
     private Rectangle portInteractionRelativeRect;
 
@@ -51,7 +51,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     {
         get
         {
-            Node? node = Engine.Graph.GetNode(ParentNodeId);
+            Node? node = GEngine.Graph.GetNode(ParentNodeId);
             if (node == null) return false;
             
             if (portFlowType == PortFlowType.Input && node.InputPorts.ContainsKey(portId))
@@ -65,12 +65,12 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public void UpdateDataType(int dataTypeId, string? newPortName = null)
     {
-        DataType? dataType = Engine.Graph.Types.GetType(dataTypeId);
+        DataType? dataType = GEngine.Graph.Types.GetType(dataTypeId);
         if (dataType != null)
         {
             isExecution = dataType.Category.HasFlag(DataCategory.Execution);
 
-            if (Engine.DataTypeColors.TryGetValue(dataTypeId, out Color c))
+            if (GEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
                 portColor = c;
             
             if (newPortName != null)
@@ -85,13 +85,13 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     {
         this.portId = portId;
 
-        if (Engine.DataTypeColors.TryGetValue(dataTypeId, out Color c))
+        if (GEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
             portColor = c;
             
-        DataType? dataType = Engine.Graph.Types.GetType(dataTypeId);
+        DataType? dataType = GEngine.Graph.Types.GetType(dataTypeId);
         isExecution = dataType != null && dataType.Category.HasFlag(DataCategory.Execution);
 
-        Engine.NotifyConnectPortAndUI(portId, this);
+        GEngine.NotifyConnectPortAndUI(portId, this);
         
         this.portFlowType = portFlowType;
 
@@ -113,10 +113,10 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     protected override void OnDraw()
     {
         if (isHovered)
-            Raylib.DrawRectangle((int)(Position.X + portInteractionRelativeRect.X), (int)(Position.Y + portInteractionRelativeRect.Y), (int)portInteractionRelativeRect.Width, (int)portInteractionRelativeRect.Height, Raylib.Fade(Color.White, 0.4f));
+            Raylib_cs.Raylib.DrawRectangle((int)(Position.X + portInteractionRelativeRect.X), (int)(Position.Y + portInteractionRelativeRect.Y), (int)portInteractionRelativeRect.Width, (int)portInteractionRelativeRect.Height, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.4f));
 
         bool isConnected = IsConnected;
-        Color fillColor = Raylib.Fade(portColor, 0.4f);
+        Raylib_cs.Color fillColor = Raylib_cs.Raylib.Fade(portColor, 0.4f);
 
         if (isExecution)
         {
@@ -135,16 +135,16 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
             }
             
             if (isConnected)
-                Raylib.DrawTriangle(p1, p2, p3, fillColor);
-            
-            Raylib.DrawTriangleLines(p1, p2, p3, portColor);
+                Raylib_cs.Raylib.DrawTriangle(p1, p2, p3, fillColor);
+
+            Raylib_cs.Raylib.DrawTriangleLines(p1, p2, p3, portColor);
         }
         else
         {
             if (isConnected)
-                Raylib.DrawCircle((int)Position.X, (int)Position.Y, portSize, fillColor);
-                
-            Raylib.DrawCircleLines((int)Position.X, (int)Position.Y, portSize, portColor);
+                Raylib_cs.Raylib.DrawCircle((int)Position.X, (int)Position.Y, portSize, fillColor);
+
+            Raylib_cs.Raylib.DrawCircleLines((int)Position.X, (int)Position.Y, portSize, portColor);
         }
 
         if (!isExecution)
@@ -158,7 +158,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     protected override void OnDelete()
     {
-        Engine.NotifyDisconnectPortAndUI(portId);
+        GEngine.NotifyDisconnectPortAndUI(portId);
     }
 
     public void OnMouseEnter(PointerVisitEventData evt)
@@ -176,7 +176,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         if (evt.MouseButton != MouseButton.Left)
             return false;
 
-        InteractionManager.CapturePointer(this);
+        Engine.Instance.InteractionManager.CapturePointer(this);
         parentNodeUI?.UIConnectionStart(this);
         return true;
     }
@@ -188,7 +188,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public bool OnMouseUp(PointerInteractEventData evt)
     {
-        if (InteractionManager.CurrentlyHovered is PortVisual portUI)
+        if (Engine.Instance.InteractionManager.CurrentlyHovered is PortVisual portUI)
         {
             if (portUI != this &&
                 portUI.Parent != null &&
@@ -200,13 +200,13 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
                 else
                     parentNodeUI?.UIConnectionComplete(portUI, this);
 
-                InteractionManager.ReleasePointer();
+                Engine.Instance.InteractionManager.ReleasePointer();
                 return true;
             }
         }
 
         parentNodeUI?.UIConnectionCanceled(this);
-        InteractionManager.ReleasePointer();
+        Engine.Instance.InteractionManager.ReleasePointer();
         return true;
     }
 

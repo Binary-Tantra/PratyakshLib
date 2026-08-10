@@ -1,5 +1,7 @@
 using Raylib_cs;
 using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
 
 namespace RaylibNodeLibrary.UI;
 
@@ -9,6 +11,8 @@ public class InspectorPanel : UILayoutBase
     private Action<int, DataType> onChangeVariableType;
     private Action<int, object> onChangeVariableValue;
     private Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu;
+
+    protected override string PanelName => "InspectorPanel";
 
     public InspectorPanel(int posX, int posY, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, object> onChangeVariableValue, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 200, 300, parent, parentBasis)
     {
@@ -22,7 +26,7 @@ public class InspectorPanel : UILayoutBase
     {
         layout.SectionEx("Inspector", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
 
-        if (Engine.CurrentlySelectedObjectId != null && Engine.Graph.Variables.TryGetValue((int)Engine.CurrentlySelectedObjectId, out Variable? v))
+        if (GEngine.CurrentlySelectedObjectId != null && GEngine.Graph.Variables.TryGetValue((int)GEngine.CurrentlySelectedObjectId, out Variable? v))
         {
             var descriptors = v.GetInspectorUIDescriptors();
 
@@ -50,7 +54,7 @@ public class InspectorPanel : UILayoutBase
                         layout.Text("Type:", Color.White);
                         layout.AddSpace(40);
 
-                        List<DataType> dataTypes = [.. Engine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
+                        List<DataType> dataTypes = [.. GEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
                         layout.Button(v.Id + 3000000, v.VarType.Name, Width - 60, 25, (btn) =>
                         {
                             System.Numerics.Vector2 mp = Raylib.GetMousePosition();

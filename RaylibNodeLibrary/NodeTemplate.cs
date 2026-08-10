@@ -1,5 +1,5 @@
-using RaylibNodeLibrary.DataModel;
-using RaylibNodeLibrary.UI;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
 
 namespace RaylibNodeLibrary;
 

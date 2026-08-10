@@ -1,3 +1,4 @@
+using Pratyaksh.Core;
 namespace RaylibNodeLibrary;
 
 public class ConnectionVisual : EditorObject

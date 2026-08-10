@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, IClippable
 {
@@ -41,13 +41,13 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
         scrollOffset.Y = Math.Clamp(scrollOffset.Y, -maxScroll, 0);
     }
 
-    public Rectangle GetScissorRect()
+    public Rectangle GetScissorRect(IWorldToScreenTransformer transformer)
     {
         Rectangle rect = new(Position.X, Position.Y, Size.X, Size.Y);
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
 
         if (worldSpace)
-            rect = Engine.Camera.GetWorldToScreenRect(rect);
+            rect = transformer.WorldToScreen(rect);
 
         return rect;
     }
@@ -56,8 +56,8 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
     {
         if (contentSize.Y > Size.Y)
         {
-            Rectangle track = new Rectangle(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
-            Raylib.DrawRectangleRec(track, new Color(40, 40, 40, 255));
+            Raylib_cs.Rectangle track = new(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
+            Raylib_cs.Raylib.DrawRectangleRec(track, new Raylib_cs.Color(40, 40, 40, 255));
 
             float visibleRatio = Size.Y / contentSize.Y;
             float thumbHeight = Math.Max(20, Size.Y * visibleRatio);
@@ -65,11 +65,11 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
             float scrollRatio = maxScroll > 0 ? (-scrollOffset.Y / maxScroll) : 0;
             float thumbY = Position.Y + (Size.Y - thumbHeight) * scrollRatio;
 
-            Rectangle thumb = new Rectangle(Position.X + Size.X - scrollbarWidth + 2, thumbY + 2, scrollbarWidth - 4, thumbHeight - 4);
-            bool isHoveringTrack = Raylib.CheckCollisionPointRec(InteractionManager.InputContext.mouseScreenPosition, track);
-            Color thumbColor = isScrollBarDragging ? new Color(120, 120, 120, 255) : ((hovered && isHoveringTrack) ? new Color(100, 100, 100, 255) : new Color(80, 80, 80, 255));
+            Raylib_cs.Rectangle thumb = new(Position.X + Size.X - scrollbarWidth + 2, thumbY + 2, scrollbarWidth - 4, thumbHeight - 4);
+            bool isHoveringTrack = Raylib_cs.Raylib.CheckCollisionPointRec(Engine.Instance.InteractionManager.InputContext.mouseScreenPosition, track);
+            Raylib_cs.Color thumbColor = isScrollBarDragging ? new Raylib_cs.Color(120, 120, 120, 255) : ((hovered && isHoveringTrack) ? new Raylib_cs.Color(100, 100, 100, 255) : new Raylib_cs.Color(80, 80, 80, 255));
 
-            Raylib.DrawRectangleRounded(thumb, 0.5f, 4, thumbColor);
+            Raylib_cs.Raylib.DrawRectangleRounded(thumb, 0.5f, 4, thumbColor);
         }
     }
 
@@ -79,16 +79,16 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
         if (contentSize.Y > Size.Y)
         {
-            Rectangle track = new Rectangle(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
+            Rectangle track = new(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
             bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
             Vector2 hitPos = worldSpace ? evt.WorldPosition : evt.ScreenPosition;
 
-            if (Raylib.CheckCollisionPointRec(hitPos, track))
+            if (track.Contains(hitPos))
             {
                 isScrollBarDragging = true;
                 dragStartMouseY = hitPos.Y;
                 dragStartScrollY = scrollOffset.Y;
-                InteractionManager.CapturePointer(this);
+                Engine.Instance.InteractionManager.CapturePointer(this);
 
                 return true;
             }
@@ -130,7 +130,7 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
         if (isScrollBarDragging && evt.MouseButton == MouseButton.Left)
         {
             isScrollBarDragging = false;
-            InteractionManager.ReleasePointer();
+            Engine.Instance.InteractionManager.ReleasePointer();
 
             return true;
         }

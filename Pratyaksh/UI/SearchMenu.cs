@@ -1,7 +1,7 @@
-using Raylib_cs;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Core;
+using Pratyaksh.UI.UIElements;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI;
 
 public class SearchMenu : UILayoutBase
 {
@@ -14,6 +14,8 @@ public class SearchMenu : UILayoutBase
 
     private bool firstFrame = true;
 
+    protected override string PanelName => "SearchMenu";
+
     public SearchMenu(int posX, int posY, int width, int height, List<(string name, object payload)> items, Action<object> onItemSelected, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         this.items = items;
@@ -25,7 +27,7 @@ public class SearchMenu : UILayoutBase
 
     public override void OnDrawLayout()
     {
-        layout.SectionEx("", Width, Height, new Color(), new Color((byte)45, (byte)45, (byte)45, (byte)255), new Color(), 0.0f, false);
+        layout.SectionEx("", Width, Height, new Raylib_cs.Color(), new Raylib_cs.Color((byte)45, (byte)45, (byte)45, (byte)255), new Raylib_cs.Color(), 0.0f, false);
 
         // Search Input Field
         InputField inputField = layout.InputField(searchInputId, "Search...", searchQuery, Width, 30, (field) =>

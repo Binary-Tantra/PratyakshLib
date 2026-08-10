@@ -1,8 +1,8 @@
 using System.Numerics;
 using System.Diagnostics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class LinkButton : UIBase, IPointerInteractable
 {
@@ -26,15 +26,15 @@ public class LinkButton : UIBase, IPointerInteractable
 
     protected override void OnDraw()
     {
-        Color normalColor = new((byte)80, (byte)160, (byte)240, (byte)255);
-        Color hoverColor = new((byte)120, (byte)190, (byte)255, (byte)255);
-        Color drawColor = hovered ? hoverColor : normalColor;
+        Raylib_cs.Color normalColor = new((byte)80, (byte)160, (byte)240, (byte)255);
+        Raylib_cs.Color hoverColor = new((byte)120, (byte)190, (byte)255, (byte)255);
+        Raylib_cs.Color drawColor = hovered ? hoverColor : normalColor;
 
         LayoutEngine.DrawTextAbsolute(text, (int)Position.X, (int)Position.Y, drawColor, fontSize, Vector2.Zero);
 
         // Draw Underline
         int lineY = (int)Position.Y + fontSize + 1;
-        Raylib.DrawLine((int)Position.X, lineY, (int)Position.X + Width, lineY, drawColor);
+        Raylib_cs.Raylib.DrawLine((int)Position.X, lineY, (int)Position.X + Width, lineY, drawColor);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

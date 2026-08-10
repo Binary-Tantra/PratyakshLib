@@ -1,19 +1,10 @@
-using Raylib_cs;
 using System.Numerics;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 {
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool CloseClipboard();
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern IntPtr GetClipboardData(uint uFormat);
-
     private string placeholderText;
     private string inputFieldText;
 
@@ -79,70 +70,29 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         isShowingPlaceholder = string.IsNullOrEmpty(inputFieldText);
     }
 
-    private static string GetClipboardTextSafe()
-    {
-        const uint CF_UNICODETEXT = 13;
-        if (!OpenClipboard(IntPtr.Zero)) return string.Empty;
-        try
-        {
-            IntPtr handle = GetClipboardData(CF_UNICODETEXT);
-            if (handle == IntPtr.Zero) return string.Empty;
-            return System.Runtime.InteropServices.Marshal.PtrToStringUni(handle) ?? string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-        finally
-        {
-            CloseClipboard();
-        }
-    }
-
-    public void PasteFromClipboard()
-    {
-        try
-        {
-            string clipboardText = GetClipboardTextSafe();
-            if (!string.IsNullOrEmpty(clipboardText))
-            {
-                if (isShowingPlaceholder)
-                {
-                    InputFieldText = clipboardText;
-                    isShowingPlaceholder = false;
-                }
-                else
-                {
-                    InputFieldText += clipboardText;
-                }
-            }
-        }
-        catch { /* Clipboard access failed */ }
-    }
-
     protected override void OnDraw()
     {
         // Palette
-        Color fillColor = new((byte)38, (byte)38, (byte)38, (byte)255);
-        Color borderNormal = new((byte)85, (byte)85, (byte)85, (byte)255);
-        Color borderFocused = new((byte)65, (byte)120, (byte)200, (byte)255);
-        Color inputTextCol = new((byte)215, (byte)215, (byte)215, (byte)255);
-        Color placeholderCol = new((byte)105, (byte)105, (byte)105, (byte)255);
-        Color cursorCol = new((byte)190, (byte)190, (byte)190, (byte)255);
+        Raylib_cs.Color fillColor = new((byte)38, (byte)38, (byte)38, (byte)255);
+        Raylib_cs.Color borderNormal = new((byte)85, (byte)85, (byte)85, (byte)255);
+        Raylib_cs.Color borderFocused = new((byte)65, (byte)120, (byte)200, (byte)255);
+        Raylib_cs.Color inputTextCol = new((byte)215, (byte)215, (byte)215, (byte)255);
+        Raylib_cs.Color placeholderCol = new((byte)105, (byte)105, (byte)105, (byte)255);
+        Raylib_cs.Color cursorCol = new((byte)190, (byte)190, (byte)190, (byte)255);
 
         const int textPadX = 6;
         int textY = (int)(Position.Y + (Height - fontSize) / 2f);   // vertically center the text
 
         // BG
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fillColor);
+        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fillColor);
 
         // Border
-        Rectangle borderRect = new(Position.X, Position.Y, Width, Height);
+        Raylib_cs.Rectangle borderRect = new(InteractionRect.X, InteractionRect.Y, InteractionRect.Width, InteractionRect.Height);
         
         if (isFocused)
-            Raylib.DrawRectangleLinesEx(borderRect, 2f, borderFocused);
+            Raylib_cs.Raylib.DrawRectangleLinesEx(borderRect, 2f, borderFocused);
         else
-            Raylib.DrawRectangleLinesEx(borderRect, 1f, borderNormal);
+            Raylib_cs.Raylib.DrawRectangleLinesEx(borderRect, 1f, borderNormal);
 
         // Text display string (masked or raw)
         string displayText = isShowingPlaceholder 
@@ -158,14 +108,14 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         // Blinking Cursor
         if (isFocused)
         {
-            bool showCursorTime = (Raylib.GetTime() % 1.0 < 0.5);
+            bool showCursorTime = (Engine.Instance.GetTime() % 1.0 < 0.5);
 
             if (showCursorTime)
             {
                 int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(displayText, fontSize);
                 int cursorX = (int)Position.X + textPadX + textW + 1;
 
-                Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + Height - 7, cursorCol);
+                Raylib_cs.Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + Height - 7, cursorCol);
             }
         }
     }
@@ -181,7 +131,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool SetFocus()
     {
-        InteractionManager.CaptureFocus(this);
+        Engine.Instance.InteractionManager.CaptureFocus(this);
         isFocused = true;
         return true;
     }
@@ -202,16 +152,30 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         // Check for Ctrl + V (Paste)
         if (kvt.Key == KeyboardKey.V && kvt.IsCtrlDown)
         {
-            PasteFromClipboard();
+            string clipboardText = Clipboard.GetClipboardText();
+
+            if (!string.IsNullOrEmpty(clipboardText))
+            {
+                if (isShowingPlaceholder)
+                {
+                    InputFieldText = clipboardText;
+                    isShowingPlaceholder = false;
+                }
+                else
+                {
+                    InputFieldText += clipboardText;
+                }
+            }
+
             return true;
         }
 
         if ((kvt.Key >= KeyboardKey.A && kvt.Key <= KeyboardKey.Z) ||
             (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine) ||
-            (kvt.Key >= KeyboardKey.Kp0 && kvt.Key <= KeyboardKey.Kp9) ||
+            (kvt.Key >= KeyboardKey.KPZero && kvt.Key <= KeyboardKey.KPNine) ||
              kvt.Key == KeyboardKey.Space ||
-             kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KpDecimal ||
-             kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KpSubtract ||
+             kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KPDecimal ||
+             kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KPMinus ||
              kvt.Key == KeyboardKey.Comma)
         {
             string newK;
@@ -220,11 +184,11 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
                 newK = " ";
             else if (kvt.Key >= KeyboardKey.Zero && kvt.Key <= KeyboardKey.Nine)
                 newK = ((int)kvt.Key - (int)KeyboardKey.Zero).ToString();
-            else if (kvt.Key >= KeyboardKey.Kp0 && kvt.Key <= KeyboardKey.Kp9)
-                newK = ((int)kvt.Key - (int)KeyboardKey.Kp0).ToString();
-            else if (kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KpDecimal)
+            else if (kvt.Key >= KeyboardKey.KPZero && kvt.Key <= KeyboardKey.KPNine)
+                newK = ((int)kvt.Key - (int)KeyboardKey.KPZero).ToString();
+            else if (kvt.Key == KeyboardKey.Period || kvt.Key == KeyboardKey.KPDecimal)
                 newK = ".";
-            else if (kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KpSubtract)
+            else if (kvt.Key == KeyboardKey.Minus || kvt.Key == KeyboardKey.KPMinus)
                 newK = "-";
             else if (kvt.Key == KeyboardKey.Comma)
                 newK = ",";
@@ -264,8 +228,8 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
         isFocused = false;
 
-        if (InteractionManager.CurrentlyFocused == this)
-            InteractionManager.ReleaseFocus();
+        if (Engine.Instance.InteractionManager.CurrentlyFocused == this)
+            Engine.Instance.InteractionManager.ReleaseFocus();
 
         OnFocusEnd?.Invoke(this);
     }

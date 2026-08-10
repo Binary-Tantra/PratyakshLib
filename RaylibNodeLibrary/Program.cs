@@ -1,9 +1,10 @@
 ﻿using RaylibNodeLibrary;
 
-internal class Program
+public class Program
 {
     static void Main(string[] args)
     {
-        Engine.Start();
+        GEngine engine = new(1024, 576);
+        engine.Start();
     }
 }

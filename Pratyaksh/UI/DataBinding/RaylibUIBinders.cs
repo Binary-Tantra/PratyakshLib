@@ -1,7 +1,7 @@
 using Pratyaksh.Core.DataBinding;
-using RaylibNodeLibrary.UI;
+using Pratyaksh.UI.UIElements;
 
-namespace RaylibNodeLibrary.DataBinding;
+namespace Pratyaksh.UI.DataBinding;
 
 public class RLToggleUI : BindableUIBase<bool>
 {

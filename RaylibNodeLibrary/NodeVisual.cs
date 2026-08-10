@@ -1,16 +1,17 @@
 namespace RaylibNodeLibrary;
 
-using Raylib_cs;
+using Pratyaksh.Core;
+using Pratyaksh.UI;
 using RaylibNodeLibrary.DataModel;
-using RaylibNodeLibrary.UI;
 using System.Numerics;
+using System.Xml.Serialization;
 
 public class NodeVisual : Actor, IPointerInteractable, IDragable
 {
     private readonly int nodeId;
 
-    private Rectangle rect;
-    private Rectangle headerRect;
+    private Raylib_cs.Rectangle rect;
+    private Raylib_cs.Rectangle headerRect;
     private string title;
 
     private float bgRectRoundness = 0.1f;
@@ -21,13 +22,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     private float hdRectSegments = 0.0f;
     private float hdRectOutlineThickness = 1.0f;
 
-    private Color titleColor = Color.White;
+    private Raylib_cs.Color titleColor = Raylib_cs.Color.White;
 
-    private Color bgRectFillColor = Raylib.Fade(Color.Black, 0.65f);
-    private Color bgRectBorderColor = Raylib.Fade(Color.DarkBlue, 0.4f);
+    private Raylib_cs.Color bgRectFillColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.Black, 0.65f);
+    private Raylib_cs.Color bgRectBorderColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.4f);
 
-    private Color hdRectFillColor = new Color((byte)125, (byte)50, (byte)50, (byte)255);
-    private Color hdRectBorderColor = Raylib.Fade(Color.DarkBlue, 0.4f);
+    private Raylib_cs.Color hdRectFillColor = new((byte)125, (byte)50, (byte)50, (byte)255);
+    private Raylib_cs.Color hdRectBorderColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.4f);
 
     private bool isDragging;
     private Vector2 dragOffset;
@@ -47,7 +48,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     private List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements;
 
-    public override Rectangle InteractionRect => rect;
+    public override Rectangle InteractionRect => new(rect.X, rect.Y, rect.Width, rect.Height);
 
     public NodeVisual(int nodeId,
                       List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
@@ -55,7 +56,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     {
         this.nodeId = nodeId;
 
-        Engine.NotifyConnectNodeAndUI(nodeId, this);
+        GEngine.NotifyConnectNodeAndUI(nodeId, this);
 
         selfInteractable = true;
 
@@ -75,7 +76,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public void UpdateNodeVisual()
     {
-        Node? n = Engine.Graph.GetNode(nodeId);
+        Node? n = GEngine.Graph.GetNode(nodeId);
 
         if (n == null)
         {
@@ -118,7 +119,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
                 }
                 else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.width ?? 150);
             }
-            else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
+            else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib_cs.Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
         }
 
         int maxPortTSize = -1;
@@ -163,8 +164,8 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             outputPorts.Add(pv);
         }
 
-        rect = new Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
-        headerRect = new Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight);
+        rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
+        headerRect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight);
 
         nodeBodyLayout = new ChildLayout(bodyUIElements,
                                             bodyHPaddingInputSide,
@@ -173,21 +174,21 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
                                             (int)height, this);
     }
 
-    protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         for (int i = inputPorts.Count - 1; i >= 0; i--)
         {
-            var hit = inputPorts[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            var hit = inputPorts[i].HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
         for (int i = outputPorts.Count - 1; i >= 0; i--)
         {
-            var hit = outputPorts[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            var hit = outputPorts[i].HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 
-        return nodeBodyLayout.HitTest(mouseScreenPosition, mouseWorldPosition);
+        return nodeBodyLayout.HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
     }
 
     protected override void OnUpdate()
@@ -210,10 +211,10 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         headerRect.X = Position.X;
         headerRect.Y = Position.Y;
 
-        Raylib.DrawRectangleRounded(rect, bgRectRoundness, (int)bgRectSegments, bgRectFillColor);
-        Raylib.DrawRectangleRoundedLinesEx(rect, bgRectRoundness, (int)bgRectSegments, bgRectOutlineThickness, bgRectBorderColor);
-        Raylib.DrawRectangleRounded(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectFillColor);
-        Raylib.DrawRectangleRoundedLinesEx(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectOutlineThickness, hdRectBorderColor);
+        Raylib_cs.Raylib.DrawRectangleRounded(rect, bgRectRoundness, (int)bgRectSegments, bgRectFillColor);
+        Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(rect, bgRectRoundness, (int)bgRectSegments, bgRectOutlineThickness, bgRectBorderColor);
+        Raylib_cs.Raylib.DrawRectangleRounded(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectFillColor);
+        Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectOutlineThickness, hdRectBorderColor);
 
         LayoutEngine.DrawTextAbsolute(title, (int)rect.X + 5, (int)rect.Y, titleColor, 15, Vector2.Zero);
 
@@ -240,7 +241,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         potConnectionWireUI?.Delete();
 
-        Engine.NotifyDisconnectNodeAndUI(nodeId);
+        GEngine.NotifyDisconnectNodeAndUI(nodeId);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -253,7 +254,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         if (evt.MouseButton != MouseButton.Left)
             return false;
 
-        InteractionManager.CapturePointer(this);
+        Engine.Instance.InteractionManager.CapturePointer(this);
 
         isDragging = true;
         dragOffset = new Vector2(evt.WorldPosition.X - RelativePosition.X, evt.WorldPosition.Y - RelativePosition.Y);
@@ -274,7 +275,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         isDragging = false;
 
-        InteractionManager.ReleasePointer();
+        Engine.Instance.InteractionManager.ReleasePointer();
 
         return true;
     }
@@ -305,7 +306,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public void UIConnectionSuccess(PortVisual sourceUI, PortVisual targetUI)
     {
-        Engine.ConnectionUIManager.OnAddNewConnection(sourceUI, targetUI);
+        GEngine.ConnectionUIManager.OnAddNewConnection(sourceUI, targetUI);
         CleanupWire();
     }
 
@@ -320,7 +321,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public bool UIConnectionComplete(PortVisual source, PortVisual connect)
     {
-        bool success = Engine.Graph.AddConnection(source.ParentNodeId, source.PortId, connect.ParentNodeId, connect.PortId);
+        bool success = GEngine.Graph.AddConnection(source.ParentNodeId, source.PortId, connect.ParentNodeId, connect.PortId);
 
         if (success) UIConnectionSuccess(source, connect);
         else UIConnectionCanceled(source);

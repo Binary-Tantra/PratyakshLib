@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Raylib-cs" Version="8.0.0" />
+    <ProjectReference Include="..\Pratyaksh\UI\Pratyaksh.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

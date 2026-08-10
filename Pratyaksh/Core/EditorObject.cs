@@ -1,8 +1,6 @@
 using System.Numerics;
-using Raylib_cs;
-using RaylibNodeLibrary.DataModel;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Core;
 
 public abstract class EditorObject : Drawable, IInteractable
 {
@@ -25,12 +23,12 @@ public abstract class EditorObject : Drawable, IInteractable
         OnDeleteObject = () => { };
     }
 
-    public virtual Drawable? HitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    public virtual Drawable? HitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         if (!treeInteractable)
             return null;
 
-        Drawable? result = OnChildrenHitTest(mouseScreenPosition, mouseWorldPosition);
+        Drawable? result = OnChildrenHitTest(transformer, mouseScreenPosition, mouseWorldPosition);
 
         if (result != null)
             return result;
@@ -45,19 +43,19 @@ public abstract class EditorObject : Drawable, IInteractable
         {
             if (ancestor is IClippable clippable)
             {
-                if (!Raylib.CheckCollisionPointRec(mousePos, clippable.GetScissorRect()))
+                if (!clippable.GetScissorRect(transformer).Contains(mousePos))
                     return null;
             }
             ancestor = ancestor.Parent;
         }
 
-        if (Raylib.CheckCollisionPointRec(mousePos, GetInteractableRect()))
+        if (GetInteractableRect(transformer).Contains(mousePos))
             result = this;
 
         return result;
     }
 
-    protected virtual Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) { return null; }
+    protected virtual Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) { return null; }
 
     public void Update()
     {
@@ -100,7 +98,7 @@ public abstract class EditorObject : Drawable, IInteractable
         return selfInteractable;
     }
 
-    public Rectangle GetInteractableRect()
+    public Rectangle GetInteractableRect(IWorldToScreenTransformer transformer)
     {
         Rectangle finalRect = InteractionRect;
 
@@ -109,7 +107,7 @@ public abstract class EditorObject : Drawable, IInteractable
             bool worldSpace = CheckAncestorsForInteractWorldPos(); // Just check ancestors if they are in world space...don't need to check self in world space, as that happens in the HitTest function already.
 
             if (worldSpace)
-                finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
+                finalRect = transformer.WorldToScreen(finalRect);
         }
 
         return finalRect;
@@ -118,11 +116,13 @@ public abstract class EditorObject : Drawable, IInteractable
     public bool IsAncestor(Drawable targetAncestor)
     {
         Drawable? curr = this;
+
         while (curr != null)
         {
             if (curr == targetAncestor) return true;
             curr = curr.Parent;
         }
+
         return false;
     }
 
@@ -131,25 +131,27 @@ public abstract class EditorObject : Drawable, IInteractable
         return obj is EditorObject eo && eo.IsAncestor(targetAncestor);
     }
 
-    public bool IsAncestorType<T>() where T : Drawable
+    public bool HasAncestorOfType<T>() where T : Drawable
     {
         Drawable? curr = this;
+
         while (curr != null)
         {
             if (curr is T) return true;
             curr = curr.Parent;
         }
+        
         return false;
     }
 
-    public static bool IsAncestorType<T>(Drawable? obj) where T : Drawable
+    public static bool HasAncestorOfType<T>(Drawable? obj) where T : Drawable
     {
-        return obj is EditorObject eo && eo.IsAncestorType<T>();
+        return obj is EditorObject eo && eo.HasAncestorOfType<T>();
     }
 
-    public static bool IsCurrFocusedChildOfEO(EditorObject root)
+    public static bool IsAnyChildFocused(EditorObject root)
     {
-        EditorObject? cur = InteractionManager.CurrentlyFocused;
+        EditorObject? cur = Engine.Instance.InteractionManager.CurrentlyFocused;
 
         while (cur != null)
         {

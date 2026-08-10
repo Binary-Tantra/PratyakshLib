@@ -1,11 +1,11 @@
-﻿namespace RaylibNodeLibrary;
-
+﻿using Pratyaksh.Core;
 using System.Numerics;
-using Raylib_cs;
 
-public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, IScrollable
+namespace RaylibNodeLibrary;
+
+public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, IScrollable, IWorldToScreenTransformer
 {
-    private Camera2D rCam2D;
+    private Raylib_cs.Camera2D rCam2D;
 
     private float camZoomSpeed = 0.10f;
     private Vector2 camZoomBounds = new(0.5f, 1.5f);
@@ -18,7 +18,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
     private int screenWidth;
     private int screenHeight;
 
-    public Camera2D RaylibCam2D { get => rCam2D; }
+    public Raylib_cs.Camera2D RaylibCam2D { get => rCam2D; }
 
     public override Rectangle InteractionRect => new(0, 0, screenWidth, screenHeight);
 
@@ -27,7 +27,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
 
-        rCam2D = new Camera2D
+        rCam2D = new Raylib_cs.Camera2D
         {
             Target = Vector2.Zero,
             Offset = Vector2.Zero,
@@ -64,7 +64,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
             rCam2D.Zoom += mouseWheel * camZoomSpeed * rCam2D.Zoom;
             rCam2D.Zoom = Math.Clamp(rCam2D.Zoom, camZoomBounds.X, camZoomBounds.Y);
 
-            Vector2 worldAfter = Raylib.GetScreenToWorld2D(mouseScreenPos, rCam2D);
+            Vector2 worldAfter = Raylib_cs.Raylib.GetScreenToWorld2D(mouseScreenPos, rCam2D);
 
             SetCamTarget(rCam2D.Target + worldBefore - worldAfter);
         }
@@ -85,7 +85,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
         if (evt.MouseButton != MouseButton.Right)
             return false;
 
-        InteractionManager.CapturePointer(this);
+        Engine.Instance.InteractionManager.CapturePointer(this);
         panning = true;
 
         return true;
@@ -102,7 +102,7 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
             return false;
 
         panning = false;
-        InteractionManager.ReleasePointer();
+        Engine.Instance.InteractionManager.ReleasePointer();
 
         return true;
     }
@@ -113,18 +113,31 @@ public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, ISc
         return true;
     }
 
-    public Rectangle GetWorldToScreenRect(Rectangle target)
+    public Vector2 WorldToScreen(Vector2 worldPos)
     {
-        return GetWorldToScreenRect(new Vector2(target.X, target.Y), new Vector2(target.Width, target.Height));
+        throw new NotImplementedException();
     }
 
-    public Rectangle GetWorldToScreenRect(Vector2 screenPos, Vector2 size)
+    public Vector2 ScreenToWorld(Vector2 screenPos)
     {
+        throw new NotImplementedException();
+    }
+
+    public Rectangle WorldToScreen(Rectangle worldRect)
+    {
+        Vector2 screenPos = new(worldRect.X, worldRect.Y);
+        Vector2 size = new(worldRect.Width, worldRect.Height);
+
         Vector2 otherCornerPos = screenPos + size;
 
-        Vector2 worldPos = Raylib.GetWorldToScreen2D(screenPos, rCam2D);
-        Vector2 worldOtherCorner = Raylib.GetWorldToScreen2D(otherCornerPos, rCam2D);
+        Vector2 worldPos = Raylib_cs.Raylib.GetWorldToScreen2D(screenPos, rCam2D);
+        Vector2 worldOtherCorner = Raylib_cs.Raylib.GetWorldToScreen2D(otherCornerPos, rCam2D);
 
         return new Rectangle(worldPos.X, worldPos.Y, worldOtherCorner.X - worldPos.X, worldOtherCorner.Y - worldPos.Y);
+    }
+
+    public Rectangle ScreenToWorld(Rectangle screenRect)
+    {
+        throw new NotImplementedException();
     }
 }

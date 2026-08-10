@@ -1,22 +1,29 @@
 ﻿using System.Numerics;
-using Raylib_cs;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Core;
 
 public class InputEventData
 {
     //public InputActionType Action; // e.g., "Jump", "Delete", "Type"
 }
 
+public interface IWorldToScreenTransformer
+{
+    public Vector2 WorldToScreen(Vector2 worldPos);
+    public Vector2 ScreenToWorld(Vector2 screenPos);
+    public Rectangle WorldToScreen(Rectangle worldRect);
+    public Rectangle ScreenToWorld(Rectangle screenRect);
+}
+
 public interface IInteractable
 {
     public bool IsSelfInteractable();
-    public Rectangle GetInteractableRect();
+    public Rectangle GetInteractableRect(IWorldToScreenTransformer transformer);
 }
 
 public interface IClippable
 {
-    public Rectangle GetScissorRect();
+    public Rectangle GetScissorRect(IWorldToScreenTransformer transformer);
 }
 
 public enum InputDevice

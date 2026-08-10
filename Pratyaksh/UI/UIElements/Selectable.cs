@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 {
@@ -12,9 +12,9 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
     private Action<Selectable> onSelectableSelect;
     private Action<Selectable> onSelectableDeselect;
 
-    private Color bgColor;
-    private Color bgSelectionColor;
-    private Color textColor;
+    private Raylib_cs.Color bgColor;
+    private Raylib_cs.Color bgSelectionColor;
+    private Raylib_cs.Color textColor;
 
     private object payload;
 
@@ -41,7 +41,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public Action<Selectable> OnTextEdited;
 
-    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Color? bgColor = null, Color? bgSelectionColor = null, Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Raylib_cs.Color? bgColor = null, Raylib_cs.Color? bgSelectionColor = null, Raylib_cs.Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         selfInteractable = true;
 
@@ -54,11 +54,11 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         this.fontSize = fontSize;
 
-        this.bgColor = bgColor ?? new Color((byte)38, (byte)38, (byte)38, (byte)255);
-        this.bgSelectionColor = bgSelectionColor ?? new Color((byte)28, (byte)50, (byte)88, (byte)255);
-        this.textColor = textColor ?? new Color((byte)200, (byte)200, (byte)200, (byte)255);
+        this.bgColor = bgColor ?? new Raylib_cs.Color((byte)38, (byte)38, (byte)38, (byte)255);
+        this.bgSelectionColor = bgSelectionColor ?? new Raylib_cs.Color((byte)28, (byte)50, (byte)88, (byte)255);
+        this.textColor = textColor ?? new Raylib_cs.Color((byte)200, (byte)200, (byte)200, (byte)255);
 
-        Engine.OnAnyPointerDown += OnClickOff;
+        Engine.Instance.InteractionManager.AnyPointerEvent += OnClickOff;
 
         editIF = new InputField("", selectableText, 0, 0, Width, Height, null, null, parent: this);
 
@@ -86,23 +86,23 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         }
 
         // Palette - derived from user-provided or default colors
-        Color fillNormal = bgColor;
-        Color fillHover = new Color((byte)Math.Min(255, bgColor.R + 25), (byte)Math.Min(255, bgColor.G + 25), (byte)Math.Min(255, bgColor.B + 25), bgColor.A);
-        Color fillSelected = bgSelectionColor;
-        Color accentBar = new((byte)65, (byte)120, (byte)200, (byte)255);
-        Color textNormal = textColor;
-        Color textSelected = textColor;
+        Raylib_cs.Color fillNormal = bgColor;
+        Raylib_cs.Color fillHover = new Raylib_cs.Color((byte)Math.Min(255, bgColor.R + 25), (byte)Math.Min(255, bgColor.G + 25), (byte)Math.Min(255, bgColor.B + 25), bgColor.A);
+        Raylib_cs.Color fillSelected = bgSelectionColor;
+        Raylib_cs.Color accentBar = new((byte)65, (byte)120, (byte)200, (byte)255);
+        Raylib_cs.Color textNormal = textColor;
+        Raylib_cs.Color textSelected = textColor;
 
         const int accentW = 3;
         const int textPadX = 9;
 
         // BG fill according to selection.
-        Color fill = isSelected ? fillSelected : (hovered ? fillHover : fillNormal);
-        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fill);
+        Raylib_cs.Color fill = isSelected ? fillSelected : (hovered ? fillHover : fillNormal);
+        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fill);
 
         // Left accent bar (when selected)
         if (isSelected)
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, Height, accentBar);
+            Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, Height, accentBar);
 
         // Text
         int textY = (int)(Position.Y + (Height - fontSize) / 2f);
@@ -138,7 +138,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
         Deselect();
         editIF.Delete();
 
-        Engine.OnAnyPointerDown -= OnClickOff;
+        Engine.Instance.InteractionManager.AnyPointerEvent -= OnClickOff;
     }
 
     public void SetOnSelect(Action<Selectable>? onSelectableSelect)

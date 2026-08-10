@@ -1,20 +1,18 @@
-﻿using Raylib_cs;
-using System.Numerics;
+﻿using System.Numerics;
+using Pratyaksh.Core;
+using Pratyaksh.UI.UIElements;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI;
 
-public interface IContextable
-{
-    public string GetContextMenu();
-}
-
-public class ContextMenu : UIBase
+public class ContextMenu : UILayoutBase
 {
     private List<(string name, object payload)> menuItems;
     private List<Button> menuButtons;
 
     private static int buttonWidth = 200;
     private static int buttonHeight = 25;
+
+    protected override string PanelName => throw new NotImplementedException();
 
     public ContextMenu(int posX, int posY, List<(string name, object payload)> menuItems, Action<Button> onButtonPressed, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, buttonWidth, buttonHeight * menuItems.Count, parent, parentBasis)
     {
@@ -28,17 +26,17 @@ public class ContextMenu : UIBase
         }
     }
 
-    protected override void OnDraw()
+    public override void OnDrawLayout()
     {
         for (int i = 0; i < menuButtons.Count; i++)
             menuButtons[i].Render();
     }
 
-    protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         for (int i = menuButtons.Count - 1; i >= 0; i--)
         {
-            var hit = menuButtons[i].HitTest(mouseScreenPosition, mouseWorldPosition);
+            var hit = menuButtons[i].HitTest(transformer, mouseScreenPosition, mouseWorldPosition);
             if (hit != null) return hit;
         }
 

@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI.UIElements;
 
 public class CycleSelector : UIBase, IPointerInteractable
 {
@@ -48,7 +48,7 @@ public class CycleSelector : UIBase, IPointerInteractable
         int btnWidth = Math.Min(Height, 28);
         if (Width < btnWidth * 2 + 20) btnWidth = Math.Max(16, Width / 4);
 
-        Vector2 mousePos = Raylib.GetMousePosition();
+        Vector2 mousePos = Raylib_cs.Raylib.GetMousePosition();
         float relX = mousePos.X - Position.X;
         float relY = mousePos.Y - Position.Y;
 
@@ -58,46 +58,46 @@ public class CycleSelector : UIBase, IPointerInteractable
         bool isCenterHovered = isMouseOver && (!isLeftHovered && !isRightHovered);
 
         // Palette
-        Color btnNormal = new((byte)48, (byte)48, (byte)48, (byte)255);
-        Color btnHover = new((byte)75, (byte)75, (byte)75, (byte)255);
-        Color borderNorm = new((byte)75, (byte)75, (byte)75, (byte)255);
-        Color borderHover = new((byte)120, (byte)120, (byte)120, (byte)255);
+        Raylib_cs.Color btnNormal = new((byte)48, (byte)48, (byte)48, (byte)255);
+        Raylib_cs.Color btnHover = new((byte)75, (byte)75, (byte)75, (byte)255);
+        Raylib_cs.Color borderNorm = new((byte)75, (byte)75, (byte)75, (byte)255);
+        Raylib_cs.Color borderHover = new((byte)120, (byte)120, (byte)120, (byte)255);
         
-        Color labelBgNormal = new((byte)30, (byte)30, (byte)30, (byte)255);
-        Color labelBgHover = new((byte)40, (byte)40, (byte)40, (byte)255);
+        Raylib_cs.Color labelBgNormal = new((byte)30, (byte)30, (byte)30, (byte)255);
+        Raylib_cs.Color labelBgHover = new((byte)40, (byte)40, (byte)40, (byte)255);
 
-        Color textCol = new((byte)220, (byte)220, (byte)220, (byte)255);
+        Raylib_cs.Color textCol = new((byte)220, (byte)220, (byte)220, (byte)255);
 
         // 1. Draw Left Button (<)
-        Color leftFill = isLeftHovered ? btnHover : btnNormal;
-        Color leftBorder = isLeftHovered ? borderHover : borderNorm;
-        Rectangle leftBtnRect = new(Position.X, Position.Y, btnWidth, Height);
-        Raylib.DrawRectangleRec(leftBtnRect, leftFill);
-        Raylib.DrawRectangleLinesEx(leftBtnRect, 1f, leftBorder);
+        Raylib_cs.Color leftFill = isLeftHovered ? btnHover : btnNormal;
+        Raylib_cs.Color leftBorder = isLeftHovered ? borderHover : borderNorm;
+        Raylib_cs.Rectangle leftBtnRect = new(Position.X, Position.Y, btnWidth, Height);
+        Raylib_cs.Raylib.DrawRectangleRec(leftBtnRect, leftFill);
+        Raylib_cs.Raylib.DrawRectangleLinesEx(leftBtnRect, 1f, leftBorder);
 
         int arrowTextW1 = LayoutEngine.MeasureTextW("<", fontSize);
         int arrowX1 = (int)(Position.X + (btnWidth - arrowTextW1) / 2f);
         int arrowY1 = (int)(Position.Y + (Height - fontSize) / 2f);
-        LayoutEngine.DrawTextAbsolute("<", arrowX1, arrowY1, isLeftHovered ? Color.White : textCol, fontSize, Vector2.Zero);
+        LayoutEngine.DrawTextAbsolute("<", arrowX1, arrowY1, isLeftHovered ? Raylib_cs.Color.White : textCol, fontSize, Vector2.Zero);
 
         // 2. Draw Right Button (>)
-        Color rightFill = isRightHovered ? btnHover : btnNormal;
-        Color rightBorder = isRightHovered ? borderHover : borderNorm;
-        Rectangle rightBtnRect = new(Position.X + Width - btnWidth, Position.Y, btnWidth, Height);
-        Raylib.DrawRectangleRec(rightBtnRect, rightFill);
-        Raylib.DrawRectangleLinesEx(rightBtnRect, 1f, rightBorder);
+        Raylib_cs.Color rightFill = isRightHovered ? btnHover : btnNormal;
+        Raylib_cs.Color rightBorder = isRightHovered ? borderHover : borderNorm;
+        Raylib_cs.Rectangle rightBtnRect = new(Position.X + Width - btnWidth, Position.Y, btnWidth, Height);
+        Raylib_cs.Raylib.DrawRectangleRec(rightBtnRect, rightFill);
+        Raylib_cs.Raylib.DrawRectangleLinesEx(rightBtnRect, 1f, rightBorder);
 
         int arrowTextW2 = LayoutEngine.MeasureTextW(">", fontSize);
         int arrowX2 = (int)(Position.X + Width - btnWidth + (btnWidth - arrowTextW2) / 2f);
         int arrowY2 = (int)(Position.Y + (Height - fontSize) / 2f);
-        LayoutEngine.DrawTextAbsolute(">", arrowX2, arrowY2, isRightHovered ? Color.White : textCol, fontSize, Vector2.Zero);
+        LayoutEngine.DrawTextAbsolute(">", arrowX2, arrowY2, isRightHovered ? Raylib_cs.Color.White : textCol, fontSize, Vector2.Zero);
 
         // 3. Draw Center Label Area
         int labelWidth = Width - (btnWidth * 2);
-        Rectangle labelRect = new(Position.X + btnWidth, Position.Y, labelWidth, Height);
-        Color labelBg = isCenterHovered ? labelBgHover : labelBgNormal;
-        Raylib.DrawRectangleRec(labelRect, labelBg);
-        Raylib.DrawRectangleLinesEx(labelRect, 1f, borderNorm);
+        Raylib_cs.Rectangle labelRect = new(Position.X + btnWidth, Position.Y, labelWidth, Height);
+        Raylib_cs.Color labelBg = isCenterHovered ? labelBgHover : labelBgNormal;
+        Raylib_cs.Raylib.DrawRectangleRec(labelRect, labelBg);
+        Raylib_cs.Raylib.DrawRectangleLinesEx(labelRect, 1f, borderNorm);
 
         // Format and display option string centered inside label area
         string optStr = SelectedOption;
@@ -120,7 +120,7 @@ public class CycleSelector : UIBase, IPointerInteractable
 
         int labelX = (int)(Position.X + btnWidth + (labelWidth - optW) / 2f);
         int labelY = (int)(Position.Y + (Height - fontSize) / 2f);
-        LayoutEngine.DrawTextAbsolute(optStr, labelX, labelY, isCenterHovered ? Color.White : textCol, fontSize, Vector2.Zero);
+        LayoutEngine.DrawTextAbsolute(optStr, labelX, labelY, isCenterHovered ? Raylib_cs.Color.White : textCol, fontSize, Vector2.Zero);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

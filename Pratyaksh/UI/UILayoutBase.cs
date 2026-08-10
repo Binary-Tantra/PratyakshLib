@@ -1,7 +1,7 @@
 using System.Numerics;
-using Raylib_cs;
+using Pratyaksh.Core;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.UI;
 
 public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IClippable
 {
@@ -12,6 +12,10 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     protected int mainVerticalSpacing = 0;
     protected int horizontalPadding = 0;
+
+    public string PanelSaveName => PanelName;
+
+    protected abstract string PanelName { get; }
 
     public UILayoutBase(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {
@@ -25,11 +29,11 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
         Rectangle finalRect = new(Position.X, Position.Y, Width, Height);
 
         if (worldSpace)
-            finalRect = Engine.Camera.GetWorldToScreenRect(finalRect);
+            finalRect = Engine.Instance.InteractionManager.WorldToScreenTransformer.WorldToScreen(finalRect);
 
         layout.BeginFrame();
 
-        Raylib.BeginScissorMode((int)finalRect.X, (int)finalRect.Y, (int)finalRect.Width, (int)finalRect.Height);
+        Raylib_cs.Raylib.BeginScissorMode((int)finalRect.X, (int)finalRect.Y, (int)finalRect.Width, (int)finalRect.Height);
         {
             layout.BeginHorizontalEx(0, (int)Position.X);
             {
@@ -43,7 +47,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
             }
             layout.EndHorizontal(Height);
         }
-        Raylib.EndScissorMode();
+        Raylib_cs.Raylib.EndScissorMode();
 
         layout.DrawOverlays();
         layout.EndFrame();
@@ -61,18 +65,18 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     public abstract void OnDrawLayout();
 
-    protected override Drawable? OnChildrenHitTest(Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        return layout.HitTestElements(mouseScreenPosition, mouseWorldPosition);
+        return layout.HitTestElements(transformer, mouseScreenPosition, mouseWorldPosition);
     }
 
-    public Rectangle GetScissorRect()
+    public Rectangle GetScissorRect(IWorldToScreenTransformer worldToScreenTransformer)
     {
         Rectangle rect = new(Position.X, Position.Y, Width, Height);
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
 
         if (worldSpace)
-            rect = Engine.Camera.GetWorldToScreenRect(rect);
+            rect = worldToScreenTransformer.WorldToScreen(rect);
 
         return rect;
     }
@@ -89,7 +93,7 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
             isDragging = true;
             dragOffset = new Vector2(evt.ScreenPosition.X - RelativePosition.X, evt.ScreenPosition.Y - RelativePosition.Y);
 
-            InteractionManager.CapturePointer(this);
+            Engine.Instance.InteractionManager.CapturePointer(this);
 
             return true;
         }
@@ -108,11 +112,15 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
         if (evt.MouseButton == MouseButton.Left)
         {
             isDragging = false;
-            InteractionManager.ReleasePointer();
+            Engine.Instance.InteractionManager.ReleasePointer();
 
             return true;
         }
 
         return false;
     }
+
+    public virtual Dictionary<string, object?> GetSaveData() => [];
+
+    public virtual void RestoreSaveData(System.Text.Json.JsonElement data) { }
 }
