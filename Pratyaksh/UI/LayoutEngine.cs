@@ -609,12 +609,13 @@ public class LayoutEngine
         bool found = layoutCycleSelectors.ContainsKey(id);
         if (!found)
         {
-            CycleSelector cachedCycle = new CycleSelector(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
+            CycleSelector cachedCycle = new(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
             ElementInfo<CycleSelector> elem = new(cachedCycle, null);
             layoutCycleSelectors.Add(id, elem);
         }
         else
         {
+            layoutCycleSelectors[id].UIElement.SelectedIndex = selectedIndex;
             layoutCycleSelectors[id].UIElement.Options = options;
             layoutCycleSelectors[id].UIElement.SetOnSelectionChanged(onSelectionChanged);
         }
