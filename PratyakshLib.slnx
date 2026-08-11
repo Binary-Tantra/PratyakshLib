@@ -2,5 +2,6 @@
   <Project Path="Pratyaksh/Core/Pratyaksh.Core.csproj" />
   <Project Path="Pratyaksh/UI/Pratyaksh.UI.csproj" />
   <Project Path="Pratyaksh/Node/Core/Pratyaksh.Node.Core.csproj" />
+  <Project Path="Pratyaksh/Node/Editor/Pratyaksh.Node.Editor.csproj" />
   <Project Path="RaylibNodeLibrary/RaylibNodeLibrary.csproj" />
 </Solution>

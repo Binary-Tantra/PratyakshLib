@@ -1,20 +1,16 @@
-using System.Text.Json;
-
 using Pratyaksh.Core.DataBinding;
 using Pratyaksh.Node.Core.DataModel;
+using Pratyaksh.Core.Serialization;
 using Pratyaksh.UI;
 using Raylib_cs;
 
 namespace RaylibNodeLibrary.DataModel.Serialization;
 
-public static class GraphSerializer
+public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engine)
 {
-    private static JsonSerializerOptions? serializeOptions;
-    private static JsonSerializerOptions? deserializeOptions;
-
-    public static string Serialize(Graph graph, Dictionary<int, NodeVisual?> nodeVisuals, NodeRegistry nodeRegistry, int maxId, Canvas? canvas = null)
+    public string Serialize(Graph graph, Dictionary<int, NodeVisual?> nodeVisuals, NodeRegistry nodeRegistry, int maxId, Canvas? canvas = null)
     {
-        GraphSaveData data = new GraphSaveData
+        GraphSaveData data = new()
         {
             MaxId = maxId
         };
@@ -33,7 +29,7 @@ public static class GraphSerializer
                 Category = template.Category,
                 InputPortTypeNames = [.. template.InputPortTypeNames],
                 OutputPortTypeNames = [.. template.OutputPortTypeNames],
-                Payload = template.Payload != null ? JsonSerializer.SerializeToElement(template.Payload) : null
+                Payload = template.Payload != null ? ((JsonSerializationEngine)engine).SerializeToElement(template.Payload) : null
             };
 
             foreach (var (elemType, elemDesc) in template.UIElements)
@@ -51,7 +47,7 @@ public static class GraphSerializer
                 Id = v.Id,
                 Name = v.VarName,
                 TypeName = v.VarType.Name,
-                Value = JsonSerializer.SerializeToElement(v.VarValue)
+                Value = ((JsonSerializationEngine)engine).SerializeToElement(v.VarValue)
             });
         }
 
@@ -70,7 +66,7 @@ public static class GraphSerializer
                 var payloads = vis.GetUIStatePayloads();
                 foreach (var p in payloads)
                 {
-                    nd.UIElementValues.Add(p != null ? JsonSerializer.SerializeToElement(p) : null);
+                    nd.UIElementValues.Add(p != null ? ((JsonSerializationEngine)engine).SerializeToElement(p) : null);
                 }
             }
 
@@ -109,16 +105,10 @@ public static class GraphSerializer
             });
         }
 
-        serializeOptions ??= new()
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
-        return JsonSerializer.Serialize(data, serializeOptions);
+        return engine.Serialize(data);
     }
 
-    private static UIElementSaveData SerializeUIElement(UIElementType elemType, UIElementDescription elemDesc)
+    private UIElementSaveData SerializeUIElement(UIElementType elemType, UIElementDescription elemDesc)
     {
         var saveData = new UIElementSaveData
         {
@@ -199,7 +189,7 @@ public static class GraphSerializer
         return saveData;
     }
 
-    public static (UIElementType elemType, UIElementDescription elemDesc) DeserializeUIElement(UIElementSaveData data)
+    public (UIElementType elemType, UIElementDescription elemDesc) DeserializeUIElement(UIElementSaveData data)
     {
         UIElementType elemType = (UIElementType)data.ElementType;
         UIElementDescription elemDesc;
@@ -275,9 +265,8 @@ public static class GraphSerializer
         return (elemType, elemDesc);
     }
 
-    public static GraphSaveData? Deserialize(string json)
+    public GraphSaveData? Deserialize(string json)
     {
-        deserializeOptions ??= new() { PropertyNameCaseInsensitive = true };
-        return JsonSerializer.Deserialize<GraphSaveData>(json, deserializeOptions);
+        return engine.Deserialize<GraphSaveData>(json);
     }
 }

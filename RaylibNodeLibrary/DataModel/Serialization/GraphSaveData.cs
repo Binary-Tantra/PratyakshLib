@@ -1,9 +1,10 @@
 namespace RaylibNodeLibrary.DataModel.Serialization;
 
+using Pratyaksh.Core.Serialization;
 using System.Collections.Generic;
 using System.Text.Json;
 
-public class GraphSaveData
+public class GraphSaveData : BaseDTO
 {
     public int MaxId { get; set; }
     public List<NodeTemplateSaveData> NodeTemplates { get; set; } = new();

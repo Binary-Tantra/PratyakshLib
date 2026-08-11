@@ -6,6 +6,8 @@ using Pratyaksh.UI.UIElements;
 using Pratyaksh.Node.Core.DataModel;
 using RaylibNodeLibrary.UI;
 using System.Numerics;
+using RaylibNodeLibrary.DataModel.Serialization;
+using Pratyaksh.Core.Serialization;
 
 public class GEngine : Engine
 {
@@ -46,6 +48,8 @@ public class GEngine : Engine
 
     private static List<(Rectangle rect, Raylib_cs.Color color)> deferredRects = new();
 
+    private GraphSerializer graphSerializer;
+
     public GEngine(int screenWidth, int screenHeight) : base()
     {
         camera = new(screenWidth, screenHeight);
@@ -55,6 +59,8 @@ public class GEngine : Engine
 
         InteractionManager.GlobalPointerEvent += HandleGlobalPointerEvent;
         InteractionManager.GlobalKBEvent += HandleGlobalKBEvents;
+
+        graphSerializer = new GraphSerializer(new JsonSerializationEngine());
     }
 
     public void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
@@ -75,20 +81,20 @@ public class GEngine : Engine
         // e.g., Ctrl+S to save the graph, Ctrl+Z to undo.
         if (keyEvent.Key == KeyboardKey.S && InteractionManager.InputContext.isCtrlDown)
         {
-            string json = DataModel.Serialization.GraphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId, canvas);
-            File.WriteAllText("save.json", json);
-            Console.WriteLine("Saved graph to save.json");
+            string data = graphSerializer.Serialize(graph, nodeToNodeUIDict, NodeRegistry, IdGen.CurrentId, canvas);
+            File.WriteAllText("save." + graphSerializer.Extension, data);
+            Console.WriteLine("Saved graph to save." + graphSerializer.Extension);
         }
         else if (keyEvent.Key == KeyboardKey.L && InteractionManager.InputContext.isCtrlDown)
         {
-            if (File.Exists("save.json"))
+            if (File.Exists("save." + graphSerializer.Extension))
             {
-                string json = File.ReadAllText("save.json");
-                var data = DataModel.Serialization.GraphSerializer.Deserialize(json);
+                string json = File.ReadAllText("save." + graphSerializer.Extension);
+                var data = graphSerializer.Deserialize(json);
                 if (data != null)
                 {
                     ReconstructGraph(data);
-                    Console.WriteLine("Loaded graph from save.json");
+                    Console.WriteLine("Loaded graph from save." + graphSerializer.Extension);
                 }
             }
         }
@@ -695,7 +701,7 @@ public class GEngine : Engine
                 var uiElements = new List<(UIElementType, UIElementDescription)>();
                 foreach (var uiData in tData.UIElements)
                 {
-                    uiElements.Add(DataModel.Serialization.GraphSerializer.DeserializeUIElement(uiData));
+                    uiElements.Add(graphSerializer.DeserializeUIElement(uiData));
                 }
 
                 object? payload = null;
