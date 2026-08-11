@@ -3,7 +3,7 @@ namespace RaylibNodeLibrary;
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 using Pratyaksh.UI.UIElements;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Node.Core.DataModel;
 using RaylibNodeLibrary.UI;
 using System.Numerics;
 
@@ -452,7 +452,15 @@ public class GEngine : Engine
         varToNodeUIsDict = [];
 
         graph = new Graph();
-        
+        graph.OnVariableAdded += NotifyAddVar;
+        graph.OnVariableRemoved += NotifyRemoveVar;
+        graph.OnNodeAdded += NotifyAddNode;
+        graph.OnNodeUpdated += NotifyUpdateNode;
+        graph.OnNodeRemoved += NotifyRemoveNode;
+        graph.OnPortAdded += NotifyAddPort;
+        graph.OnPortRemoved += NotifyRemovePort;
+        graph.OnConnectionRemoved += NotifyRemoveConnection;
+
         graph.Types.RegisterDefaultTypes();
         SetupDefaultTypeColors();
 
@@ -742,29 +750,19 @@ public class GEngine : Engine
                 }
             }
 
-            Node n = new(nd.Id, nd.TemplateId);
+            Node n = graph.AddNodeExplicit(nd.Id, nd.TemplateId);
 
             foreach (var pData in nd.InputPorts)
             {
                 DataType? t = graph.Types.GetType(pData.DataTypeName);
-                if (t != null)
-                {
-                    Port p = new(pData.Id, pData.Name, PortFlowType.Input, t);
-                    n.AddInputPortExplicit(p);
-                }
+                if (t != null) graph.AddInputPortExplicit(n, pData.Id, pData.Name, t);
             }
 
             foreach (var pData in nd.OutputPorts)
             {
                 DataType? t = graph.Types.GetType(pData.DataTypeName);
-                if (t != null)
-                {
-                    Port p = new(pData.Id, pData.Name, PortFlowType.Output, t);
-                    n.AddOutputPortExplicit(p);
-                }
+                if (t != null) graph.AddOutputPortExplicit(n, pData.Id, pData.Name, t);
             }
-
-            graph.AddNodeExplicit(n);
 
             List<(UIElementType, UIElementDescription)> uiElems = template != null ? template.UIElements : [];
             string titleName = template != null ? template.Name : "Node " + n.Id;

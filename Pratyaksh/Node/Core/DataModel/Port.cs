@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataModel;
+namespace Pratyaksh.Node.Core.DataModel;
 
 public enum PortFlowType
 {
@@ -18,8 +18,6 @@ public class Port : DataObject
 
     public Port(string portName, PortFlowType portFlowType, DataType dataType) : base()
     {
-        GEngine.NotifyAddPort(Id);
-
         this.portName = portName;
         this.portFlowType = portFlowType;
         this.dataType = dataType;
@@ -27,8 +25,6 @@ public class Port : DataObject
 
     public Port(int id, string portName, PortFlowType portFlowType, DataType dataType) : base(id)
     {
-        GEngine.NotifyAddPort(Id);
-
         this.portName = portName;
         this.portFlowType = portFlowType;
         this.dataType = dataType;

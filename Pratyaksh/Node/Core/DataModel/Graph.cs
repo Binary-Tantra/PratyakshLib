@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataModel;
+namespace Pratyaksh.Node.Core.DataModel;
 
 public class Graph
 {
@@ -11,6 +11,15 @@ public class Graph
     public Dictionary<int, Variable> Variables { get => graphVariables; }
     public Dictionary<(int, int), Connection> Connections { get => graphConnections; }
     public Dictionary<int, Node> Nodes { get => graphNodes; }
+
+    public Action<int>? OnVariableAdded;
+    public Action<int>? OnVariableRemoved;
+    public Action<int>? OnNodeAdded;
+    public Action<int>? OnNodeUpdated;
+    public Action<int>? OnNodeRemoved;
+    public Action<int>? OnPortAdded;
+    public Action<int>? OnPortRemoved;
+    public Action<int, int>? OnConnectionRemoved;
 
     public Graph()
     {
@@ -27,41 +36,81 @@ public class Graph
         graphVariables.Clear();
     }
 
+    public void AddVariableExplicit(Variable v)
+    {
+        graphVariables.Add(v.Id, v);
+        OnVariableAdded?.Invoke(v.Id);
+    }
+
+    public void AddVariable(string name, DataType type, object value)
+    {
+        Variable newV = new(name, type, value);
+        graphVariables.Add(newV.Id, newV);
+
+        OnVariableAdded?.Invoke(newV.Id);
+    }
+
+    public void RemoveVariable(int id)
+    {
+        if (!graphVariables.ContainsKey(id))
+        {
+            Console.WriteLine($"Error: Cannot Remove variable with the id {id}. The variable doesn't exist.");
+            return;
+        }
+
+        graphVariables.Remove(id);
+        OnVariableRemoved?.Invoke(id);
+    }
+
+    public Variable? GetVariable(int varId)
+    {
+        if (!graphVariables.TryGetValue(varId, out Variable? variable))
+        {
+            Console.WriteLine($"Error: Cannot get variable with id: {varId}. The variable doesn't exist. ");
+            return null;
+        }
+
+        return variable;
+    }
+
+    public bool RenameVariable(int varId, string newName)
+    {
+        Variable? var = GetVariable(varId);
+        var?.SetName_Graph(newName);
+
+        return var != null;
+    }
+
+    public void ChangeVariableType(int varId, DataType newType)
+    {
+        Variable? var = GetVariable(varId);
+        if (var != null)
+        {
+            object defaultValue = 0;
+            if (newType.CSharpType == typeof(float)) defaultValue = 0f;
+            else if (newType.CSharpType == typeof(string)) defaultValue = "";
+            else if (newType.CSharpType == typeof(bool)) defaultValue = false;
+
+            var.ChangeType(newType, defaultValue);
+        }
+    }
+
     public Node AddNode(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes)
     {
-        Node n = new(templateId, inputPortTypes, outputPortTypes);
+        Node n = new(templateId, inputPortTypes, outputPortTypes, OnPortAdded);
+        OnNodeAdded?.Invoke(n.Id);
         graphNodes.Add(n.Id, n);
 
         return n;
     }
 
-    public void AddNodeExplicit(Node n)
+    public Node AddNodeExplicit(int nodeId, int templateId)
     {
+        Node n = new(nodeId, templateId);
         graphNodes.Add(n.Id, n);
-    }
+        OnNodeAdded?.Invoke(n.Id);
 
-    public void AddConnectionExplicit(Connection c)
-    {
-        graphConnections.Add((c.SourcePortId, c.TargetPortId), c);
-        
-        Port? sourcePort = null;
-        Port? targetPort = null;
-        
-        foreach (Node n in graphNodes.Values)
-        {
-            if (n.HasOutputPort(c.SourcePortId)) sourcePort = n.OutputPorts[c.SourcePortId];
-            if (n.HasInputPort(c.TargetPortId)) targetPort = n.InputPorts[c.TargetPortId];
-            if (sourcePort != null && targetPort != null) break;
-        }
-
-        if (sourcePort != null) sourcePort.IsConnected = true;
-        if (targetPort != null) targetPort.IsConnected = true;
-    }
-
-    public void AddVariableExplicit(Variable v)
-    {
-        graphVariables.Add(v.Id, v);
-        GEngine.NotifyAddVar(v.Id);
+        return n;
     }
 
     public void RemoveNode(int id)
@@ -110,10 +159,10 @@ public class Graph
             RemoveConnection(sourcePort, targetPort);
         }
 
-        graphNodes[id].RemovePorts();
+        graphNodes[id].RemovePorts(OnPortRemoved);
 
         if (graphNodes.Remove(id))
-            GEngine.NotifyRemoveNode(id);
+            OnNodeRemoved?.Invoke(id);
     }
 
     public Node? GetNode(int nodeId)
@@ -125,6 +174,40 @@ public class Graph
         }
 
         return node;
+    }
+
+    public void AddInputPort(Node n, DataType dataType)
+    {
+        Port port = new(dataType.Name, PortFlowType.Input, dataType);
+        OnPortAdded?.Invoke(port.Id);
+        
+        n.AddInputPort(port);
+        OnNodeUpdated?.Invoke(n.Id);
+    }
+
+    public void AddOutputPort(Node n, DataType dataType)
+    {
+        Port port = new(dataType.Name, PortFlowType.Output, dataType);
+        OnPortAdded?.Invoke(port.Id);
+
+        n.AddOutputPort(port);
+        OnNodeUpdated?.Invoke(n.Id);
+    }
+
+    public void AddInputPortExplicit(Node n, int id, string portName, DataType dataType)
+    {
+        Port port = new(id, portName, PortFlowType.Input, dataType);
+        OnPortAdded?.Invoke(port.Id);
+
+        n.AddInputPort(port);
+    }
+
+    public void AddOutputPortExplicit(Node n, int id, string portName, DataType dataType)
+    {
+        Port port = new(id, portName, PortFlowType.Output, dataType);
+        OnPortAdded?.Invoke(port.Id);
+
+        n.AddOutputPort(port);
     }
 
     public bool AddConnection(int sourceNodeId, int sourcePortId, int targetNodeId, int targetPortId)
@@ -167,6 +250,24 @@ public class Graph
         return true;
     }
 
+    public void AddConnectionExplicit(Connection c)
+    {
+        graphConnections.Add((c.SourcePortId, c.TargetPortId), c);
+
+        Port? sourcePort = null;
+        Port? targetPort = null;
+
+        foreach (Node n in graphNodes.Values)
+        {
+            if (n.HasOutputPort(c.SourcePortId)) sourcePort = n.OutputPorts[c.SourcePortId];
+            if (n.HasInputPort(c.TargetPortId)) targetPort = n.InputPorts[c.TargetPortId];
+            if (sourcePort != null && targetPort != null) break;
+        }
+
+        sourcePort?.IsConnected = true;
+        targetPort?.IsConnected = true;
+    }
+
     public void RemoveConnection(int sourcePortId, int targetPortId)
     {
         if (!graphConnections.ContainsKey((sourcePortId, targetPortId)))
@@ -190,7 +291,7 @@ public class Graph
         sourcePort?.IsConnected = graphConnections.Keys.Any(k => k.Item1 == sourcePortId);
         targetPort?.IsConnected = graphConnections.Keys.Any(k => k.Item2 == targetPortId);
 
-        GEngine.NotifyRemoveConnection(sourcePortId, targetPortId);
+        OnConnectionRemoved?.Invoke(sourcePortId, targetPortId);
     }
 
     public Connection? GetConnection(int sourcePortId, int targetPortId)
@@ -202,59 +303,6 @@ public class Graph
         }
 
         return connection;
-    }
-
-    public void AddVariable(string name, DataType type, object value)
-    {
-        Variable newV = new(name, type, value);
-        graphVariables.Add(newV.Id, newV);
-
-        GEngine.NotifyAddVar(newV.Id);
-    }
-
-    public void RemoveVariable(int id)
-    {
-        if (!graphVariables.ContainsKey(id))
-        {
-            Console.WriteLine($"Error: Cannot Remove variable with the id {id}. The variable doesn't exist.");
-            return;
-        }
-
-        graphVariables.Remove(id);
-        GEngine.NotifyRemoveVar(id);
-    }
-
-    public Variable? GetVariable(int varId)
-    {
-        if (!graphVariables.TryGetValue(varId, out Variable? variable))
-        {
-            Console.WriteLine($"Error: Cannot get variable with id: {varId}. The variable doesn't exist. ");
-            return null;
-        }
-
-        return variable;
-    }
-
-    public bool RenameVariable(int varId, string newName)
-    {
-        Variable? var = GetVariable(varId);
-        var?.SetName_Graph(newName);
-
-        return var != null;
-    }
-
-    public void ChangeVariableType(int varId, DataType newType)
-    {
-        Variable? var = GetVariable(varId);
-        if (var != null)
-        {
-            object defaultValue = 0;
-            if (newType.CSharpType == typeof(float)) defaultValue = 0f;
-            else if (newType.CSharpType == typeof(string)) defaultValue = "";
-            else if (newType.CSharpType == typeof(bool)) defaultValue = false;
-
-            var.ChangeType(newType, defaultValue);
-        }
     }
 
     public void DisconnectIncompatibleConnections(int portId)

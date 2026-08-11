@@ -1,7 +1,7 @@
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 using Pratyaksh.UI.UIElements;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Node.Core.DataModel;
 
 namespace RaylibNodeLibrary.UI;
 

@@ -2,9 +2,8 @@ namespace RaylibNodeLibrary;
 
 using Pratyaksh.Core;
 using Pratyaksh.UI;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Node.Core.DataModel;
 using System.Numerics;
-using System.Xml.Serialization;
 
 public class NodeVisual : Actor, IPointerInteractable, IDragable
 {
@@ -153,14 +152,14 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         for (int i = 0; i < inputPortIdNames.Count; i++)
         {
             Port p = n.InputPorts[inputPortIdNames[i].id];
-            PortVisual pv = new(inputPortIdNames[i].id, DataModel.PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
+            PortVisual pv = new(inputPortIdNames[i].id, PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
             inputPorts.Add(pv);
         }
 
         for (int i = 0; i < outputPortIdNames.Count; i++)
         {
             Port p = n.OutputPorts[outputPortIdNames[i].id];
-            PortVisual pv = new(outputPortIdNames[i].id, DataModel.PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
+            PortVisual pv = new(outputPortIdNames[i].id, PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
             outputPorts.Add(pv);
         }
 

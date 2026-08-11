@@ -1,7 +1,7 @@
 using System.Numerics;
 using Pratyaksh.Core;
 using Pratyaksh.UI;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Node.Core.DataModel;
 
 namespace RaylibNodeLibrary;
 

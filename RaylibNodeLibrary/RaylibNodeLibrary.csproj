@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pratyaksh\Core\Pratyaksh.Core.csproj" />
+    <ProjectReference Include="..\Pratyaksh\Node\Core\Pratyaksh.Node.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

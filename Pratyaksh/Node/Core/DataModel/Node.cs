@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataModel;
+namespace Pratyaksh.Node.Core.DataModel;
 
 public class Node : DataObject
 {
@@ -16,10 +16,9 @@ public class Node : DataObject
 
     public int TemplateId { get; set; } = -1;
 
-    public Node(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes) : base()
+    internal Node(int templateId, List<DataType> inputPortTypes, List<DataType> outputPortTypes, Action<int>? OnPortAdded) : base()
     {
         TemplateId = templateId;
-        GEngine.NotifyAddNode(Id);
 
         inputPorts = [];
         outputPorts = [];
@@ -27,33 +26,24 @@ public class Node : DataObject
         for (int i = 0; i < inputPortTypes.Count; i++)
         {
             Port p = new(inputPortTypes[i].Name, PortFlowType.Input, inputPortTypes[i]);
+            OnPortAdded?.Invoke(p.Id);
             inputPorts.Add(p.Id, p);
         }
 
         for (int i = 0; i < outputPortTypes.Count; i++)
         {
             Port p = new(outputPortTypes[i].Name, PortFlowType.Output, outputPortTypes[i]);
+            OnPortAdded?.Invoke(p.Id);
             outputPorts.Add(p.Id, p);
         }
     }
 
-    public Node(int id, int templateId) : base(id)
+    internal Node(int id, int templateId) : base(id)
     {
         TemplateId = templateId;
-        GEngine.NotifyAddNode(Id);
 
         inputPorts = [];
         outputPorts = [];
-    }
-
-    public void AddInputPortExplicit(Port port)
-    {
-        inputPorts.Add(port.Id, port);
-    }
-
-    public void AddOutputPortExplicit(Port port)
-    {
-        outputPorts.Add(port.Id, port);
     }
 
     public bool HasInputPort(int inputPortId)
@@ -66,34 +56,30 @@ public class Node : DataObject
         return outputPorts.ContainsKey(outputPortId);
     }
 
-    public void RemovePorts()
+    internal void AddInputPort(Port p)
+    {
+        inputPorts.Add(p.Id, p);
+    }
+
+    internal void AddOutputPort(Port p)
+    {
+        outputPorts.Add(p.Id, p);
+    }
+
+    internal void RemovePorts(Action<int>? onRemovePort)
     {
         List<int> keys = [.. inputPorts.Keys];
         for (int i = 0; i < keys.Count; i++)
         {
             if (inputPorts.Remove(keys[i]))
-                GEngine.NotifyRemovePort(keys[i]);
+                onRemovePort?.Invoke(keys[i]);
         }
 
         keys = [.. outputPorts.Keys];
         for (int i = 0; i < keys.Count; i++)
         {
             if (outputPorts.Remove(keys[i]))
-                GEngine.NotifyRemovePort(keys[i]);
+                onRemovePort?.Invoke(keys[i]);
         }
-    }
-
-    public void AddInputPort(DataType dataType)
-    {
-        Port newI = new(dataType.Name, PortFlowType.Input, dataType);
-        inputPorts.Add(newI.Id, newI);
-        GEngine.NotifyUpdateNode(Id);
-    }
-
-    public void AddOutputPort(DataType dataType)
-    {
-        Port newO = new(dataType.Name, PortFlowType.Output, dataType);
-        outputPorts.Add(newO.Id, newO);
-        GEngine.NotifyUpdateNode(Id);
     }
 }

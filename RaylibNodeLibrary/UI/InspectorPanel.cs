@@ -1,5 +1,5 @@
 using Raylib_cs;
-using RaylibNodeLibrary.DataModel;
+using Pratyaksh.Node.Core.DataModel;
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 
@@ -22,13 +22,41 @@ public class InspectorPanel : UILayoutBase
         this.requestSearchMenu = requestSearchMenu;
     }
 
+    public List<(UIElementType type, UIElementDescription desc)> GetInspectorUIDescriptors(Variable v)
+    {
+        DataType varType = v.VarType;
+        List<(UIElementType, UIElementDescription)> list =
+            [
+                (UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Var Name", v.VarNameBindable))
+            ];
+
+        if (varType.Name == "Bool" && v.BoolValueBindable != null)
+        {
+            list.Add((UIElementType.BindableToggle, new BindableToggleDesc("Value", v.BoolValueBindable)));
+        }
+        else if (varType.Name == "Int" && v.IntValueBindable != null)
+        {
+            list.Add((UIElementType.BindableInputField_Int, new BindableInputFieldIntDesc("0", v.IntValueBindable)));
+        }
+        else if (varType.Name == "Float" && v.FloatValueBindable != null)
+        {
+            list.Add((UIElementType.BindableInputField_Float, new BindableInputFieldFloatDesc("0.0", v.FloatValueBindable)));
+        }
+        else if (varType.Name == "String" && v.StringValueBindable != null)
+        {
+            list.Add((UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Text", v.StringValueBindable)));
+        }
+
+        return list;
+    }
+
     public override void OnDrawLayout()
     {
         layout.SectionEx("Inspector", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
 
         if (GEngine.CurrentlySelectedObjectId != null && GEngine.Graph.Variables.TryGetValue((int)GEngine.CurrentlySelectedObjectId, out Variable? v))
         {
-            var descriptors = v.GetInspectorUIDescriptors();
+            var descriptors = GetInspectorUIDescriptors(v);
 
             layout.AddSpace(10);
 

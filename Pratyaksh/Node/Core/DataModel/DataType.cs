@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataModel;
+namespace Pratyaksh.Node.Core.DataModel;
 
 [Flags]
 public enum DataCategory

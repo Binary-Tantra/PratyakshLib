@@ -1,7 +1,6 @@
 using Pratyaksh.Core.DataBinding;
-using Pratyaksh.UI;
 
-namespace RaylibNodeLibrary.DataModel;
+namespace Pratyaksh.Node.Core.DataModel;
 
 public class Variable : DataObject
 {
@@ -84,32 +83,6 @@ public class Variable : DataObject
     {
         varType = newType;
         InitTypedValue(newDefaultValue);
-    }
-
-    public List<(UIElementType type, UIElementDescription desc)> GetInspectorUIDescriptors()
-    {
-        var list = new List<(UIElementType, UIElementDescription)>();
-
-        list.Add((UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Var Name", VarNameBindable)));
-
-        if (varType.Name == "Bool" && BoolValueBindable != null)
-        {
-            list.Add((UIElementType.BindableToggle, new BindableToggleDesc("Value", BoolValueBindable)));
-        }
-        else if (varType.Name == "Int" && IntValueBindable != null)
-        {
-            list.Add((UIElementType.BindableInputField_Int, new BindableInputFieldIntDesc("0", IntValueBindable)));
-        }
-        else if (varType.Name == "Float" && FloatValueBindable != null)
-        {
-            list.Add((UIElementType.BindableInputField_Float, new BindableInputFieldFloatDesc("0.0", FloatValueBindable)));
-        }
-        else if (varType.Name == "String" && StringValueBindable != null)
-        {
-            list.Add((UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Text", StringValueBindable)));
-        }
-
-        return list;
     }
 
     public override string ToString()
