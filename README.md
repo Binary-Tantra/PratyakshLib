@@ -1,2 +1,2 @@
-# Raylib-Node-Library
-A node editor library based on Raylib.
+# Pratyaksh Library
+A UI Library.
