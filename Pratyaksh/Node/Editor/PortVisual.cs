@@ -3,7 +3,7 @@ using Pratyaksh.Core;
 using Pratyaksh.UI;
 using Pratyaksh.Node.Core.DataModel;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDragable
 {
@@ -51,7 +51,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     {
         get
         {
-            Node? node = GEngine.Graph.GetNode(ParentNodeId);
+            Core.DataModel.Node? node = NodeEditorEngine.Graph.GetNode(ParentNodeId);
             if (node == null) return false;
             
             if (portFlowType == PortFlowType.Input && node.InputPorts.ContainsKey(portId))
@@ -65,12 +65,12 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public void UpdateDataType(int dataTypeId, string? newPortName = null)
     {
-        DataType? dataType = GEngine.Graph.Types.GetType(dataTypeId);
+        DataType? dataType = NodeEditorEngine.Graph.Types.GetType(dataTypeId);
         if (dataType != null)
         {
             isExecution = dataType.Category.HasFlag(DataCategory.Execution);
 
-            if (GEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
+            if (NodeEditorEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
                 portColor = c;
             
             if (newPortName != null)
@@ -85,13 +85,13 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     {
         this.portId = portId;
 
-        if (GEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
+        if (NodeEditorEngine.DataTypeColors.TryGetValue(dataTypeId, out Raylib_cs.Color c))
             portColor = c;
             
-        DataType? dataType = GEngine.Graph.Types.GetType(dataTypeId);
+        DataType? dataType = NodeEditorEngine.Graph.Types.GetType(dataTypeId);
         isExecution = dataType != null && dataType.Category.HasFlag(DataCategory.Execution);
 
-        GEngine.NotifyConnectPortAndUI(portId, this);
+        NodeEditorEngine.NotifyConnectPortAndUI(portId, this);
         
         this.portFlowType = portFlowType;
 
@@ -158,7 +158,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     protected override void OnDelete()
     {
-        GEngine.NotifyDisconnectPortAndUI(portId);
+        NodeEditorEngine.NotifyDisconnectPortAndUI(portId);
     }
 
     public void OnMouseEnter(PointerVisitEventData evt)

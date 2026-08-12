@@ -3,7 +3,7 @@ using Pratyaksh.Node.Core.DataModel;
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.Node.Editor.UI;
 
 public class InspectorPanel : UILayoutBase
 {
@@ -54,7 +54,7 @@ public class InspectorPanel : UILayoutBase
     {
         layout.SectionEx("Inspector", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
 
-        if (GEngine.CurrentlySelectedObjectId != null && GEngine.Graph.Variables.TryGetValue((int)GEngine.CurrentlySelectedObjectId, out Variable? v))
+        if (NodeEditorEngine.CurrentlySelectedObjectId != null && NodeEditorEngine.Graph.Variables.TryGetValue((int)NodeEditorEngine.CurrentlySelectedObjectId, out Variable? v))
         {
             var descriptors = GetInspectorUIDescriptors(v);
 
@@ -82,7 +82,7 @@ public class InspectorPanel : UILayoutBase
                         layout.Text("Type:", Color.White);
                         layout.AddSpace(40);
 
-                        List<DataType> dataTypes = [.. GEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
+                        List<DataType> dataTypes = [.. NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
                         layout.Button(v.Id + 3000000, v.VarType.Name, Width - 60, 25, (btn) =>
                         {
                             System.Numerics.Vector2 mp = Raylib.GetMousePosition();

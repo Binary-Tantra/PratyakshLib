@@ -1,7 +1,7 @@
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class NodeTemplate
 {

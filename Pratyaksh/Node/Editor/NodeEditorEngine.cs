@@ -1,15 +1,15 @@
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 using Pratyaksh.UI.UIElements;
 using Pratyaksh.Node.Core.DataModel;
-using RaylibNodeLibrary.UI;
+using Pratyaksh.Node.Editor.UI;
 using System.Numerics;
-using RaylibNodeLibrary.DataModel.Serialization;
+using Pratyaksh.Node.Editor.Serialization;
 using Pratyaksh.Core.Serialization;
 
-public class GEngine : Engine
+public class NodeEditorEngine : Engine
 {
     public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
@@ -50,7 +50,7 @@ public class GEngine : Engine
 
     private GraphSerializer graphSerializer;
 
-    public GEngine(int screenWidth, int screenHeight) : base()
+    public NodeEditorEngine(int screenWidth, int screenHeight) : base()
     {
         camera = new(screenWidth, screenHeight);
         InteractionManager itm = new(camera);
@@ -687,7 +687,7 @@ public class GEngine : Engine
         varToNodeUIsDict.Clear();
     }
 
-    public void ReconstructGraph(DataModel.Serialization.GraphSaveData data)
+    public void ReconstructGraph(GraphSaveData data)
     {
         ClearWorkspace();
 

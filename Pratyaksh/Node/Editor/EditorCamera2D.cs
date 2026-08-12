@@ -1,7 +1,7 @@
 ﻿using Pratyaksh.Core;
 using System.Numerics;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class EditorCamera2D : EditorObject, IPointerInteractable, IDragable, IScrollable, IWorldToScreenTransformer
 {

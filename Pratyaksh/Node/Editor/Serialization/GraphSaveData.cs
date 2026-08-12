@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary.DataModel.Serialization;
+namespace Pratyaksh.Node.Editor.Serialization;
 
 using Pratyaksh.Core.Serialization;
 using System.Collections.Generic;

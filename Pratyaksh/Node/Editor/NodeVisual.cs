@@ -1,4 +1,4 @@
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 using Pratyaksh.Core;
 using Pratyaksh.UI;
@@ -55,7 +55,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     {
         this.nodeId = nodeId;
 
-        GEngine.NotifyConnectNodeAndUI(nodeId, this);
+        NodeEditorEngine.NotifyConnectNodeAndUI(nodeId, this);
 
         selfInteractable = true;
 
@@ -75,7 +75,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public void UpdateNodeVisual()
     {
-        Node? n = GEngine.Graph.GetNode(nodeId);
+        Node? n = NodeEditorEngine.Graph.GetNode(nodeId);
 
         if (n == null)
         {
@@ -240,7 +240,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         potConnectionWireUI?.Delete();
 
-        GEngine.NotifyDisconnectNodeAndUI(nodeId);
+        NodeEditorEngine.NotifyDisconnectNodeAndUI(nodeId);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)
@@ -305,7 +305,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public void UIConnectionSuccess(PortVisual sourceUI, PortVisual targetUI)
     {
-        GEngine.ConnectionUIManager.OnAddNewConnection(sourceUI, targetUI);
+        NodeEditorEngine.ConnectionUIManager.OnAddNewConnection(sourceUI, targetUI);
         CleanupWire();
     }
 
@@ -320,7 +320,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public bool UIConnectionComplete(PortVisual source, PortVisual connect)
     {
-        bool success = GEngine.Graph.AddConnection(source.ParentNodeId, source.PortId, connect.ParentNodeId, connect.PortId);
+        bool success = NodeEditorEngine.Graph.AddConnection(source.ParentNodeId, source.PortId, connect.ParentNodeId, connect.PortId);
 
         if (success) UIConnectionSuccess(source, connect);
         else UIConnectionCanceled(source);

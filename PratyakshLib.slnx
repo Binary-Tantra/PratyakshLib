@@ -3,5 +3,5 @@
   <Project Path="Pratyaksh/UI/Pratyaksh.UI.csproj" />
   <Project Path="Pratyaksh/Node/Core/Pratyaksh.Node.Core.csproj" />
   <Project Path="Pratyaksh/Node/Editor/Pratyaksh.Node.Editor.csproj" />
-  <Project Path="RaylibNodeLibrary/RaylibNodeLibrary.csproj" />
+  <Project Path="Samples/NodeEditorSample/NodeEditorSample.csproj" />
 </Solution>

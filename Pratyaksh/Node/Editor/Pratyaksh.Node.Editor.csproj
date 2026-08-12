@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Pratyaksh.Core.csproj" />
+    <ProjectReference Include="..\..\UI\Pratyaksh.UI.csproj" />
+    <ProjectReference Include="..\Core\Pratyaksh.Node.Core.csproj" />
+  </ItemGroup>
+
 </Project>

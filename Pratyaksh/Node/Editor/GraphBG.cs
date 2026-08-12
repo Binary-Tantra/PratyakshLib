@@ -1,7 +1,7 @@
 ﻿using Pratyaksh.Core;
 using Raylib_cs;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class GraphBG : Actor
 {

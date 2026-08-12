@@ -1,7 +1,7 @@
 using System.Numerics;
 using Pratyaksh.Node.Core.DataModel;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class NodeRegistry
 {
@@ -91,7 +91,7 @@ public class NodeRegistry
             if (t != null) outPorts.Add(t);
         }
 
-        Node n = graph.AddNode(template.Id, inPorts, outPorts);
+        Core.DataModel.Node n = graph.AddNode(template.Id, inPorts, outPorts);
         
         NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, position.X, position.Y);
         return nodeVis;

@@ -3,7 +3,7 @@ using Pratyaksh.UI;
 using Pratyaksh.UI.UIElements;
 using Pratyaksh.Node.Core.DataModel;
 
-namespace RaylibNodeLibrary.UI;
+namespace Pratyaksh.Node.Editor.UI;
 
 public class VariablePanel : UILayoutBase
 {
@@ -123,7 +123,7 @@ public class VariablePanel : UILayoutBase
 
     public override void OnDrawLayout()
     {
-        Dictionary<int, Variable> variables = GEngine.Graph.Variables;
+        Dictionary<int, Variable> variables = NodeEditorEngine.Graph.Variables;
         List<int> varIds = [.. variables.Keys];
 
         layout.SectionEx("Variables", Width, Height - 50, Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkGray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.7f), 0.1f, false);
@@ -134,7 +134,7 @@ public class VariablePanel : UILayoutBase
 
             layout.BeginScrollView(scrollId, Width - 10, Height - 50 - 40, 40, 5);
             {
-                List<DataType> dataTypes = GEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
+                List<DataType> dataTypes = NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
                 string[] dataTypeNames = dataTypes.Select(t => t.Name).ToArray();
 
                 for (int i = 0; i < varIds.Count; i++)

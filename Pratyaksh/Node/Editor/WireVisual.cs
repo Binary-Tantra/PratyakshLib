@@ -2,7 +2,7 @@ using System.Numerics;
 using Pratyaksh.Core;
 using Raylib_cs;
 
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class ObjectOrPosition(bool isPosition, Vector2 position, EditorObject? editorObject)
 {

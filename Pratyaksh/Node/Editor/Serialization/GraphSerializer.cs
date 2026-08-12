@@ -4,7 +4,7 @@ using Pratyaksh.Core.Serialization;
 using Pratyaksh.UI;
 using Raylib_cs;
 
-namespace RaylibNodeLibrary.DataModel.Serialization;
+namespace Pratyaksh.Node.Editor.Serialization;
 
 public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engine)
 {

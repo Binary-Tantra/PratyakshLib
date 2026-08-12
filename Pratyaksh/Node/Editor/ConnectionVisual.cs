@@ -1,5 +1,5 @@
 using Pratyaksh.Core;
-namespace RaylibNodeLibrary;
+namespace Pratyaksh.Node.Editor;
 
 public class ConnectionVisual : EditorObject
 {
