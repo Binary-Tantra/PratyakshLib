@@ -13,7 +13,7 @@ using Pratyaksh.Node.Core.DataModel;
 using Pratyaksh.Node.Editor.UI;
 using Pratyaksh.Node.Editor.Serialization;
 
-public class NodeEditorEngine : DefaultRaylibEngine
+public class NodeEditorEngine : BaseRaylibEngine
 {
     public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
