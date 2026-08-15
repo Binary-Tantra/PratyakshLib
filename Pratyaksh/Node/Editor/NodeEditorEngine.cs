@@ -31,8 +31,6 @@ public class NodeEditorEngine : BaseRaylibEngine
 
     private static int? currentlySelectedObjectId;
 
-    private static Raylib_cs.Font defaultFont;
-
     public float ScreenWidth { get => InteractionManager.WorldToScreenTransformer.GetWidth(); }
     public float ScreenHeight { get => InteractionManager.WorldToScreenTransformer.GetHeight(); }
     public static Graph Graph { get => graph; }
@@ -43,7 +41,6 @@ public class NodeEditorEngine : BaseRaylibEngine
     public static int? CurrentlySelectedObjectId { get => currentlySelectedObjectId; }
     public static Dictionary<int, Raylib_cs.Color> DataTypeColors { get; private set; }
     public static NodeRegistry NodeRegistry { get; private set; }
-    public static Raylib_cs.Font DefaultFont { get => defaultFont; }
 
     public static event Action<int?> OnGlobalSelectionChanged;
 
@@ -51,7 +48,7 @@ public class NodeEditorEngine : BaseRaylibEngine
 
     private GraphSerializer graphSerializer;
 
-    public NodeEditorEngine(int screenWidth, int screenHeight) : base(screenWidth, screenHeight, "Raylib Node Library", true, new Raylib_cs.Color((byte)30, (byte)30, (byte)30), true, false)
+    public NodeEditorEngine(int screenWidth, int screenHeight) : base(screenWidth, screenHeight, "Raylib Node Library", "../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf", true, new Raylib_cs.Color((byte)30, (byte)30, (byte)30), true, false)
     {
         camera = new EditorCamera2D(screenWidth, screenHeight);
         Init(new InteractionManager(camera));
@@ -449,9 +446,6 @@ public class NodeEditorEngine : BaseRaylibEngine
     {
         Raylib_cs.Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
 
-        defaultFont = Raylib_cs.Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
-        LayoutEngine.InitSLEDefaultFont(defaultFont);
-
         nodeToNodeUIDict = [];
         portToPortUIDict = [];
         varToNodeUIsDict = [];
@@ -547,11 +541,6 @@ public class NodeEditorEngine : BaseRaylibEngine
     public void DrawDeferredWorldSpaceRect(Rectangle rect, Raylib_cs.Color color)
     {
         deferredRects.Add((rect, color));
-    }
-
-    protected override void OnCleanup()
-    {
-        Raylib_cs.Raylib.UnloadFont(defaultFont);
     }
 
     public void ClearWorkspace()

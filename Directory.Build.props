@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://github.com/Binary-Tantra/PratyakshLib</PackageProjectUrl>
 
     <!-- Unified Package Versioning -->
-    <VersionPrefix>0.1.6</VersionPrefix>
+    <VersionPrefix>0.1.7</VersionPrefix>
     
     <!-- Embed PDBs for debugging -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

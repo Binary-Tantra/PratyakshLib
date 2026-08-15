@@ -10,16 +10,20 @@ public abstract class BaseRaylibEngine : Engine
 
     protected string windowName;
 
+    protected string? defaultFontPath;
+
     protected bool clearScreen;
     protected Color clearColor;
 
     protected bool drawFPS = false;
 
+    private Font defaultFont;
+
     public override float DeltaTime => Raylib.GetFrameTime();
 
     public virtual BaseRaylibCam Camera { get => camera; }
 
-    public BaseRaylibEngine(int width, int height, string windowName, bool clearScreen = true, Color? clearColor = null, bool drawFPS = false, bool initCamera = true, BaseRaylibCam? camera = null) : base()
+    public BaseRaylibEngine(int width, int height, string windowName, string? defaultFontPath = null, bool clearScreen = true, Color? clearColor = null, bool drawFPS = false, bool initCamera = true, BaseRaylibCam? camera = null) : base()
     {
         if (initCamera)
         {
@@ -28,6 +32,7 @@ public abstract class BaseRaylibEngine : Engine
         }
 
         this.windowName = windowName;
+        this.defaultFontPath = defaultFontPath;
         this.clearScreen = clearScreen;
         this.clearColor = clearColor ?? Color.DarkGray;
         this.drawFPS = drawFPS;
@@ -99,6 +104,15 @@ public abstract class BaseRaylibEngine : Engine
         Raylib.InitWindow((int)camera.GetWidth(), (int)camera.GetHeight(), windowName);
         editorObjects.Add(camera);
 
+        Font defF;
+        if (Path.Exists(defaultFontPath) && Path.GetExtension(defaultFontPath) == ".ttf")
+            defF = Raylib.LoadFont(defaultFontPath);
+        else
+            defF = Raylib.GetFontDefault();
+
+        defaultFont = defF;
+        LayoutEngine.InitSLEDefaultFont(defF);
+
         OnSetup();
     }
 
@@ -161,6 +175,7 @@ public abstract class BaseRaylibEngine : Engine
     protected override void Cleanup()
     {
         OnCleanup();
+        Raylib_cs.Raylib.UnloadFont(defaultFont);
         Raylib.CloseWindow();
     }
 

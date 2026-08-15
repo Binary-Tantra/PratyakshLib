@@ -67,6 +67,36 @@ cd PratyakshLib
 dotnet run --project Samples/NodeEditorSample/NodeEditorSample.csproj
 ```
 
+### 1.1 Sample 'Hello World'
+
+```csharp
+using Raylib_cs;
+using Pratyaksh.UI;
+
+namespace TestProject;
+
+public class Program : DefaultRaylibEngine
+{
+    private DemoPanel demoPanel;
+
+    public Program() : base(800, 600, "Test Project", null, true, Color.DarkGreen, false)
+    {
+        demoPanel = new DemoPanel(50, 50);
+    }
+
+    protected override void OnSetup()
+    {
+        uiElements.Add(demoPanel);
+    }
+
+    static void Main()
+    {
+        new Program().Start();
+    }
+}
+
+```
+
 ### 2. Basic Node Editor Host
 
 ```csharp
