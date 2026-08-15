@@ -104,5 +104,5 @@ public abstract class Engine
         return inputContext;
     }
 
-    protected abstract void OnUpdate();
+    protected virtual void OnUpdate() { }
 }
