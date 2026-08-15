@@ -8,15 +8,24 @@ public abstract class DefaultRaylibEngine : Engine
 {
     private DefaultRaylibCam camera;
 
+    protected string windowName;
+
+    protected bool clearScreen;
+    protected Color clearColor;
+
     public override float DeltaTime => Raylib.GetFrameTime();
 
     public DefaultRaylibCam Camera { get => camera; }
 
-    public DefaultRaylibEngine(int width, int height) : base()
+    public DefaultRaylibEngine(int width, int height, string windowName, bool clearScreen = true, Color? clearColor = null) : base()
     {
         camera = new DefaultRaylibCam(width, height);
+        this.windowName = windowName;
+
         Init(new InteractionManager(camera));
-        OnInit();
+
+        this.clearScreen = clearScreen;
+        this.clearColor = clearColor ?? Color.DarkGray;
     }
 
     protected override InputContext Input()
@@ -82,7 +91,7 @@ public abstract class DefaultRaylibEngine : Engine
 
     protected override void Setup()
     {
-        Raylib.InitWindow((int)camera.GetWidth(), (int)camera.GetHeight(), "Test Project");
+        Raylib.InitWindow((int)camera.GetWidth(), (int)camera.GetHeight(), windowName);
         camera.Setup();
 
         editorObjects.Add(camera);
@@ -103,10 +112,8 @@ public abstract class DefaultRaylibEngine : Engine
 
     protected override void Render()
     {
-        OnUpdate();
-
         Raylib.BeginDrawing();
-        Raylib.ClearBackground(Color.DarkGray);
+        if (clearScreen) Raylib.ClearBackground(clearColor);
 
         OnRender();
 
@@ -124,9 +131,7 @@ public abstract class DefaultRaylibEngine : Engine
         Raylib.CloseWindow();
     }
 
-    protected virtual void OnInit() { }
     protected abstract void OnSetup();
-    protected abstract void OnUpdate();
     protected abstract void OnRender();
     protected virtual void OnCleanup() { }
 }

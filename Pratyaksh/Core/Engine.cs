@@ -35,6 +35,7 @@ public abstract class Engine
     public void Init(InteractionManager intMan)
     {
         this.intMan = intMan;
+        OnInit();
     }
 
     public double GetTime()
@@ -58,6 +59,7 @@ public abstract class Engine
             UpdateScreen();
 
             InputContext ipc = Input();
+            ipc = OnInput(ipc);
 
             intMan.UpdateInputContext(ipc);
             intMan.HandleInput();
@@ -87,9 +89,20 @@ public abstract class Engine
 
         for (int i = 0; i < uiElements.Count; i++)
             uiElements[i].Update();
+
+        OnUpdate();
     }
 
     protected abstract void Render();
 
     protected abstract void Cleanup();
+
+    protected virtual void OnInit() { }
+    
+    protected virtual InputContext OnInput(InputContext inputContext)
+    {
+        return inputContext;
+    }
+
+    protected abstract void OnUpdate();
 }

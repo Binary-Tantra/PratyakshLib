@@ -538,6 +538,8 @@ public class NodeEditorEngine : Engine
         }
     }
 
+    protected override void OnUpdate() { }
+
     protected override InputContext Input()
     {
         InputContext inputContext = new()
