@@ -6,26 +6,33 @@ namespace Pratyaksh.UI;
 
 public abstract class DefaultRaylibEngine : Engine
 {
-    private DefaultRaylibCam camera;
+    protected BaseRaylibCam camera;
 
     protected string windowName;
 
     protected bool clearScreen;
     protected Color clearColor;
 
+    protected bool drawFPS = false;
+
     public override float DeltaTime => Raylib.GetFrameTime();
 
-    public DefaultRaylibCam Camera { get => camera; }
+    public virtual BaseRaylibCam Camera { get => camera; }
 
-    public DefaultRaylibEngine(int width, int height, string windowName, bool clearScreen = true, Color? clearColor = null) : base()
+    public DefaultRaylibEngine(int width, int height, string windowName, bool clearScreen = true, Color? clearColor = null, bool drawFPS = false, bool initCamera = true, BaseRaylibCam? camera = null) : base()
     {
-        camera = new DefaultRaylibCam(width, height);
+        if (initCamera)
+        {
+            ArgumentNullException.ThrowIfNull(camera, nameof(camera));
+            
+            this.camera = camera;
+            Init(new InteractionManager(camera));
+        }
+
         this.windowName = windowName;
-
-        Init(new InteractionManager(camera));
-
         this.clearScreen = clearScreen;
         this.clearColor = clearColor ?? Color.DarkGray;
+        this.drawFPS = drawFPS;
     }
 
     protected override InputContext Input()
@@ -92,8 +99,6 @@ public abstract class DefaultRaylibEngine : Engine
     protected override void Setup()
     {
         Raylib.InitWindow((int)camera.GetWidth(), (int)camera.GetHeight(), windowName);
-        camera.Setup();
-
         editorObjects.Add(camera);
 
         OnSetup();
@@ -107,17 +112,47 @@ public abstract class DefaultRaylibEngine : Engine
         if (camera.GetWidth() != sw || camera.GetHeight() != sh)
         {
             InteractionManager.WorldToScreenTransformer.SetScreenSize(new Vector2(sw, sh));
+            OnUpdateScreen(sw, sh);
         }
     }
 
     protected override void Render()
     {
         Raylib.BeginDrawing();
-        if (clearScreen) Raylib.ClearBackground(clearColor);
+        {
+            if (clearScreen) Raylib.ClearBackground(clearColor);
 
-        OnRender();
-
+            RenderWorld();
+            RenderUI();
+            RenderEditorObjects();
+            OnRender();
+        }
         Raylib.EndDrawing();
+    }
+
+    private void RenderWorld()
+    {
+        Raylib.BeginMode2D(camera.RaylibCam2D);
+
+        for (int i = 0; i < actors.Count; i++)
+            actors[i].Render();
+
+        Raylib.EndMode2D();
+    }
+
+    private void RenderUI()
+    {
+        if (drawFPS)
+            Raylib.DrawFPS((int)InteractionManager.WorldToScreenTransformer.GetWidth() - 150, 10);
+
+        for (int i = 0; i < uiElements.Count; i++)
+            uiElements[i].Render();
+    }
+
+    private void RenderEditorObjects()
+    {
+        for (int i = 0; i < editorObjects.Count; i++)
+            editorObjects[i].Render();
     }
 
     protected override bool IsCloseRequested()
@@ -132,6 +167,7 @@ public abstract class DefaultRaylibEngine : Engine
     }
 
     protected abstract void OnSetup();
-    protected abstract void OnRender();
+    protected virtual void OnUpdateScreen(int sw, int sh) { }
+    protected virtual void OnRender() { }
     protected virtual void OnCleanup() { }
 }

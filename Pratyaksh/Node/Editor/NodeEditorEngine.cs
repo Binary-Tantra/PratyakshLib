@@ -1,19 +1,22 @@
 namespace Pratyaksh.Node.Editor;
 
-using Pratyaksh.Core;
-using Pratyaksh.UI;
-using Pratyaksh.UI.UIElements;
-using Pratyaksh.Node.Core.DataModel;
-using Pratyaksh.Node.Editor.UI;
 using System.Numerics;
-using Pratyaksh.Node.Editor.Serialization;
+
+using Pratyaksh.Core;
 using Pratyaksh.Core.Serialization;
 
-public class NodeEditorEngine : Engine
+using Pratyaksh.UI;
+using Pratyaksh.UI.UIElements;
+
+using Pratyaksh.Node.Core.DataModel;
+
+using Pratyaksh.Node.Editor.UI;
+using Pratyaksh.Node.Editor.Serialization;
+
+public class NodeEditorEngine : DefaultRaylibEngine
 {
     public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
-    private static EditorCamera2D camera;
     private static Canvas canvas;
     private static int searchMenuIdx;
     private static int contextMenuIdx;
@@ -32,9 +35,7 @@ public class NodeEditorEngine : Engine
 
     public float ScreenWidth { get => InteractionManager.WorldToScreenTransformer.GetWidth(); }
     public float ScreenHeight { get => InteractionManager.WorldToScreenTransformer.GetHeight(); }
-    public static Raylib_cs.Camera2D RCamera { get => camera.RaylibCam2D; }
     public static Graph Graph { get => graph; }
-    public static EditorCamera2D Camera { get => camera; }
     public static Canvas Canvas { get => canvas; }
     public static ConnectionVisualManager ConnectionUIManager { get => connectionUIManager; }
     public static Dictionary<int, NodeVisual?> NodeToNodeUIDict { get => nodeToNodeUIDict; }
@@ -50,17 +51,17 @@ public class NodeEditorEngine : Engine
 
     private GraphSerializer graphSerializer;
 
-    public NodeEditorEngine(int screenWidth, int screenHeight) : base()
+    public NodeEditorEngine(int screenWidth, int screenHeight) : base(screenWidth, screenHeight, "Raylib Node Library", true, new Raylib_cs.Color((byte)30, (byte)30, (byte)30), true, false)
     {
-        camera = new(screenWidth, screenHeight);
-        InteractionManager itm = new(camera);
-
-        Init(itm);
+        camera = new EditorCamera2D(screenWidth, screenHeight);
+        Init(new InteractionManager(camera));
 
         InteractionManager.GlobalPointerEvent += HandleGlobalPointerEvent;
         InteractionManager.GlobalKBEvent += HandleGlobalKBEvents;
 
         graphSerializer = new GraphSerializer(new JsonSerializationEngine());
+
+        Raylib_cs.Raylib.SetConfigFlags(Raylib_cs.ConfigFlags.ResizableWindow);
     }
 
     public void HandleGlobalPointerEvent(PointerInteractEventData evt, PointerEventType pet, bool wasBubble)
@@ -69,10 +70,10 @@ public class NodeEditorEngine : Engine
             canvas.OnMouseUp(evt);
 
         if (pet == PointerEventType.DragStart && evt.MouseButton == MouseButton.Right)
-            camera.OnDragStart(evt);
+            ((EditorCamera2D)camera).OnDragStart(evt);
 
         if ((pet == PointerEventType.Up || pet == PointerEventType.Down) && evt.MouseButton == MouseButton.Middle && evt is ScrollEventData sed)
-            camera.OnScroll(sed);
+            ((EditorCamera2D)camera).OnScroll(sed);
     }
 
     public void HandleGlobalKBEvents(KeyInteractEventData keyEvent)
@@ -444,10 +445,8 @@ public class NodeEditorEngine : Engine
         return success;
     }
 
-    protected override void Setup()
+    protected override void OnSetup()
     {
-        Raylib_cs.Raylib.SetConfigFlags(Raylib_cs.ConfigFlags.ResizableWindow);
-        Raylib_cs.Raylib.InitWindow((int)ScreenWidth, (int)ScreenHeight, "Raylib Node Library");
         Raylib_cs.Raylib.SetExitKey(Raylib_cs.KeyboardKey.Null);
 
         defaultFont = Raylib_cs.Raylib.LoadFont("../../../Thirdparty/Fonts/Satoshi_Complete/Fonts/TTF/Satoshi-Variable.ttf");
@@ -469,9 +468,6 @@ public class NodeEditorEngine : Engine
 
         graph.Types.RegisterDefaultTypes();
         SetupDefaultTypeColors();
-
-        camera.Setup();
-        editorObjects.Add(camera);
 
         connectionUIManager = new(null);
 
@@ -521,122 +517,16 @@ public class NodeEditorEngine : Engine
         actors.Add(connectionUIManager);
     }
 
-    protected override bool IsCloseRequested()
+    protected override void OnUpdateScreen(int newW, int newH)
     {
-        return Raylib_cs.Raylib.WindowShouldClose();
-    }
-
-    protected override void UpdateScreen()
-    {
-        int sw = Raylib_cs.Raylib.GetScreenWidth();
-        int sh = Raylib_cs.Raylib.GetScreenHeight();
-
-        if (ScreenWidth != sw || ScreenHeight != sh)
-        {
-            InteractionManager.WorldToScreenTransformer.SetScreenSize(new Vector2(sw, sh));
-            canvas.Size = new Vector2(sw, sh);
-        }
+        canvas.Size = new Vector2(newW, newH);
     }
 
     protected override void OnUpdate() { }
 
-    protected override InputContext Input()
+    protected override void OnRender()
     {
-        InputContext inputContext = new()
-        {
-            isLMBCurrentlyHeld = Raylib_cs.Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.Left),
-            isRMBCurrentlyHeld = Raylib_cs.Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.Right),
-
-            wasLMBPressedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.Left),
-            wasRMBPressedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.Right),
-            wasLMBReleasedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.Left),
-            wasRMBReleasedOnceThisFrame = Raylib_cs.Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.Right),
-
-            mouseScreenPosition = Raylib_cs.Raylib.GetMousePosition(),
-            mouseWorldPosition = Raylib_cs.Raylib.GetScreenToWorld2D(Raylib_cs.Raylib.GetMousePosition(), RCamera),
-
-            mouseWheel = Raylib_cs.Raylib.GetMouseWheelMove(),
-
-            isCtrlDown = Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.LeftControl) || Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.RightControl),
-            isShiftDown = Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.LeftShift) || Raylib_cs.Raylib.IsKeyDown(Raylib_cs.KeyboardKey.RightShift)
-        };
-
-        int keycode;
-        while ((keycode = Raylib_cs.Raylib.GetKeyPressed()) != 0)
-        {
-            Raylib_cs.KeyboardKey rkey = (Raylib_cs.KeyboardKey)keycode;
-
-            KeyboardKey key;
-
-            if (rkey == Raylib_cs.KeyboardKey.Backspace)
-                key = KeyboardKey.Backspace;
-            else if (rkey == Raylib_cs.KeyboardKey.Minus)
-                key = KeyboardKey.Minus;
-            else if (rkey == Raylib_cs.KeyboardKey.Comma)
-                key = KeyboardKey.Comma;
-            else if (rkey == Raylib_cs.KeyboardKey.Escape)
-                key = KeyboardKey.Escape;
-            else if (rkey == Raylib_cs.KeyboardKey.Space)
-                key = KeyboardKey.Space;
-            else if (rkey == Raylib_cs.KeyboardKey.Enter)
-                key = KeyboardKey.Enter;
-            else if (rkey == Raylib_cs.KeyboardKey.Tab)
-                key = KeyboardKey.Tab;
-            else if (rkey == Raylib_cs.KeyboardKey.CapsLock)
-                key = KeyboardKey.CapsLock;
-            else if (rkey == Raylib_cs.KeyboardKey.Left)
-                key = KeyboardKey.LeftArrow;
-            else if (rkey == Raylib_cs.KeyboardKey.Right)
-                key = KeyboardKey.RightArrow;
-            else if (rkey == Raylib_cs.KeyboardKey.Up)
-                key = KeyboardKey.UpArrow;
-            else if (rkey == Raylib_cs.KeyboardKey.Down)
-                key = KeyboardKey.DownArrow;
-            else
-                key = (KeyboardKey)keycode;
-
-            inputContext.keyboardKeysDown.Add(key);
-        }
-
-        return inputContext;
-    }
-
-    protected override void Render()
-    {
-        Raylib_cs.Raylib.BeginDrawing();
-        {
-            Raylib_cs.Raylib.ClearBackground(new Raylib_cs.Color((byte)30, (byte)30, (byte)30));
-
-            RenderWorld();
-            RenderUI();
-            RenderEditorObjects();
-            RenderDeferred();
-        }
-        Raylib_cs.Raylib.EndDrawing();
-    }
-
-    private void RenderWorld()
-    {
-        Raylib_cs.Raylib.BeginMode2D(camera.RaylibCam2D);
-
-        for (int i = 0; i < actors.Count; i++)
-            actors[i].Render();
-
-        Raylib_cs.Raylib.EndMode2D();
-    }
-
-    private void RenderUI()
-    {
-        Raylib_cs.Raylib.DrawFPS((int)InteractionManager.WorldToScreenTransformer.GetWidth() - 150, 10);
-
-        for (int i = 0; i < uiElements.Count; i++)
-            uiElements[i].Render();
-    }
-
-    private void RenderEditorObjects()
-    {
-        for (int i = 0; i < editorObjects.Count; i++)
-            editorObjects[i].Render();
+        RenderDeferred();
     }
 
     private void RenderDeferred()
@@ -659,10 +549,9 @@ public class NodeEditorEngine : Engine
         deferredRects.Add((rect, color));
     }
 
-    protected override void Cleanup()
+    protected override void OnCleanup()
     {
         Raylib_cs.Raylib.UnloadFont(defaultFont);
-        Raylib_cs.Raylib.CloseWindow();
     }
 
     public void ClearWorkspace()
