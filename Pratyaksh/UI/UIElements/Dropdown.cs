@@ -3,7 +3,7 @@ using Pratyaksh.Core;
 
 namespace Pratyaksh.UI.UIElements;
 
-public class Dropdown : UIBase, IPointerInteractable
+public class Dropdown : UIBase, IPointerInteractable, IOverlayable
 {
     private string[] options;
     private int selectedIndex;

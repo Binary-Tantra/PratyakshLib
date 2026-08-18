@@ -48,7 +48,7 @@ public class VariablePanel : UILayoutBase
                 {
                     int id = (int)selectionCache.Payload;
                     onRemoveVariable?.Invoke(id);
-                    layout.RemoveLayoutSelectable(id);
+                    layout.RemoveLayoutElement(id);
                 }
             }
         }, 0, parent: this);

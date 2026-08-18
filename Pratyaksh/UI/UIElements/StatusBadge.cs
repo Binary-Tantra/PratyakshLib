@@ -40,10 +40,10 @@ public class StatusBadge : UIBase
     {
         Raylib_cs.Color badgeColor = statusType switch
         {
-            StatusType.Active => new Raylib_cs.Color((byte)46, (byte)160, (byte)67, (byte)255),       // Green
-            StatusType.Processing => new Raylib_cs.Color((byte)210, (byte)153, (byte)34, (byte)255),  // Yellow/Orange
-            StatusType.Error => new Raylib_cs.Color((byte)218, (byte)54, (byte)51, (byte)255),        // Red
-            StatusType.Idle => new Raylib_cs.Color((byte)110, (byte)110, (byte)110, (byte)255),      // Gray
+            StatusType.Active => new Raylib_cs.Color((byte)46, (byte)160, (byte)67, (byte)255),         // Green
+            StatusType.Processing => new Raylib_cs.Color((byte)210, (byte)153, (byte)34, (byte)255),    // Yellow/Orange
+            StatusType.Error => new Raylib_cs.Color((byte)218, (byte)54, (byte)51, (byte)255),          // Red
+            StatusType.Idle => new Raylib_cs.Color((byte)110, (byte)110, (byte)110, (byte)255),         // Gray
             StatusType.Custom => customColor,
             _ => Raylib_cs.Color.Gray
         };
@@ -59,6 +59,7 @@ public class StatusBadge : UIBase
         int dotRadius = 4;
         int dotX = (int)Position.X + 8;
         int dotY = (int)Position.Y + Height / 2;
+
         Raylib_cs.Raylib.DrawCircle(dotX, dotY, dotRadius, badgeColor);
 
         // Draw text

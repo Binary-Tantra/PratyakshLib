@@ -3,6 +3,11 @@ using Pratyaksh.Core;
 
 namespace Pratyaksh.UI;
 
+internal interface IOverlayable
+{
+    public void DrawOverlay();
+}
+
 public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IClippable
 {
     protected LayoutEngine layout;

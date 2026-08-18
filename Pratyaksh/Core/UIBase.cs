@@ -43,6 +43,8 @@ public abstract class UIBase : EditorObject, IPointerVisitable
             if (size != value)
             {
                 size = value;
+                SetBasisInfo(parentBasis); // Refresh basis after chaning size.
+
                 OnResize?.Invoke();
             }
         }
