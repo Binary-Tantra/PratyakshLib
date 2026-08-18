@@ -66,6 +66,7 @@ public class LayoutEngine
     private Dictionary<int, ElementInfo<LinkButton>> layoutLinkButtons = [];
     private Dictionary<int, ElementInfo<StatusBadge>> layoutStatusBadges = [];
     private Dictionary<int, ElementInfo<AlertBanner>> layoutAlertBanners = [];
+    private Dictionary<int, ElementInfo<Slider>> layoutSliders = [];
 
     private Stack<EditorObject?> parentStack = new();
     private Stack<int> activeScrollViews = new();
@@ -142,6 +143,7 @@ public class LayoutEngine
         DeactivateElements(layoutLinkButtons);
         DeactivateElements(layoutStatusBadges);
         DeactivateElements(layoutAlertBanners);
+        DeactivateElements(layoutSliders);
     }
 
     public void EndFrame()
@@ -181,6 +183,7 @@ public class LayoutEngine
         DeleteElements(layoutLinkButtons);
         DeleteElements(layoutStatusBadges);
         DeleteElements(layoutAlertBanners);
+        DeleteElements(layoutSliders);
     }
 
     public void UpdateLayoutElements()
@@ -195,6 +198,7 @@ public class LayoutEngine
         UpdateActiveElements(layoutLinkButtons);
         UpdateActiveElements(layoutStatusBadges);
         UpdateActiveElements(layoutAlertBanners);
+        UpdateActiveElements(layoutSliders);
     }
 
     public void RemoveLayoutButton(int id) => DeleteElement(id, layoutButtons);
@@ -207,6 +211,7 @@ public class LayoutEngine
     public void RemoveLayoutLinkButton(int id) => DeleteElement(id, layoutLinkButtons);
     public void RemoveLayoutStatusBadge(int id) => DeleteElement(id, layoutStatusBadges);
     public void RemoveLayoutAlertBanner(int id) => DeleteElement(id, layoutAlertBanners);
+    public void RemoveLayoutSlider(int id) => DeleteElement(id, layoutSliders);
 
     public Drawable? HitTestElements(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
@@ -220,6 +225,9 @@ public class LayoutEngine
         if (hit != null) return hit;
 
         hit = HitTestActiveElements(layoutLinkButtons, transformer, mouseScreenPosition, mouseWorldPosition);
+        if (hit != null) return hit;
+
+        hit = HitTestActiveElements(layoutSliders, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
         hit = HitTestActiveElements(layoutButtons, transformer, mouseScreenPosition, mouseWorldPosition);
@@ -694,6 +702,37 @@ public class LayoutEngine
         return layoutAlertBanners[id].UIElement;
     }
 
+    private Slider DrawSliderAbsolute(int id, float value, float minValue, float maxValue, int posX, int posY, int width, int height, Action<Slider>? onValueChanged, object? payload, bool showValue = true, string? format = null, int fontSize = 13, float? step = null)
+    {
+        bool found = layoutSliders.ContainsKey(id);
+        if (!found)
+        {
+            Slider cachedSlider = new(posX, posY, value, minValue, maxValue, width, height, onValueChanged, payload, showValue, format, fontSize, step, defaultParent);
+            ElementInfo<Slider> elem = new(cachedSlider, null);
+            layoutSliders.Add(id, elem);
+        }
+        else
+        {
+            layoutSliders[id].UIElement.MinValue = minValue;
+            layoutSliders[id].UIElement.MaxValue = maxValue;
+            layoutSliders[id].UIElement.Step = step;
+            layoutSliders[id].UIElement.ShowValue = showValue;
+            layoutSliders[id].UIElement.Format = format;
+            layoutSliders[id].UIElement.FontSize = fontSize;
+            if (!layoutSliders[id].UIElement.IsDragging)
+            {
+                layoutSliders[id].UIElement.SetValueWithoutNotify(value);
+            }
+            layoutSliders[id].UIElement.SetOnValueChanged(onValueChanged);
+        }
+
+        layoutSliders[id] = layoutSliders[id].Activate();
+
+        layoutSliders[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutSliders[id].UIElement.Render();
+        return layoutSliders[id].UIElement;
+    }
+
     public void Text(string text, Raylib_cs.Color fontColor, bool updateLayout = true)
     {
         DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
@@ -889,6 +928,16 @@ public class LayoutEngine
         AlertBanner cached = DrawAlertBannerAbsolute(id, message, alertType, (int)pos.X, (int)pos.Y, width, height, isDismissible, 13);
         if (updateLayout && !cached.IsDismissed) DrawAny(width, height);
         return cached;
+    }
+
+    public Slider Slider(int id, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged = null, object? payload = null, bool showValue = true, string? format = null, float? step = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null) pos -= defaultParent.Position;
+
+        Slider slider = DrawSliderAbsolute(id, value, minValue, maxValue, (int)pos.X, (int)pos.Y, width, height, onValueChanged, payload, showValue, format, 13, step);
+        if (updateLayout) DrawAny(width, height);
+        return slider;
     }
 
     public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
@@ -1331,5 +1380,56 @@ public class LayoutEngine
         Dropdown dropdown = DrawBindableDropdownAbsolute(id, options, dataModel, (int)pos.X, (int)pos.Y, width, height);
         if (updateLayout) DrawAny(width, height);
         return dropdown;
+    }
+
+    public Slider DrawBindableSliderAbsolute(int id, BindableValueBase<float> dataModel, float minValue, float maxValue, int posX, int posY, int width, int height, bool showValue = true, string? format = null, float? step = null, int fontSize = 13)
+    {
+        bool found = layoutSliders.ContainsKey(id);
+        if (!found)
+        {
+            Slider cachedSlider = new(posX, posY, dataModel.Get(), minValue, maxValue, width, height, null, id, showValue, format, fontSize, step, defaultParent);
+            RLSliderUI uiWrapper = new(cachedSlider);
+            FloatSliderBinder binder = new();
+            binder.Bind(dataModel, uiWrapper);
+
+            ElementInfo<Slider> elem = new(cachedSlider, binder);
+            layoutSliders.Add(id, elem);
+        }
+        else
+        {
+            layoutSliders[id].UIElement.MinValue = minValue;
+            layoutSliders[id].UIElement.MaxValue = maxValue;
+            layoutSliders[id].UIElement.Step = step;
+            layoutSliders[id].UIElement.ShowValue = showValue;
+            layoutSliders[id].UIElement.Format = format;
+            layoutSliders[id].UIElement.FontSize = fontSize;
+
+            if (layoutSliders[id].DataBinder is FloatSliderBinder binder)
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+                    if (binder.GetBoundUIObject() is RLSliderUI uiTarget)
+                        binder.Bind(dataModel, uiTarget);
+                }
+            }
+        }
+
+        layoutSliders[id] = layoutSliders[id].Activate();
+
+        layoutSliders[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutSliders[id].UIElement.Render();
+        return layoutSliders[id].UIElement;
+    }
+
+    public Slider BindableSlider(int id, BindableValueBase<float> dataModel, float minValue, float maxValue, int width, int height, bool showValue = true, string? format = null, float? step = null, bool updateLayout = true)
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        if (defaultParent != null)
+            pos -= defaultParent.Position;
+
+        Slider slider = DrawBindableSliderAbsolute(id, dataModel, minValue, maxValue, (int)pos.X, (int)pos.Y, width, height, showValue, format, step);
+        if (updateLayout) DrawAny(width, height);
+        return slider;
     }
 }

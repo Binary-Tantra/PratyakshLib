@@ -40,6 +40,12 @@ public class UIElementSaveData
     public List<string> Options { get; set; } = new();
     public int SelectedIndex { get; set; }
     public int Spacing { get; set; }
+    public float Value { get; set; }
+    public float MinValue { get; set; }
+    public float MaxValue { get; set; }
+    public float? Step { get; set; }
+    public bool ShowValue { get; set; } = true;
+    public string? Format { get; set; }
     public List<UIElementSaveData> Children { get; set; } = new();
 }
 

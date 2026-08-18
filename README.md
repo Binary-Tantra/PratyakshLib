@@ -51,7 +51,7 @@ graph TD
 - 🧩 **Embedded Node Widgets**: Place text labels, input fields, toggles, buttons, selectables, and nested groups directly inside node bodies.
 - 🔍 **Integrated Tooling**: Fuzzy-search node palette, context menus, variable management panel, and property inspector.
 - 💾 **Full JSON State Persistence**: Serialize and deserialize entire workspaces—including graph topologies, node positions, variable declarations, templates, and UI panel states.
-- 🎯 **10 Ready-to-Use UI Widgets**: `Button`, `InputField`, `Dropdown`, `CycleSelector`, `ScrollView`, `Selectable`, `Toggle`, `LinkButton`, `AlertBanner`, and `StatusBadge`.
+- 🎯 **11 Ready-to-Use UI Widgets**: `Button`, `InputField`, `Dropdown`, `CycleSelector`, `ScrollView`, `Selectable`, `Toggle`, `LinkButton`, `AlertBanner`, `StatusBadge`, and `Slider`.
 
 ---
 

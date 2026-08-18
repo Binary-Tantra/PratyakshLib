@@ -1,12 +1,12 @@
-﻿using Pratyaksh.Core.DataBinding;
+using Pratyaksh.Core.DataBinding;
 using Pratyaksh.UI.UIElements;
 
 namespace Pratyaksh.UI;
 
 public enum UIElementType
 {
-    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Group,
-    BindableToggle, BindableInputField_String, BindableInputField_Int, BindableInputField_Float, BindableSelectable, BindableDropdown
+    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Slider, Group,
+    BindableToggle, BindableInputField_String, BindableInputField_Int, BindableInputField_Float, BindableSelectable, BindableDropdown, BindableSlider
 }
 
 public abstract class UIElementDescription
@@ -159,6 +159,28 @@ public class AlertBannerDesc : RectUIEDescription
     }
 }
 
+public class SliderDesc : RectUIEDescription
+{
+    public float value;
+    public float minValue;
+    public float maxValue;
+    public float? step;
+    public bool showValue;
+    public string? format;
+    public Action<Slider>? onValueChanged;
+
+    public SliderDesc(string label, float value, float minValue, float maxValue, int? width = null, int? height = null, Action<Slider>? onValueChanged = null, bool showValue = true, string? format = null, float? step = null) : base(label, width, height)
+    {
+        this.value = value;
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.step = step;
+        this.showValue = showValue;
+        this.format = format;
+        this.onValueChanged = onValueChanged;
+    }
+}
+
 public class HorizontalGroupDesc : RectUIEDescription
 {
     public int spacing;
@@ -236,5 +258,25 @@ public class BindableDropdownDesc : RectUIEDescription
     {
         this.options = options;
         this.dataModel = dataModel;
+    }
+}
+
+public class BindableSliderDesc : RectUIEDescription
+{
+    public BindableValueBase<float> dataModel;
+    public float minValue;
+    public float maxValue;
+    public float? step;
+    public bool showValue;
+    public string? format;
+
+    public BindableSliderDesc(string label, BindableValueBase<float> dataModel, float minValue = 0f, float maxValue = 1f, int? width = null, int? height = null, bool showValue = true, string? format = null, float? step = null) : base(label, width, height)
+    {
+        this.dataModel = dataModel;
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.step = step;
+        this.showValue = showValue;
+        this.format = format;
     }
 }

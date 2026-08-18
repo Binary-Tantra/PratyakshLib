@@ -173,6 +173,24 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
                 saveData.Options = bDdDesc.options != null ? [.. bDdDesc.options] : [];
                 saveData.SelectedIndex = bDdDesc.dataModel.Get();
             }
+            else if (rectDesc is SliderDesc sliderDesc)
+            {
+                saveData.Value = sliderDesc.value;
+                saveData.MinValue = sliderDesc.minValue;
+                saveData.MaxValue = sliderDesc.maxValue;
+                saveData.Step = sliderDesc.step;
+                saveData.ShowValue = sliderDesc.showValue;
+                saveData.Format = sliderDesc.format;
+            }
+            else if (rectDesc is BindableSliderDesc bSliderDesc)
+            {
+                saveData.Value = bSliderDesc.dataModel.Get();
+                saveData.MinValue = bSliderDesc.minValue;
+                saveData.MaxValue = bSliderDesc.maxValue;
+                saveData.Step = bSliderDesc.step;
+                saveData.ShowValue = bSliderDesc.showValue;
+                saveData.Format = bSliderDesc.format;
+            }
             else if (rectDesc is HorizontalGroupDesc groupDesc)
             {
                 saveData.Spacing = groupDesc.spacing;
@@ -221,6 +239,10 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
                 elemDesc = new DropdownDesc([.. data.Options], data.SelectedIndex, data.Width, data.Height, (dd) => { });
                 break;
 
+            case UIElementType.Slider:
+                elemDesc = new SliderDesc(data.Text, data.Value, data.MinValue, data.MaxValue, data.Width, data.Height, (sl) => { }, data.ShowValue, data.Format, data.Step);
+                break;
+
             case UIElementType.BindableToggle:
                 elemDesc = new BindableToggleDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
                 break;
@@ -243,6 +265,10 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
 
             case UIElementType.BindableDropdown:
                 elemDesc = new BindableDropdownDesc([.. data.Options], new BindableInt(data.SelectedIndex), data.Width, data.Height);
+                break;
+
+            case UIElementType.BindableSlider:
+                elemDesc = new BindableSliderDesc(data.Text, new BindableFloat(data.Value), data.MinValue, data.MaxValue, data.Width, data.Height, data.ShowValue, data.Format, data.Step);
                 break;
 
             case UIElementType.Group:

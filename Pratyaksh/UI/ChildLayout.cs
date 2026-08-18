@@ -111,6 +111,19 @@ public class ChildLayout : UILayoutBase
                     BindableDropdownDesc bDdDesc = (BindableDropdownDesc)desc;
                     layout.BindableDropdown(id, bDdDesc.options, bDdDesc.dataModel, bDdDesc.width ?? maxWidthCoverage, bDdDesc.height ?? 25);
                     break;
+                case UIElementType.Slider:
+                    SliderDesc slDesc = (SliderDesc)desc;
+                    payload = ids[i][j].payload ?? slDesc.value;
+                    layout.Slider(id, Convert.ToSingle(payload), slDesc.minValue, slDesc.maxValue, slDesc.width ?? maxWidthCoverage, slDesc.height ?? 20, (sl) =>
+                    {
+                        ids[i][j] = (ids[i][j].id, sl.Value);
+                        slDesc.onValueChanged?.Invoke(sl);
+                    }, id, slDesc.showValue, slDesc.format, slDesc.step);
+                    break;
+                case UIElementType.BindableSlider:
+                    BindableSliderDesc bSlDesc = (BindableSliderDesc)desc;
+                    layout.BindableSlider(id, bSlDesc.dataModel, bSlDesc.minValue, bSlDesc.maxValue, bSlDesc.width ?? maxWidthCoverage, bSlDesc.height ?? 20, bSlDesc.showValue, bSlDesc.format, bSlDesc.step);
+                    break;
             }
         }
 
@@ -191,6 +204,7 @@ public class ChildLayout : UILayoutBase
                         {
                             if (elem.Value.TryGetInt32(out int intVal)) val = intVal;
                             else if (elem.Value.TryGetSingle(out float fltVal)) val = fltVal;
+                            else if (elem.Value.TryGetDouble(out double dblVal)) val = (float)dblVal;
                         }
                         if (val != null) ids[i][j] = (ids[i][j].id, val);
                     }

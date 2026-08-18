@@ -12,7 +12,7 @@
 - **Hybrid Immediate/Retained Layout Engine**:
   - Declarative nested layout API (`BeginHorizontal`, `EndHorizontal`, `BeginVertical`, `EndVertical`, `BeginScrollView`, `EndScrollView`, `AddSpace`, `SectionEx`).
   - Automatic retained widget caching across frames to avoid per-frame widget recreation.
-- **Rich 10-Widget Component Suite**:
+- **Rich 11-Widget Component Suite**:
   - `Button` (with custom background, border, text colors, and payload handlers).
   - `InputField` (supports placeholder text, focus state, text changes, and masked password mode).
   - `Dropdown` (expandable overlay selection menu).
@@ -20,11 +20,12 @@
   - `ScrollView` (smooth mouse-wheel scrolling, draggable scrollbar thumb, and scissor clipping).
   - `Selectable` (toggleable selection item with custom payload).
   - `Toggle` (animated switch toggle).
+  - `Slider` (interactive track bar with continuous or stepped values, formatted overlay value text, and drag interaction).
   - `LinkButton` (clickable hyperlinked button).
   - `AlertBanner` (status notification banner with success/warning/error/info styling).
   - `StatusBadge` (compact pill badge with color indicators).
 - **Two-Way Data-Bound UI Adapters**:
-  - Out-of-the-box binders (`RLToggleUI`, `RLInputFieldUI_String`, `RLInputFieldUI_Int`, `RLInputFieldUI_Float`, `RLSelectableUI`, `RLDropdownUI`) for zero-boilerplate model-view synchronization.
+  - Out-of-the-box binders (`RLToggleUI`, `RLInputFieldUI_String`, `RLInputFieldUI_Int`, `RLInputFieldUI_Float`, `RLSelectableUI`, `RLDropdownUI`, `RLSliderUI`) for zero-boilerplate model-view synchronization.
 - **Raylib Hosting & Multi-Panel Canvas**:
   - Built-in `Canvas` managing persistent panels and transient popups (with click-away auto-dismissal).
   - `BaseRaylibEngine` providing game-loop integration, resizing events, delta-time calculations, and 2D camera support.

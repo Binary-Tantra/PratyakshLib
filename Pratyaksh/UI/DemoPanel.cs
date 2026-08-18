@@ -32,6 +32,8 @@ public class DemoPanel : UILayoutBase
     private int statusBadgeId1;
     private int statusBadgeId2;
     private int alertBannerId;
+    private int sliderId;
+    private float sliderValue = 65f;
 
     private Selectable? previousSelected = null;
 
@@ -69,6 +71,7 @@ public class DemoPanel : UILayoutBase
         statusBadgeId1 = IdGen.GetNewID();
         statusBadgeId2 = IdGen.GetNewID();
         alertBannerId = IdGen.GetNewID();
+        sliderId = IdGen.GetNewID();
     }
 
     public override Dictionary<string, object?> GetSaveData()
@@ -80,6 +83,7 @@ public class DemoPanel : UILayoutBase
             ["cycleSelectedIdx"] = cycleSelectedIdx,
             ["dropdownSelectedIdx"] = dropdownSelectedIdx,
             ["selectedSpace"] = selectedSpace,
+            ["sliderValue"] = sliderValue,
             ["selectableStates"] = selectableIds.Select(s => s.isSelected).ToList()
         };
     }
@@ -102,6 +106,9 @@ public class DemoPanel : UILayoutBase
 
         if (data.TryGetProperty("selectedSpace", out var ss) && ss.ValueKind == System.Text.Json.JsonValueKind.Number)
             selectedSpace = ss.GetInt32();
+
+        if (data.TryGetProperty("sliderValue", out var sv) && sv.ValueKind == System.Text.Json.JsonValueKind.Number)
+            sliderValue = sv.GetSingle();
 
         if (data.TryGetProperty("selectableStates", out var selArray) && selArray.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
@@ -223,6 +230,17 @@ public class DemoPanel : UILayoutBase
                 layout.InputField(passwordFieldId, "Password...", passwordText, 140, 24, (inpf) => passwordText = inpf.InputFieldText, isMasked: true);
             }
             layout.EndHorizontal(25);
+
+            layout.AddSpace(10);
+
+            // --- Slider Demonstration ---
+            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            {
+                layout.Text("Volume:    ", Raylib_cs.Color.White);
+                layout.AddSpace(10);
+                layout.Slider(sliderId, sliderValue, 0f, 100f, 140, 20, (sl) => sliderValue = sl.Value, format: "{0:0}%", step: 1f);
+            }
+            layout.EndHorizontal(22);
 
             layout.AddSpace(10);
 

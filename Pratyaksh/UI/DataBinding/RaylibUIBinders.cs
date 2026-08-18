@@ -213,6 +213,40 @@ public class RLDropdownUI : BindableUIBase<int>
     }
 }
 
+public class RLSliderUI : BindableUIBase<float>
+{
+    private Slider slider;
+
+    public RLSliderUI(Slider slider)
+    {
+        this.slider = slider;
+    }
+
+    private void RelayChange(Slider sl)
+    {
+        NotifyBoundValOfChange(sl.Value);
+    }
+
+    public override float Get() => slider.Value;
+
+    protected override void OnSet(float newVal)
+    {
+        slider.SetValueWithoutNotify(newVal);
+    }
+
+    protected override float GetDefault() => 0f;
+
+    public override void NotifyBind()
+    {
+        slider.SetOnValueChanged(RelayChange);
+    }
+
+    public override void NotifyUnbind()
+    {
+        slider.SetOnValueChanged(null);
+    }
+}
+
 // Typed Binders
 public class BoolToggleBinder : Binder<BindableValueBase<bool>, RLToggleUI, bool> { }
 public class StringInputBinder : Binder<BindableValueBase<string>, RLInputFieldUI_String, string> { }
@@ -220,3 +254,5 @@ public class IntInputBinder : Binder<BindableValueBase<int>, RLInputFieldUI_Int,
 public class FloatInputBinder : Binder<BindableValueBase<float>, RLInputFieldUI_Float, float> { }
 public class BoolSelectableBinder : Binder<BindableValueBase<bool>, RLSelectableUI, bool> { }
 public class IntDropdownBinder : Binder<BindableValueBase<int>, RLDropdownUI, int> { }
+public class FloatSliderBinder : Binder<BindableValueBase<float>, RLSliderUI, float> { }
+
