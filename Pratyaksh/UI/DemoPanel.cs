@@ -191,8 +191,8 @@ public class DemoPanel : UILayoutBase
             // Colored Custom Buttons Demonstration
             layout.BeginHorizontalEx(10, (int)Position.X + 10);
             {
-                layout.Button(customBtnId1, "Primary", 85, 25, OnDemoButtonPressed, 15, new Raylib_cs.Color((byte)28, (byte)100, (byte)200, (byte)255), Raylib_cs.Color.SkyBlue, Raylib_cs.Color.White);
-                layout.Button(customBtnId2, "Danger", 85, 25, OnDemoButtonPressed, 30, new Raylib_cs.Color((byte)180, (byte)40, (byte)40, (byte)255), Raylib_cs.Color.Red, Raylib_cs.Color.White);
+                layout.Button(customBtnId1, "Primary", 85, 25, OnDemoButtonPressed, 0, fillColor: new Raylib_cs.Color((byte)28, (byte)100, (byte)200, (byte)255), borderColor: Raylib_cs.Color.SkyBlue, textColor: Raylib_cs.Color.White);
+                layout.Button(customBtnId2, "Danger", 85, 25, OnDemoButtonPressed, 30, fillColor: new Raylib_cs.Color((byte)180, (byte)40, (byte)40, (byte)255), borderColor: Raylib_cs.Color.Red, textColor: Raylib_cs.Color.White);
                 layout.Button(buttonIds[2], "Default", 85, 25, OnDemoButtonPressed, 45);
             }
             layout.EndHorizontal(25);

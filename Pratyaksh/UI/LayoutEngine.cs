@@ -367,194 +367,39 @@ public class LayoutEngine
             Raylib_cs.Raylib.DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
     }
 
-    private T DrawElementAbsolute<T>(int id, Func<(T, BinderBase?)> factory, Action<(T, BinderBase?)> storedReflect, int posX, int posY) where T : UIBase
-    {
-        bool found = layoutElements.ContainsKey(id);
-
-        if (!found)
-        {
-            (T newElem, BinderBase? binder) = factory.Invoke();
-            ElementInfo elem = new(newElem, binder);
-            layoutElements.Add(id, elem);
-        }
-        else storedReflect.Invoke((layoutElements[id].Get<T>(), layoutElements[id].DataBinder));
-
-        layoutElements[id] = layoutElements[id].Activate();
-
-        layoutElements[id].UIElement.RelativePosition = new Vector2(posX, posY);
-        layoutElements[id].UIElement.Render();
-
-        return layoutElements[id].Get<T>();
-    }
-
-    private T DrawElementAbsolute<T>(int id, Func<T> factory, Action<T> storedReflect, int posX, int posY) where T : UIBase
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            T elem = factory.Invoke();
-            BinderBase? binder = null;
-            return (elem, binder);
-        }, (expanded) =>
-        {
-            storedReflect.Invoke(expanded.Item1);
-        },
-        posX, posY);
-    }
-
-    private Button DrawButtonAbsolute(int id, string buttonText, int posX, int posY, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize, bool hasBorder, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new Button(posX, posY, buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
-        }, (stored) =>
-        {
-            stored.ButtonText = buttonText;
-
-            if (fillColor.HasValue) stored.FillColor = fillColor;
-            if (borderColor.HasValue) stored.BorderColor = borderColor;
-            if (textColor.HasValue) stored.TextColor = textColor;
-        }, posX, posY);
-    }
-
-    private Selectable DrawSelectableAbsolute(int id, bool isSelected, string selectableText, int posX, int posY, int selectableWidth, int selectableHeight, int fontSize, Action<Selectable> onSelectableSelect, object? payload, Raylib_cs.Color bgColor, Raylib_cs.Color bgSelectionColor, Raylib_cs.Color textColor)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new Selectable(selectableText, isSelected, posX, posY, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
-        }, (stored) =>
-        {
-            if (isSelected != stored.IsSelected)
-            {
-                if (isSelected) stored.Select(false);
-                else stored.Deselect(false);
-            }
-
-            stored.SelectableText = selectableText;
-        }, posX, posY);
-    }
-
-    private InputField DrawInputFieldAbsolute(int id, string placeholderText, string fieldText, int posX, int posY, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize, bool isMasked = false)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new InputField(placeholderText, fieldText, posX, posY, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
-        }, (stored) =>
-        {
-            if (!stored.IsFocused)
-            {
-                stored.InputFieldText = fieldText;
-            }
-
-            stored.IsMasked = isMasked;
-            stored.OnTextChanged = onTextEdited;
-            stored.OnFocusEnd = onFocusEnd;
-        }, posX, posY);
-    }
-
-    private Toggle DrawToggleAbsolute(int id, bool toggleValue, int posX, int posY, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new Toggle(posX, posY, toggleValue, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
-        }, (stored) =>
-        {
-            stored.Value = toggleValue;
-            stored.SetOnToggleChanged(onToggleChanged);
-        }, posX, posY);
-    }
-
-    private Dropdown DrawDropdownAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new Dropdown(options, selectedIndex, posX, posY, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
-        }, (stored) =>
-        {
-            if (stored.Options.Length != options.Length)
-                stored.SetOptions(options, selectedIndex);
-            else
-            {
-                stored.SelectedIndex = selectedIndex;
-                stored.SetOnSelectionChanged(onSelectionChanged);
-            }
-        }, posX, posY);
-    }
-
-    private CycleSelector DrawCycleSelectorAbsolute(int id, string[] options, int selectedIndex, int posX, int posY, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload, int fontSize)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new CycleSelector(options, selectedIndex, posX, posY, width, height, onSelectionChanged, payload, fontSize, defaultParent);
-        }, (stored) =>
-        {
-            stored.SelectedIndex = selectedIndex;
-            stored.Options = options;
-            stored.SetOnSelectionChanged(onSelectionChanged);
-        }, posX, posY);
-    }
-
-    private LinkButton DrawLinkButtonAbsolute(int id, string text, string url, int posX, int posY, Action<LinkButton>? onClick, int fontSize)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new LinkButton(posX, posY, text, url, onClick, fontSize, defaultParent);
-        }, (stored) =>
-        {
-            stored.Text = text;
-            stored.Url = url;
-        }, posX, posY);
-    }
-
-    private StatusBadge DrawStatusBadgeAbsolute(int id, string text, StatusType statusType, Raylib_cs.Color? customColor, int posX, int posY, int fontSize)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new StatusBadge(posX, posY, text, statusType, customColor, fontSize, defaultParent);
-        }, (stored) =>
-        {
-            stored.Text = text;
-            stored.Type = statusType;
-
-            if (customColor.HasValue) stored.CustomColor = customColor.Value;
-        }, posX, posY);
-    }
-
-    private AlertBanner DrawAlertBannerAbsolute(int id, string message, AlertType alertType, int posX, int posY, int width, int height, bool isDismissible, int fontSize)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new AlertBanner(posX, posY, message, alertType, width, height, isDismissible, fontSize, defaultParent);
-        }, (stored) =>
-        {
-            stored.Message = message;
-            stored.Type = alertType;
-        }, posX, posY);
-    }
-
-    private Slider DrawSliderAbsolute(int id, float value, float minValue, float maxValue, int posX, int posY, int width, int height, Action<Slider>? onValueChanged, object? payload, bool showValue = true, string? format = null, int fontSize = 13, float? step = null)
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            return new Slider(posX, posY, value, minValue, maxValue, width, height, onValueChanged, payload, showValue, format, fontSize, step, defaultParent);
-        }, (stored) =>
-        {
-            stored.MinValue = minValue;
-            stored.MaxValue = maxValue;
-            stored.Step = step;
-            stored.ShowValue = showValue;
-            stored.Format = format;
-            stored.FontSize = fontSize;
-
-            if (!stored.IsDragging) stored.SetValueWithoutNotify(value);
-
-            stored.SetOnValueChanged(onValueChanged);
-        }, posX, posY);
-    }
-
     public void Text(string text, Raylib_cs.Color fontColor, bool updateLayout = true)
     {
         DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
         if (updateLayout) DrawAny(text.Length * 2, 20);
+    }
+
+    public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
+    {
+        string truncatedStr = text;
+        int measuredW = MeasureTextW(text, fontSize);
+        if (measuredW > maxWidth)
+        {
+            const string ellipsis = "...";
+            int ellipsisW = MeasureTextW(ellipsis, fontSize);
+            int availableW = maxWidth - ellipsisW;
+
+            if (availableW > 0)
+            {
+                int len = text.Length;
+                while (len > 0 && MeasureTextW(text.Substring(0, len), fontSize) > availableW)
+                {
+                    len--;
+                }
+                truncatedStr = string.Concat(text.AsSpan(0, len), ellipsis);
+            }
+            else
+            {
+                truncatedStr = ellipsis;
+            }
+        }
+
+        DrawTextAbsolute(truncatedStr, PosX_Dynamic(), PosY_Dynamic(), fontColor, fontSize, Vector2.Zero);
+        if (updateLayout) DrawAny(Math.Min(measuredW, maxWidth), fontSize + 4);
     }
 
     public void Panel(int width, int height, Raylib_cs.Color panelColor, bool updateLayout = true)
@@ -602,6 +447,67 @@ public class LayoutEngine
         if (updateLayout) DrawAny(width, heigth);
     }
 
+    public T DrawElementAbsolute<T>(int id, Func<(T, BinderBase?)> factory, Action<(T, BinderBase?)> storedReflect, int posX, int posY) where T : UIBase
+    {
+        bool found = layoutElements.ContainsKey(id);
+
+        if (!found)
+        {
+            (T newElem, BinderBase? binder) = factory.Invoke();
+            ElementInfo elem = new(newElem, binder);
+            layoutElements.Add(id, elem);
+        }
+        else storedReflect.Invoke((layoutElements[id].Get<T>(), layoutElements[id].DataBinder));
+
+        layoutElements[id] = layoutElements[id].Activate();
+
+        layoutElements[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutElements[id].UIElement.Render();
+
+        return layoutElements[id].Get<T>();
+    }
+
+    public T DrawElementAbsolute<T>(int id, Func<T> factory, Action<T> storedReflect, int posX, int posY) where T : UIBase
+    {
+        return DrawElementAbsolute(id, () =>
+        {
+            T elem = factory.Invoke();
+            BinderBase? binder = null;
+            return (elem, binder);
+        }, (expanded) =>
+        {
+            storedReflect.Invoke(expanded.Item1);
+        },
+        posX, posY);
+    }
+
+    public ElemType DrawBindableElementAbsolute<ElemType, ValType, RLUIType>(int id, BindableValueBase<ValType> dataModel, int posX, int posY, Func<(ElemType, RLUIType)> factory, Action<ElemType> storedReflect = null) where ElemType : UIBase where RLUIType : BindableUIBase<ValType>
+    {
+        return DrawElementAbsolute(id, () =>
+        {
+            (ElemType newElem, RLUIType uiBindable) = factory.Invoke();
+
+            Binder<BindableValueBase<ValType>, RLUIType, ValType> binder = new();
+            binder.Bind(dataModel, uiBindable);
+
+            return (newElem, binder);
+        }, ((ElemType stored, BinderBase? binder) expanded) =>
+        {
+            storedReflect?.Invoke(expanded.stored);
+
+            if (expanded.binder is Binder<BindableValueBase<ValType>, RLUIType, ValType> binder)
+            {
+                if (binder.GetBoundValObject() != dataModel)
+                {
+                    binder.Unbind();
+
+                    if (binder.GetBoundUIObject() is RLUIType uiTarget)
+                        binder.Bind(dataModel, uiTarget);
+                }
+            }
+        }, posX, posY);
+    }
+
     public T DrawElement<T>(T element, bool updateLayout = true) where T : UIBase
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
@@ -611,6 +517,18 @@ public class LayoutEngine
 
         T drawnElem = DrawElementAbsolute(element.Id, () => element, (stored) => { }, (int)pos.X, (int)pos.Y);
         if (updateLayout) DrawAny((int)drawnElem.Width, (int)drawnElem.Height);
+        return drawnElem;
+    }
+
+    public T DrawElement<T>(int id, Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
+    {
+        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+
+        if (defaultParent != null) // then make relative.
+            pos -= defaultParent.Position;
+
+        T drawnElem = drawAbsoluteCaller.Invoke(pos);
+        if (updateLayout) DrawAny(drawnElem.Width, drawnElem.Height);
         return drawnElem;
     }
 
@@ -625,39 +543,66 @@ public class LayoutEngine
     public AlertBanner AlertBanner(AlertBanner alertBanner, bool updateLayout = true) => DrawElement(alertBanner, updateLayout);
     public Slider Slider(Slider slider, bool updateLayout = true) => DrawElement(slider, updateLayout);
 
-    public T DrawElement<T>(int id, Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
-    {
-        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
-
-        if (defaultParent != null) // then make relative.
-            pos -= defaultParent.Position;
-
-        T drawnElem = drawAbsoluteCaller.Invoke(pos);
-        if (updateLayout) DrawAny(drawnElem.Width, drawnElem.Height);
-        return drawnElem;
-    }
-
-    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
+    public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
     {
         return DrawElement(id, (pos) =>
         {
-            return DrawButtonAbsolute(id, buttonText, (int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, onButtonPressed, payload, 15, true, fillColor, borderColor, textColor);
+            return DrawElementAbsolute(id, () =>
+            {
+                return new Button((int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+            }, (stored) =>
+            {
+                stored.ButtonText = buttonText;
+
+                if (fillColor.HasValue) stored.FillColor = fillColor;
+                if (borderColor.HasValue) stored.BorderColor = borderColor;
+                if (textColor.HasValue) stored.TextColor = textColor;
+            }, (int)pos.X, (int)pos.Y);
         }, updateLayout);
     }
 
-    public Selectable Selectable(int id, bool isSelected, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, bool updateLayout = true)
+    public Selectable Selectable(int id, bool isSelected, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, int fontSize = 15, Raylib_cs.Color? bgColor = null, Raylib_cs.Color? bgSelectionColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
     {
+        bgColor ??= new Raylib_cs.Color((byte)38, (byte)38, (byte)38, (byte)255);
+        bgSelectionColor ??= new Raylib_cs.Color((byte)28, (byte)50, (byte)88, (byte)255);
+        textColor ??= new Raylib_cs.Color((byte)200, (byte)200, (byte)200, (byte)255);
+
         return DrawElement(id, (pos) =>
         {
-            return DrawSelectableAbsolute(id, isSelected, selectableText, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, 15, onSelectableSelect, payload, new Raylib_cs.Color((byte)38, (byte)38, (byte)38, (byte)255), new Raylib_cs.Color((byte)28, (byte)50, (byte)88, (byte)255), new Raylib_cs.Color((byte)200, (byte)200, (byte)200, (byte)255));
+            return DrawElementAbsolute(id, () =>
+            {
+                return new Selectable(selectableText, isSelected, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
+            }, (stored) =>
+            {
+                if (isSelected != stored.IsSelected)
+                {
+                    if (isSelected) stored.Select(false);
+                    else stored.Deselect(false);
+                }
+
+                stored.SelectableText = selectableText;
+            }, (int)pos.X, (int)pos.Y);
         }, updateLayout);
     }
 
-    public InputField InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, bool isMasked = false, bool updateLayout = true)
+    public InputField InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, int fontSize = 15, bool isMasked = false, bool updateLayout = true)
     {
         return DrawElement(id, (pos) =>
         {
-            return DrawInputFieldAbsolute(id, placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, 15, isMasked);
+            return DrawElementAbsolute(id, () =>
+            {
+                return new InputField(placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
+            }, (stored) =>
+            {
+                if (!stored.IsFocused)
+                {
+                    stored.InputFieldText = fieldText;
+                }
+
+                stored.IsMasked = isMasked;
+                stored.OnTextChanged = onTextEdited;
+                stored.OnFocusEnd = onFocusEnd;
+            }, (int)pos.X, (int)pos.Y);
         }, updateLayout);
     }
 
@@ -665,85 +610,121 @@ public class LayoutEngine
     {
         return DrawElement(id, (pos) =>
         {
-            return DrawToggleAbsolute(id, toggleValue, (int)pos.X, (int)pos.Y, toggleWidth, toggleHeight, onToggleChanged, payload);
-        }, updateLayout);
-    }
-
-    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawDropdownAbsolute(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, 15);
-        }, updateLayout);
-    }
-
-    public CycleSelector CycleSelector(int id, string[] options, int selectedIndex, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload = null, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawCycleSelectorAbsolute(id, options, selectedIndex, (int)pos.X, (int)pos.Y, width, height, onSelectionChanged, payload, 15);
-        }, updateLayout);
-    }
-
-    public LinkButton LinkButton(int id, string text, string url, Action<LinkButton>? onClick = null, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawLinkButtonAbsolute(id, text, url, (int)pos.X, (int)pos.Y, onClick, 14);
-        }, updateLayout);
-    }
-
-    public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawStatusBadgeAbsolute(id, text, statusType, customColor, (int)pos.X, (int)pos.Y, 13);
-        }, updateLayout);
-    }
-
-    public AlertBanner AlertBanner(int id, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawAlertBannerAbsolute(id, message, alertType, (int)pos.X, (int)pos.Y, width, height, isDismissible, 13);
-        }, updateLayout);
-    }
-
-    public Slider Slider(int id, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged = null, object? payload = null, bool showValue = true, string? format = null, float? step = null, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawSliderAbsolute(id, value, minValue, maxValue, (int)pos.X, (int)pos.Y, width, height, onValueChanged, payload, showValue, format, 13, step);
-        }, updateLayout);
-    }
-
-    public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
-    {
-        string truncatedStr = text;
-        int measuredW = MeasureTextW(text, fontSize);
-        if (measuredW > maxWidth)
-        {
-            const string ellipsis = "...";
-            int ellipsisW = MeasureTextW(ellipsis, fontSize);
-            int availableW = maxWidth - ellipsisW;
-
-            if (availableW > 0)
+            return DrawElementAbsolute(id, () =>
             {
-                int len = text.Length;
-                while (len > 0 && MeasureTextW(text.Substring(0, len), fontSize) > availableW)
+                return new Toggle((int)pos.X, (int)pos.Y, toggleValue, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+            }, (stored) =>
+            {
+                stored.Value = toggleValue;
+                stored.SetOnToggleChanged(onToggleChanged);
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize = 15, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new Dropdown(options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
+            }, (stored) =>
+            {
+                if (stored.Options.Length != options.Length)
+                    stored.SetOptions(options, selectedIndex);
+                else
                 {
-                    len--;
+                    stored.SelectedIndex = selectedIndex;
+                    stored.SetOnSelectionChanged(onSelectionChanged);
                 }
-                truncatedStr = string.Concat(text.AsSpan(0, len), ellipsis);
-            }
-            else
-            {
-                truncatedStr = ellipsis;
-            }
-        }
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
 
-        DrawTextAbsolute(truncatedStr, PosX_Dynamic(), PosY_Dynamic(), fontColor, fontSize, Vector2.Zero);
-        if (updateLayout) DrawAny(Math.Min(measuredW, maxWidth), fontSize + 4);
+    public CycleSelector CycleSelector(int id, string[] options, int selectedIndex, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload = null, int fontSize = 15, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new CycleSelector(options, selectedIndex, (int)pos.X, (int)pos.Y, width, height, onSelectionChanged, payload, fontSize, defaultParent);
+            }, (stored) =>
+            {
+                stored.SelectedIndex = selectedIndex;
+                stored.Options = options;
+                stored.SetOnSelectionChanged(onSelectionChanged);
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public LinkButton LinkButton(int id, string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new LinkButton((int)pos.X, (int)pos.Y, text, url, onClick, fontSize, defaultParent);
+            }, (stored) =>
+            {
+                stored.Text = text;
+                stored.Url = url;
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, int fontSize = 13, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new StatusBadge((int)pos.X, (int)pos.Y, text, statusType, customColor, fontSize, defaultParent);
+            }, (stored) =>
+            {
+                stored.Text = text;
+                stored.Type = statusType;
+
+                if (customColor.HasValue) stored.CustomColor = customColor.Value;
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public AlertBanner AlertBanner(int id, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, int fontSize = 13, bool isDismissible = true, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new AlertBanner((int)pos.X, (int)pos.Y, message, alertType, width, height, isDismissible, fontSize, defaultParent);
+            }, (stored) =>
+            {
+                stored.Message = message;
+                stored.Type = alertType;
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public Slider Slider(int id, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged = null, object? payload = null, bool showValue = true, string? format = null, float? step = null, int fontSize = 13, bool updateLayout = true)
+    {
+        return DrawElement(id, (pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new Slider((int)pos.X, (int)pos.Y, value, minValue, maxValue, width, height, onValueChanged, payload, showValue, format, fontSize, step, defaultParent);
+            }, (stored) =>
+            {
+                stored.MinValue = minValue;
+                stored.MaxValue = maxValue;
+                stored.Step = step;
+                stored.ShowValue = showValue;
+                stored.Format = format;
+                stored.FontSize = fontSize;
+
+                if (!stored.IsDragging) stored.SetValueWithoutNotify(value);
+
+                stored.SetOnValueChanged(onValueChanged);
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
     }
 
     public void BeginHorizontal(int spacingDist)
@@ -892,35 +873,6 @@ public class LayoutEngine
             if (kvp.Value.UIElement is IOverlayable overlay && kvp.Value.IsActiveThisFrame)
                 overlay.DrawOverlay();
         }
-    }
-
-    // ==================== BINDABLE DRAWING METHODS ====================
-
-    public ElemType DrawBindableElementAbsolute<ElemType, ValType, RLUIType>(int id, BindableValueBase<ValType> dataModel, int posX, int posY, Func<(ElemType, RLUIType)> factory, Action<ElemType> storedReflect = null) where ElemType : UIBase where RLUIType : BindableUIBase<ValType>
-    {
-        return DrawElementAbsolute(id, () =>
-        {
-            (ElemType newElem, RLUIType uiBindable) = factory.Invoke();
-
-            Binder<BindableValueBase<ValType>, RLUIType, ValType> binder = new();
-            binder.Bind(dataModel, uiBindable);
-
-            return (newElem, binder);
-        }, ((ElemType stored, BinderBase? binder) expanded) =>
-        {
-            storedReflect?.Invoke(expanded.stored);
-
-            if (expanded.binder is Binder<BindableValueBase<ValType>, RLUIType, ValType> binder)
-            {
-                if (binder.GetBoundValObject() != dataModel)
-                {
-                    binder.Unbind();
-
-                    if (binder.GetBoundUIObject() is RLUIType uiTarget)
-                        binder.Bind(dataModel, uiTarget);
-                }
-            }
-        }, posX, posY);
     }
 
     public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, int width, int height, bool updateLayout = true)
