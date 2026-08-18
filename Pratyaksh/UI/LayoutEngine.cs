@@ -66,20 +66,20 @@ public class LayoutEngine
 
     private EditorObject? defaultParent = null;
 
-    private static void ActivateElements<T>(Dictionary<int, ElementInfo> targetDict) where T : UIBase
+    private static void ActivateElements(Dictionary<int, ElementInfo> targetDict)
     {
         foreach (var kvp in targetDict)
             targetDict[kvp.Key] = targetDict[kvp.Key].Activate();
     }
 
-    private static void DeactivateElements<T>(Dictionary<int, ElementInfo> targetDict) where T : UIBase
+    private static void DeactivateElements(Dictionary<int, ElementInfo> targetDict)
     {
         foreach (var kvp in targetDict)
             targetDict[kvp.Key] = targetDict[kvp.Key].Deactivate();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void DeleteElement<T>(int id, Dictionary<int, ElementInfo> targetDict) where T : UIBase
+    private static void DeleteElement(int id, Dictionary<int, ElementInfo> targetDict)
     {
         if (targetDict.TryGetValue(id, out var info))
         {
@@ -89,7 +89,7 @@ public class LayoutEngine
         }
     }
 
-    private static void DeleteElements<T>(Dictionary<int, ElementInfo> targetDict) where T : UIBase
+    private static void DeleteElements(Dictionary<int, ElementInfo> targetDict)
     {
         foreach (var kvp in targetDict)
         {
@@ -100,7 +100,7 @@ public class LayoutEngine
         targetDict.Clear();
     }
 
-    private static void UpdateActiveElements<T>(Dictionary<int, ElementInfo> targetDict) where T : UIBase
+    private static void UpdateActiveElements(Dictionary<int, ElementInfo> targetDict)
     {
         foreach (var kvp in targetDict)
         {
@@ -109,7 +109,7 @@ public class LayoutEngine
         }
     }
 
-    private static Drawable? HitTestActiveElements<T>(Dictionary<int, ElementInfo> targetDict, IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) where T : UIBase
+    private static Drawable? HitTestActiveElements(Dictionary<int, ElementInfo> targetDict, IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         var keys = targetDict.Keys.ToArray();
         for (int i = keys.Length - 1; i >= 0; i--)
@@ -126,7 +126,7 @@ public class LayoutEngine
 
     public void BeginFrame()
     {
-        DeactivateElements<UIBase>(layoutElements);
+        DeactivateElements(layoutElements);
     }
 
     public void EndFrame()
@@ -154,19 +154,19 @@ public class LayoutEngine
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
 
-        DeleteElements<UIBase>(layoutElements);
+        DeleteElements(layoutElements);
     }
 
     public void UpdateLayoutElements()
     {
-        UpdateActiveElements<UIBase>(layoutElements);
+        UpdateActiveElements(layoutElements);
     }
 
-    public void RemoveLayoutElement(int id) => DeleteElement<UIBase>(id, layoutElements);
+    public void RemoveLayoutElement(int id) => DeleteElement(id, layoutElements);
 
     public Drawable? HitTestElements(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        Drawable? hit = HitTestActiveElements<UIBase>(layoutElements, transformer, mouseScreenPosition, mouseWorldPosition);
+        Drawable? hit = HitTestActiveElements(layoutElements, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
         return null;
