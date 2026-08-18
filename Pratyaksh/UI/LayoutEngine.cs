@@ -520,7 +520,7 @@ public class LayoutEngine
         return drawnElem;
     }
 
-    public T DrawElement<T>(int id, Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
+    public T DrawElement<T>(Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
     {
         Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
 
@@ -533,19 +533,10 @@ public class LayoutEngine
     }
 
     public Button Button(Button button, bool updateLayout = true) => DrawElement(button, updateLayout);
-    public Selectable Selectable(Selectable selectable, bool updateLayout = true) => DrawElement(selectable, updateLayout);
-    public InputField InputField(InputField inputField, bool updateLayout = true) => DrawElement(inputField, updateLayout);
-    public Toggle Toggle(Toggle toggle, bool updateLayout = true) => DrawElement(toggle, updateLayout);
-    public Dropdown Dropdown(Dropdown dropdown, bool updateLayout = true) => DrawElement(dropdown, updateLayout);
-    public CycleSelector CycleSelector(CycleSelector cycleSelector, bool updateLayout = true) => DrawElement(cycleSelector, updateLayout);
-    public LinkButton LinkButton(LinkButton linkButton, bool updateLayout = true) => DrawElement(linkButton, updateLayout);
-    public StatusBadge StatusBadge(StatusBadge statusBadge, bool updateLayout = true) => DrawElement(statusBadge, updateLayout);
-    public AlertBanner AlertBanner(AlertBanner alertBanner, bool updateLayout = true) => DrawElement(alertBanner, updateLayout);
-    public Slider Slider(Slider slider, bool updateLayout = true) => DrawElement(slider, updateLayout);
 
     public Button Button(int id, string buttonText, int buttonWidth, int buttonHeight, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -561,13 +552,20 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public Button Button(int id, ButtonDesc buttonDesc, bool updateLayout = true)
+    {
+        return Button(id, buttonDesc.text, buttonDesc.width ?? 200, buttonDesc.height ?? 25, buttonDesc.onClick, 0, buttonDesc.fontSize, buttonDesc.hasBorder, buttonDesc.fillColor, buttonDesc.borderColor, buttonDesc.textColor, updateLayout);
+    }
+
+    public Selectable Selectable(Selectable selectable, bool updateLayout = true) => DrawElement(selectable, updateLayout);
+
     public Selectable Selectable(int id, bool isSelected, string selectableText, int selectableWidth, int selectableHeight, Action<Selectable> onSelectableSelect, object? payload, int fontSize = 15, Raylib_cs.Color? bgColor = null, Raylib_cs.Color? bgSelectionColor = null, Raylib_cs.Color? textColor = null, bool updateLayout = true)
     {
         bgColor ??= new Raylib_cs.Color((byte)38, (byte)38, (byte)38, (byte)255);
         bgSelectionColor ??= new Raylib_cs.Color((byte)28, (byte)50, (byte)88, (byte)255);
         textColor ??= new Raylib_cs.Color((byte)200, (byte)200, (byte)200, (byte)255);
 
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -585,9 +583,24 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public Selectable BindableSelectable(int id, BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                Selectable selectable = new(selectableText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, (sel) => { }, id, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.Blue, Raylib_cs.Color.White, defaultParent);
+                RLSelectableUI newUIBindable = new(selectable);
+                return (selectable, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public InputField InputField(InputField inputField, bool updateLayout = true) => DrawElement(inputField, updateLayout);
+
     public InputField InputField(int id, string placeholderText, string fieldText, int inputFieldWidth, int inputFieldHeight, Action<InputField>? onTextEdited = null, Action<InputField>? onFocusEnd = null, int fontSize = 15, bool isMasked = false, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -606,9 +619,50 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public InputField BindableInputFieldString(int id, string placeholderText, BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                InputField newInputField = new(placeholderText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                RLInputFieldUI_String newUIBindable = new(newInputField);
+                return (newInputField, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public InputField BindableInputFieldInt(int id, string placeholderText, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                InputField newInputField = new(placeholderText, dataModel.Get().ToString(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                RLInputFieldUI_Int newUIBindable = new(newInputField);
+                return (newInputField, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public InputField BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                InputField newInputField = new(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                RLInputFieldUI_Float newUIBindable = new(newInputField);
+                return (newInputField, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public Toggle Toggle(Toggle toggle, bool updateLayout = true) => DrawElement(toggle, updateLayout);
+
     public Toggle Toggle(int id, bool toggleValue, int toggleWidth, int toggleHeight, Action<Toggle>? onToggleChanged, object? payload, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -621,9 +675,24 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                Toggle newToggle = new((int)pos.X, (int)pos.Y, dataModel.Get(), width, height, null, id, 15, defaultParent);
+                RLToggleUI newUIBindable = new(newToggle);
+                return (newToggle, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public Dropdown Dropdown(Dropdown dropdown, bool updateLayout = true) => DrawElement(dropdown, updateLayout);
+
     public Dropdown Dropdown(int id, string[] options, int selectedIndex, int width, int itemHeight, Action<Dropdown>? onSelectionChanged, object? payload, int fontSize = 15, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -641,9 +710,24 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public Dropdown BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                Dropdown dropdown = new(options, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, id, 15, defaultParent);
+                RLDropdownUI newUIBindable = new(dropdown);
+                return (dropdown, newUIBindable);
+            });
+        }, updateLayout);
+    }
+
+    public CycleSelector CycleSelector(CycleSelector cycleSelector, bool updateLayout = true) => DrawElement(cycleSelector, updateLayout);
+
     public CycleSelector CycleSelector(int id, string[] options, int selectedIndex, int width, int height, Action<CycleSelector>? onSelectionChanged, object? payload = null, int fontSize = 15, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -657,9 +741,11 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public LinkButton LinkButton(LinkButton linkButton, bool updateLayout = true) => DrawElement(linkButton, updateLayout);
+
     public LinkButton LinkButton(int id, string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -672,9 +758,11 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public StatusBadge StatusBadge(StatusBadge statusBadge, bool updateLayout = true) => DrawElement(statusBadge, updateLayout);
+
     public StatusBadge StatusBadge(int id, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, int fontSize = 13, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -689,9 +777,11 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public AlertBanner AlertBanner(AlertBanner alertBanner, bool updateLayout = true) => DrawElement(alertBanner, updateLayout);
+
     public AlertBanner AlertBanner(int id, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, int fontSize = 13, bool isDismissible = true, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -704,9 +794,11 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    public Slider Slider(Slider slider, bool updateLayout = true) => DrawElement(slider, updateLayout);
+
     public Slider Slider(int id, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged = null, object? payload = null, bool showValue = true, string? format = null, float? step = null, int fontSize = 13, bool updateLayout = true)
     {
-        return DrawElement(id, (pos) =>
+        return DrawElement((pos) =>
         {
             return DrawElementAbsolute(id, () =>
             {
@@ -724,6 +816,27 @@ public class LayoutEngine
 
                 stored.SetOnValueChanged(onValueChanged);
             }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public Slider BindableSlider(int id, BindableValueBase<float> dataModel, float minValue, float maxValue, int width, int height, bool showValue = true, string? format = null, float? step = null, int fontSize = 13, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                Slider slider = new((int)pos.X, (int)pos.Y, dataModel.Get(), minValue, maxValue, width, height, null, id, showValue, format, fontSize, step, defaultParent);
+                RLSliderUI newUIBindable = new(slider);
+                return (slider, newUIBindable);
+            }, (stored) =>
+            {
+                stored.MinValue = minValue;
+                stored.MaxValue = maxValue;
+                stored.Step = step;
+                stored.ShowValue = showValue;
+                stored.Format = format;
+                stored.FontSize = fontSize;
+            });
         }, updateLayout);
     }
 
@@ -873,104 +986,5 @@ public class LayoutEngine
             if (kvp.Value.UIElement is IOverlayable overlay && kvp.Value.IsActiveThisFrame)
                 overlay.DrawOverlay();
         }
-    }
-
-    public Toggle BindableToggle(int id, BindableValueBase<bool> dataModel, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                Toggle newToggle = new((int)pos.X, (int)pos.Y, dataModel.Get(), width, height, null, id, 15, defaultParent);
-                RLToggleUI newUIBindable = new(newToggle);
-                return (newToggle, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public InputField BindableInputFieldString(int id, string placeholderText, BindableValueBase<string> dataModel, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                InputField newInputField = new(placeholderText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
-                RLInputFieldUI_String newUIBindable = new(newInputField);
-                return (newInputField, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public InputField BindableInputFieldInt(int id, string placeholderText, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                InputField newInputField = new(placeholderText, dataModel.Get().ToString(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
-                RLInputFieldUI_Int newUIBindable = new(newInputField);
-                return (newInputField, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public InputField BindableInputFieldFloat(int id, string placeholderText, BindableValueBase<float> dataModel, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                InputField newInputField = new(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
-                RLInputFieldUI_Float newUIBindable = new(newInputField);
-                return (newInputField, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public Selectable BindableSelectable(int id, BindableValueBase<bool> dataModel, string selectableText, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                Selectable selectable = new(selectableText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, (sel) => { }, id, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.Blue, Raylib_cs.Color.White, defaultParent);
-                RLSelectableUI newUIBindable = new(selectable);
-                return (selectable, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public Dropdown BindableDropdown(int id, string[] options, BindableValueBase<int> dataModel, int width, int height, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                Dropdown dropdown = new(options, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, id, 15, defaultParent);
-                RLDropdownUI newUIBindable = new(dropdown);
-                return (dropdown, newUIBindable);
-            });
-        }, updateLayout);
-    }
-
-    public Slider BindableSlider(int id, BindableValueBase<float> dataModel, float minValue, float maxValue, int width, int height, bool showValue = true, string? format = null, float? step = null, int fontSize = 13, bool updateLayout = true)
-    {
-        return DrawElement(id, (pos) =>
-        {
-            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
-            {
-                Slider slider = new((int)pos.X, (int)pos.Y, dataModel.Get(), minValue, maxValue, width, height, null, id, showValue, format, fontSize, step, defaultParent);
-                RLSliderUI newUIBindable = new(slider);
-                return (slider, newUIBindable);
-            }, (stored) =>
-            {
-                stored.MinValue     = minValue;
-                stored.MaxValue     = maxValue;
-                stored.Step         = step;
-                stored.ShowValue    = showValue;
-                stored.Format       = format;
-                stored.FontSize     = fontSize;
-            });
-        }, updateLayout);
     }
 }

@@ -44,13 +44,21 @@ public class RectUIEDescription : UIElementDescription
 public class ButtonDesc : RectUIEDescription
 {
     public Action<Button> onClick;
+
+    public int fontSize;
+    public bool hasBorder;
+
     public Raylib_cs.Color? fillColor;
     public Raylib_cs.Color? borderColor;
     public Raylib_cs.Color? textColor;
 
-    public ButtonDesc(string text, int? width, int? height, Action<Button> onClick, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null) : base(text, width, height)
+    public ButtonDesc(string text, int? width, int? height, Action<Button> onClick, int fontSize = 15, bool hasBorder = true, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null) : base(text, width, height)
     {
         this.onClick = onClick;
+
+        this.fontSize = fontSize;
+        this.hasBorder = hasBorder;
+        
         this.fillColor = fillColor;
         this.borderColor = borderColor;
         this.textColor = textColor;
