@@ -507,7 +507,7 @@ public class NodeEditorEngine : BaseRaylibEngine
 
         uiElements.Add(canvas);
 
-        actors.Add(new GraphBG(15000, 15000));
+        actors.Add(new GraphBG(15000, 15000, new Vector2(-7500, -7500)));
         actors.Add(connectionUIManager);
     }
 
