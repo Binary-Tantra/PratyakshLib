@@ -68,7 +68,7 @@ public abstract class UIBase : EditorObject, IPointerVisitable
         hovered = false;
     }
 
-    private static Vector2 CalcParentBasisPos(ParentBasis parentBasis, UIBase? uibParent, Drawable parent)
+    private Vector2 CalcParentBasisPos(ParentBasis parentBasis, UIBase? uibParent, Drawable parent)
     {
         if (uibParent == null)
         {
@@ -78,14 +78,14 @@ public abstract class UIBase : EditorObject, IPointerVisitable
         return parentBasis switch
         {
             ParentBasis.TopLeft => uibParent.Position,
-            ParentBasis.TopCenter => uibParent.Position + new Vector2(uibParent.Size.X / 2, 0),
-            ParentBasis.TopRight => uibParent.Position + new Vector2(uibParent.Size.X, 0),
-            ParentBasis.Left => uibParent.Position + new Vector2(0, uibParent.Size.Y / 2),
-            ParentBasis.Center => uibParent.Position + new Vector2(uibParent.Size.X / 2, uibParent.Size.Y / 2),
-            ParentBasis.Right => uibParent.Position + new Vector2(uibParent.Size.X, uibParent.Size.Y / 2),
-            ParentBasis.BottomLeft => uibParent.Position + new Vector2(0, uibParent.Size.Y),
-            ParentBasis.BottomCenter => uibParent.Position + new Vector2(uibParent.Size.X / 2, uibParent.Size.Y),
-            ParentBasis.BottomRight => uibParent.Position + new Vector2(uibParent.Size.X, uibParent.Size.Y),
+            ParentBasis.TopCenter => uibParent.Position + new Vector2(uibParent.Size.X / 2 - Size.X / 2, 0),
+            ParentBasis.TopRight => uibParent.Position + new Vector2(uibParent.Size.X - Size.X, 0),
+            ParentBasis.Left => uibParent.Position + new Vector2(0, uibParent.Size.Y / 2 - Size.Y / 2),
+            ParentBasis.Center => uibParent.Position + new Vector2(uibParent.Size.X / 2 - Size.X / 2, uibParent.Size.Y / 2 - Size.Y / 2),
+            ParentBasis.Right => uibParent.Position + new Vector2(uibParent.Size.X - Size.X, uibParent.Size.Y / 2 - Size.Y / 2),
+            ParentBasis.BottomLeft => uibParent.Position + new Vector2(0, uibParent.Size.Y - Size.Y),
+            ParentBasis.BottomCenter => uibParent.Position + new Vector2(uibParent.Size.X / 2 - Size.X / 2, uibParent.Size.Y - Size.Y),
+            ParentBasis.BottomRight => uibParent.Position + new Vector2(uibParent.Size.X - Size.X, uibParent.Size.Y - Size.Y),
             _ => throw new ArgumentOutOfRangeException(nameof(parentBasis), parentBasis, "Invalid parent basis in CalcParentBasisPos!"),
         };
     }

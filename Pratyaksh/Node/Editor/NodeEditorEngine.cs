@@ -499,7 +499,7 @@ public class NodeEditorEngine : BaseRaylibEngine
         VariablePanel varPan = new(10, 20, OnSelectVar, OnAddVar, OnRemoveVar, OnRenameVariable, OnChangeVarType, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas);
         canvas.AddPanel(varPan, false, false);
 
-        InspectorPanel inPan = new(-200 - 10, 20, OnRenameVariable, OnChangeVarType, OnChangeVarValue, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas, ParentBasis.TopRight);
+        InspectorPanel inPan = new(-10, 20, OnRenameVariable, OnChangeVarType, OnChangeVarValue, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas, ParentBasis.TopRight);
         canvas.AddPanel(inPan, false, false);
 
         DemoPanel demoPanel = new(60, 70, canvas);
