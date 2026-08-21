@@ -97,7 +97,60 @@ public class Program : DefaultRaylibEngine
 
 ```
 
-### 2. Basic Node Editor Host
+### 2. Creating a Standalone UI Panel
+
+```csharp
+using Pratyaksh.Core;
+using Pratyaksh.UI;
+using Raylib_cs;
+
+public class ControlPanel : UILayoutBase
+{
+    private int btnId = IdGen.GetNewID();
+    private int toggleId = IdGen.GetNewID();
+    private bool isChecked = true;
+
+    protected override string PanelName => "ControlPanel";
+
+    public ControlPanel(int x, int y, Drawable? parent = null) : base(x, y, 260, 180, parent) { }
+
+    public override void OnDrawLayout()
+    {
+        layout.SectionEx("Controls", Width, Height,
+            Raylib.Fade(Color.DarkGray, 0.8f),
+            Raylib.Fade(Color.Gray, 0.7f),
+            Color.White, 0.15f, false);
+
+        layout.AddSpace(10);
+
+        int heightBegin, heightEnd;
+        layout.BeginHorizontalEx(0, (int)Position.X + 10);
+        {
+            heightBegin = layout.PosY();
+            layout.BeginVerticalEx(15, (int)Position.Y + 35);
+            {
+                layout.BeginHorizontal(5);
+                {
+                    layout.Text("Toggle Option: ", 15, Color.White);
+                    layout.Toggle(toggleId, isChecked, 50, 20, (t) => isChecked = t.IsOn, toggleId);
+                }
+                layout.EndHorizontal(20);
+
+                layout.BeginHorizontal(10);
+                {
+                    layout.Button(btnId, "Click Me", 100, 28, (b) => Console.WriteLine("Button Clicked!"), btnId);
+                }
+                layout.EndHorizontal(28);
+            }
+            layout.EndVertical(Width);
+            heightEnd = layout.PosY();
+        }
+        layout.EndHorizontal(heightEnd - heightBegin);
+    }
+}
+```
+
+### 3. Basic Node Editor Host
 
 ```csharp
 using Pratyaksh.Node.Editor;
@@ -113,7 +166,7 @@ public class Program
 }
 ```
 
-### 3. Registering Custom Node Templates
+### 4. Registering Custom Node Templates
 
 ```csharp
 using Pratyaksh.Node.Editor;
@@ -142,51 +195,6 @@ NodeEditorEngine.NodeRegistry.RegisterNode(new NodeTemplate(
         (UIElementType.Button, new ButtonDesc("Execute", 140, 25, (btn) => Console.WriteLine("Executed!")))
     ]
 ));
-```
-
-### 4. Creating a Standalone UI Panel
-
-```csharp
-using Pratyaksh.Core;
-using Pratyaksh.UI;
-using Raylib_cs;
-
-public class ControlPanel : UILayoutBase
-{
-    private int btnId = IdGen.GetNewID();
-    private int toggleId = IdGen.GetNewID();
-    private bool isChecked = true;
-
-    protected override string PanelName => "ControlPanel";
-
-    public ControlPanel(int x, int y, Drawable? parent = null) 
-        : base(x, y, 260, 180, parent) { }
-
-    public override void OnDrawLayout()
-    {
-        layout.SectionEx("Controls", Width, Height,
-            Raylib.Fade(Color.DarkGray, 0.8f),
-            Raylib.Fade(Color.Gray, 0.7f),
-            Color.White, 0.1f, false);
-
-        layout.AddSpace(10);
-
-        layout.BeginHorizontal(10);
-        {
-            layout.Text("Toggle Option: ", Color.White);
-            layout.Toggle(toggleId, "Active", isChecked, 50, 20, (t) => isChecked = t.IsOn);
-        }
-        layout.EndHorizontal(20);
-
-        layout.AddSpace(15);
-
-        layout.BeginHorizontal(10);
-        {
-            layout.Button(btnId, "Click Me", 100, 28, (b) => Console.WriteLine("Button Clicked!"));
-        }
-        layout.EndHorizontal(28);
-    }
-}
 ```
 
 ---

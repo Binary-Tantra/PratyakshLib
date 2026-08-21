@@ -70,56 +70,65 @@ public class MyCustomPanel : UILayoutBase
 
     protected override string PanelName => "SettingsPanel";
 
-    public MyCustomPanel(int x, int y, Drawable? parent = null) 
-        : base(x, y, 300, 250, parent) { }
+    public MyCustomPanel(int x, int y, Drawable? parent = null) : base(x, y, 300, 250, parent) { }
 
     public override void OnDrawLayout()
     {
         // 1. Draw panel background and title header
         layout.SectionEx("Settings", Width, Height,
-            Raylib.Fade(Color.DarkGray, 0.8f),
+            Raylib.Fade(Color.DarkBrown, 0.8f),
             Raylib.Fade(Color.Gray, 0.7f),
             Color.White, 0.1f, false);
 
-        layout.AddSpace(10);
-
-        // 2. Horizontal row: Label + InputField
-        layout.BeginHorizontal(10);
+        layout.BeginHorizontalEx(0, (int)Position.X);
         {
-            layout.Text("User: ", Color.White);
             layout.AddSpace(10);
-            layout.InputField(inputId, "Enter username...", username, 180, 25, (field) =>
+
+            layout.BeginVerticalEx(0, (int)Position.Y);
             {
-                username = field.InputFieldText;
-            });
+                layout.AddSpace(50);
+
+                // 2. Horizontal row: Label + InputField
+                layout.BeginHorizontal(30);
+                {
+                    layout.Text("User: ", 15, Color.White);
+
+                    layout.InputField(inputId, "Enter username...", username, 180, 25, (field) =>
+                    {
+                        username = field.InputFieldText;
+                    });
+                }
+                layout.EndHorizontal(25);
+
+                layout.AddSpace(10);
+
+                // 3. Horizontal row: Toggle
+                layout.BeginHorizontal(35);
+                {
+                    layout.Text("Alerts: ", 15, Color.White);
+
+                    layout.Toggle(toggleId, notificationsEnabled, 50, 20, (tog) =>
+                    {
+                        notificationsEnabled = tog.IsOn;
+                    }, toggleId);
+                }
+                layout.EndHorizontal(20);
+
+                layout.AddSpace(15);
+
+                // 4. Action Button
+                layout.BeginHorizontal(10);
+                {
+                    layout.Button(buttonId, "Save Changes", 120, 30, (btn) =>
+                    {
+                        Console.WriteLine($"Saved! Username: {username}, Alerts: {notificationsEnabled}");
+                    }, buttonId);
+                }
+                layout.EndHorizontal(30);
+            }
+            layout.EndVertical(Width);
         }
-        layout.EndHorizontal(25);
-
-        layout.AddSpace(10);
-
-        // 3. Horizontal row: Toggle
-        layout.BeginHorizontal(10);
-        {
-            layout.Text("Alerts: ", Color.White);
-            layout.AddSpace(10);
-            layout.Toggle(toggleId, "Enable", notificationsEnabled, 50, 20, (tog) =>
-            {
-                notificationsEnabled = tog.IsOn;
-            });
-        }
-        layout.EndHorizontal(20);
-
-        layout.AddSpace(15);
-
-        // 4. Action Button
-        layout.BeginHorizontal(10);
-        {
-            layout.Button(buttonId, "Save Changes", 120, 30, (btn) =>
-            {
-                Console.WriteLine($"Saved! Username: {username}, Alerts: {notificationsEnabled}");
-            });
-        }
-        layout.EndHorizontal(30);
+        layout.EndHorizontal(Height);
     }
 }
 ```
@@ -134,12 +143,12 @@ public class MyGameEngine : BaseRaylibEngine
 {
     private Canvas canvas = null!;
 
-    public MyGameEngine() : base(1024, 576, "Pratyaksh.UI Demo", true, Color.DarkGray) { }
+    public MyGameEngine() : base(1024, 576, "Pratyaksh.UI Demo", clearScreen: true, clearColor: Color.DarkGray) { }
 
     protected override void OnSetup()
     {
-        canvas = new Canvas((int)ScreenWidth, (int)ScreenHeight, (evt, target) => false);
-        
+        canvas = new Canvas((int)camera.GetWidth(), (int)camera.GetHeight(), (evt, target) => false);
+
         // Add panel to canvas
         var panel = new MyCustomPanel(50, 50, canvas);
         canvas.AddPanel(panel, saveable: false, transient: false);
