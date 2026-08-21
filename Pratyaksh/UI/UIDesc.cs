@@ -1,12 +1,13 @@
 using Pratyaksh.Core.DataBinding;
 using Pratyaksh.UI.UIElements;
+using System.Numerics;
 
 namespace Pratyaksh.UI;
 
 public enum UIElementType
 {
-    Text, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Slider, Group,
-    BindableToggle, BindableInputField_String, BindableInputField_Int, BindableInputField_Float, BindableSelectable, BindableDropdown, BindableSlider
+    Text, Label, Button, InputField, Selectable, Toggle, Dropdown, CycleSelector, LinkButton, StatusBadge, AlertBanner, Slider, Group,
+    BindableLabel, BindableToggle, BindableInputField_String, BindableInputField_Int, BindableInputField_Float, BindableSelectable, BindableDropdown, BindableSlider
 }
 
 public abstract class UIElementDescription
@@ -21,11 +22,13 @@ public abstract class UIElementDescription
 
 public class TextDesc : UIElementDescription
 {
+    public int fontSize;
     public Raylib_cs.Color color;
 
-    public TextDesc(string text, Raylib_cs.Color color) : base(text)
+    public TextDesc(string text, int fontSize = 15, Raylib_cs.Color? color = null) : base(text)
     {
-        this.color = color;
+        this.fontSize = fontSize;
+        this.color = color ?? Raylib_cs.Color.DarkGray;
     }
 }
 
@@ -38,6 +41,22 @@ public class RectUIEDescription : UIElementDescription
     {
         this.width = width;
         this.height = height;
+    }
+}
+
+public class LabelDesc : RectUIEDescription
+{
+    public int fontSize = 15;
+    public Raylib_cs.Color? textColor;
+
+    public LabelDesc(string text, int fontSize = 15, Raylib_cs.Color? textColor = null) : base(text, 0, 0)
+    {
+        Vector2 tSize = LayoutEngine.MeasureText(text, fontSize);
+        width = (int)tSize.X;
+        height = (int)tSize.Y;
+
+        this.fontSize = fontSize;
+        this.textColor = textColor;
     }
 }
 
@@ -198,6 +217,25 @@ public class HorizontalGroupDesc : RectUIEDescription
     {
         this.spacing = spacing;
         this.uiElements = uiElements;
+    }
+}
+
+public class BindableLabelDesc : RectUIEDescription
+{
+    public BindableValueBase<string> label;
+    public int fontSize = 15;
+    public Raylib_cs.Color? textColor;
+
+    public BindableLabelDesc(BindableValueBase<string> dataModel, int fontSize = 15, Raylib_cs.Color? textColor = null) : base(dataModel.Get(), 0, 0)
+    {
+        label = dataModel;
+
+        Vector2 tSize = LayoutEngine.MeasureText(label.Get(), fontSize);
+        width = (int)tSize.X;
+        height = (int)tSize.Y;
+
+        this.fontSize = fontSize;
+        this.textColor = textColor;
     }
 }
 

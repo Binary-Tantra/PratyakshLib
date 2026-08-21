@@ -3,6 +3,29 @@ using Pratyaksh.UI.UIElements;
 
 namespace Pratyaksh.UI.DataBinding;
 
+public class RLLabelUI : BindableUIBase<string>
+{
+    private Label label;
+
+    public RLLabelUI(Label label)
+    {
+        this.label = label;
+    }
+
+    public override string Get() => label.Text;
+
+    protected override void OnSet(string newVal)
+    {
+        label.Text = newVal;
+    }
+
+    protected override string GetDefault() => string.Empty;
+
+    public override void NotifyBind() { }
+
+    public override void NotifyUnbind() { }
+}
+
 public class RLToggleUI : BindableUIBase<bool>
 {
     private Toggle toggle;

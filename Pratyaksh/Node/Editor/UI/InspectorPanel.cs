@@ -68,7 +68,7 @@ public class InspectorPanel : UILayoutBase
                     // Render Name (Bindable InputField)
                     layout.BeginHorizontal(0);
                     {
-                        layout.Text("Name:", Color.White);
+                        layout.Text("Name:", 15, Color.White);
                         layout.AddSpace(40);
                         layout.BindableInputFieldString(v.Id + 2000000, "Var Name", v.VarNameBindable, Width - 60, 25);
                     }
@@ -79,7 +79,7 @@ public class InspectorPanel : UILayoutBase
                     // Render Type (Button selector)
                     layout.BeginHorizontal(0);
                     {
-                        layout.Text("Type:", Color.White);
+                        layout.Text("Type:", 15, Color.White);
                         layout.AddSpace(40);
 
                         List<DataType> dataTypes = [.. NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
@@ -110,7 +110,7 @@ public class InspectorPanel : UILayoutBase
 
                         layout.BeginHorizontal(0);
                         {
-                            layout.Text("Value:", Color.White);
+                            layout.Text("Value:", 15, Color.White);
                             layout.AddSpace(40);
 
                             if (item.type == UIElementType.BindableToggle && item.desc is BindableToggleDesc togDesc)

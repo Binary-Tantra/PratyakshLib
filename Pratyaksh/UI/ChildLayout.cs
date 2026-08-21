@@ -39,22 +39,24 @@ public class ChildLayout : UILayoutBase
     {
         void DrawAccType(int id, UIElementType type, UIElementDescription desc, int i, int j)
         {
-            object? payload = null;
-
             switch (type)
             {
                 case UIElementType.Text:
                     TextDesc textDesc = (TextDesc)desc;
-                    layout.Text(textDesc.text, textDesc.color);
+                    layout.Text(textDesc.text, textDesc.fontSize, textDesc.color);
+                    break;
+                case UIElementType.Label:
+                    LabelDesc labelDesc = (LabelDesc)desc;
+                    layout.Label(id, labelDesc.text, labelDesc.fontSize, labelDesc.textColor);
                     break;
                 case UIElementType.Button:
                     ButtonDesc buttonDesc = (ButtonDesc)desc;
-                    layout.Button(id, buttonDesc.text, buttonDesc.width ?? maxWidthCoverage, buttonDesc.height ?? 25, buttonDesc.onClick, id);
+                    layout.Button(id, buttonDesc.text, buttonDesc.width ?? maxWidthCoverage, buttonDesc.height ?? 25, buttonDesc.onClick, id, buttonDesc.fontSize, buttonDesc.hasBorder, buttonDesc.fillColor, buttonDesc.borderColor, buttonDesc.textColor);
                     break;
                 case UIElementType.InputField:
                     InputFieldDesc ifDesc = (InputFieldDesc)desc;
-                    payload = ids[i][j].payload ?? ifDesc.text;
-                    layout.InputField(id, ifDesc.placeholderText, (string)payload, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, (ifld) =>
+                    string ifname = ids[i][j].payload is string pl ? pl : ifDesc.text;
+                    layout.InputField(id, ifDesc.placeholderText, ifname, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, (ifld) =>
                     {
                         ids[i][j] = (ids[i][j].id, ifld.InputFieldText);
                         ifDesc.onTextChanged?.Invoke(ifld);
@@ -62,8 +64,8 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Selectable:
                     SelectableDesc selDesc = (SelectableDesc)desc;
-                    payload = ids[i][j].payload ?? selDesc.startingSelected;
-                    layout.Selectable(id, (bool)payload, selDesc.text, selDesc.width ?? maxWidthCoverage, selDesc.height ?? 25, (sel) =>
+                    bool issel = ids[i][j].payload is bool sl ? sl : selDesc.startingSelected;
+                    layout.Selectable(id, issel, selDesc.text, selDesc.width ?? maxWidthCoverage, selDesc.height ?? 25, (sel) =>
                     {
                         ids[i][j] = (ids[i][j].id, sel.IsSelected);
                         selDesc.onSelect?.Invoke(sel);
@@ -71,8 +73,8 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Toggle:
                     ToggleDesc togDesc = (ToggleDesc)desc;
-                    payload = ids[i][j].payload ?? togDesc.startingState;
-                    layout.Toggle(id, (bool)payload, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
+                    bool togval = ids[i][j].payload is bool tg ? tg : togDesc.startingState;
+                    layout.Toggle(id, togval, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
                     {
                         ids[i][j] = (ids[i][j].id, tog.Value);
                         togDesc.onToggle?.Invoke(tog);
@@ -80,12 +82,16 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Dropdown:
                     DropdownDesc ddDesc = (DropdownDesc)desc;
-                    payload = ids[i][j].payload ?? ddDesc.selectedIndex;
-                    layout.Dropdown(id, ddDesc.options, (int)payload, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, (dd) =>
+                    int ddid = ids[i][j].payload is int idx ? idx : ddDesc.selectedIndex;
+                    layout.Dropdown(id, ddDesc.options, ddid, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, (dd) =>
                     {
                         ids[i][j] = (ids[i][j].id, dd.SelectedIndex);
                         ddDesc.onSelectionChanged?.Invoke(dd);
                     }, id);
+                    break;
+                case UIElementType.BindableLabel:
+                    BindableLabelDesc bLabDesc = (BindableLabelDesc)desc;
+                    layout.BindableLabel(id, bLabDesc.label, bLabDesc.fontSize, bLabDesc.textColor);
                     break;
                 case UIElementType.BindableToggle:
                     BindableToggleDesc bTogDesc = (BindableToggleDesc)desc;
@@ -113,8 +119,8 @@ public class ChildLayout : UILayoutBase
                     break;
                 case UIElementType.Slider:
                     SliderDesc slDesc = (SliderDesc)desc;
-                    payload = ids[i][j].payload ?? slDesc.value;
-                    layout.Slider(id, Convert.ToSingle(payload), slDesc.minValue, slDesc.maxValue, slDesc.width ?? maxWidthCoverage, slDesc.height ?? 20, (sl) =>
+                    float sval = ids[i][j].payload is string sv ? Convert.ToSingle(sv) : slDesc.value;
+                    layout.Slider(id, sval, slDesc.minValue, slDesc.maxValue, slDesc.width ?? maxWidthCoverage, slDesc.height ?? 20, (sl) =>
                     {
                         ids[i][j] = (ids[i][j].id, sl.Value);
                         slDesc.onValueChanged?.Invoke(sl);

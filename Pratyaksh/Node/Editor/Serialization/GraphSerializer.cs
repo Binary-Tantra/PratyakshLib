@@ -118,6 +118,8 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
 
         if (elemDesc is TextDesc textDesc)
         {
+            saveData.Spacing = textDesc.fontSize;
+
             saveData.ColorR = textDesc.color.R;
             saveData.ColorG = textDesc.color.G;
             saveData.ColorB = textDesc.color.B;
@@ -128,6 +130,19 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
             saveData.Width = rectDesc.width;
             saveData.Height = rectDesc.height;
 
+            if (rectDesc is LabelDesc labelDesc)
+            {
+                saveData.Text = labelDesc.text;
+                saveData.Spacing = labelDesc.fontSize;
+
+                if (labelDesc.textColor.HasValue)
+                {
+                    saveData.ColorR = labelDesc.textColor.Value.R;
+                    saveData.ColorG = labelDesc.textColor.Value.G;
+                    saveData.ColorB = labelDesc.textColor.Value.B;
+                    saveData.ColorA = labelDesc.textColor.Value.A;
+                }
+            }
             if (rectDesc is InputFieldDesc inputDesc)
             {
                 saveData.PlaceholderText = inputDesc.placeholderText ?? string.Empty;
@@ -144,6 +159,18 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
             {
                 saveData.Options = dropDesc.options != null ? [.. dropDesc.options] : [];
                 saveData.SelectedIndex = dropDesc.selectedIndex;
+            }
+            else if (rectDesc is BindableLabelDesc bLabDesc)
+            {
+                saveData.Text = bLabDesc.label.Get();
+
+                if (bLabDesc.textColor.HasValue)
+                {
+                    saveData.ColorR = bLabDesc.textColor.Value.R;
+                    saveData.ColorG = bLabDesc.textColor.Value.G;
+                    saveData.ColorB = bLabDesc.textColor.Value.B;
+                    saveData.ColorA = bLabDesc.textColor.Value.A;
+                }
             }
             else if (rectDesc is BindableToggleDesc bTogDesc)
             {
@@ -215,10 +242,13 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
         switch (elemType)
         {
             case UIElementType.Text:
-                Color col = new Color(data.ColorR, data.ColorG, data.ColorB, data.ColorA);
-                elemDesc = new TextDesc(data.Text, col);
+                Color col = new(data.ColorR, data.ColorG, data.ColorB, data.ColorA);
+                elemDesc = new TextDesc(data.Text, data.Spacing, col);
                 break;
-
+            case UIElementType.Label:
+                col = new(data.ColorR, data.ColorG, data.ColorB, data.ColorA);
+                elemDesc = new LabelDesc(data.Text, data.Spacing, col);
+                break;
             case UIElementType.Button:
                 elemDesc = new ButtonDesc(data.Text, data.Width, data.Height, (btn) => { });
                 break;
@@ -241,6 +271,11 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
 
             case UIElementType.Slider:
                 elemDesc = new SliderDesc(data.Text, data.Value, data.MinValue, data.MaxValue, data.Width, data.Height, (sl) => { }, data.ShowValue, data.Format, data.Step);
+                break;
+
+            case UIElementType.BindableLabel:
+                col = new(data.ColorR, data.ColorG, data.ColorB, data.ColorA);
+                elemDesc = new BindableLabelDesc(new BindableString(data.Text), data.Spacing, col);
                 break;
 
             case UIElementType.BindableToggle:
@@ -284,7 +319,7 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
                 break;
 
             default:
-                elemDesc = new TextDesc(data.Text, Color.White);
+                elemDesc = new TextDesc(data.Text, 15, Color.White);
                 break;
         }
 

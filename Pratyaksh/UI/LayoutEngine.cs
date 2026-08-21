@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Pratyaksh.Core;
@@ -367,10 +368,11 @@ public class LayoutEngine
             Raylib_cs.Raylib.DrawTextEx(textFont, heading, new Vector2(posX + 5, posY), headingSize, 0.5f, fontColor);
     }
 
-    public void Text(string text, Raylib_cs.Color fontColor, bool updateLayout = true)
+    public void Text(string text, float fontSize = 15, Raylib_cs.Color? fontColor = null, Vector2? offset = null, bool updateLayout = true)
     {
-        DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor, new Vector2(0, 0));
-        if (updateLayout) DrawAny(text.Length * 2, 20);
+        DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor ?? Raylib_cs.Color.DarkGray, fontSize, offset ?? Vector2.Zero);
+        Vector2 textSize = MeasureText(text, fontSize);
+        if (updateLayout) DrawAny((int)textSize.X, (int)textSize.Y);
     }
 
     public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
@@ -530,6 +532,36 @@ public class LayoutEngine
         T drawnElem = drawAbsoluteCaller.Invoke(pos);
         if (updateLayout) DrawAny(drawnElem.Width, drawnElem.Height);
         return drawnElem;
+    }
+
+    public Label Label(Label label, bool updateLayout = true) => DrawElement(label, updateLayout);
+
+    public Label Label(int id, string label, int fontSize = 15, Raylib_cs.Color? textColor = null, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawElementAbsolute(id, () =>
+            {
+                return new Label((int)pos.X, (int)pos.Y, label, fontSize, textColor, defaultParent);
+            }, (stored) =>
+            {
+                stored.Text = label;
+                if (textColor.HasValue) stored.TextColor = (Raylib_cs.Color)textColor;
+            }, (int)pos.X, (int)pos.Y);
+        }, updateLayout);
+    }
+
+    public Label BindableLabel(int id, BindableValueBase<string> dataModel, int fontSize = 15, Raylib_cs.Color? textColor = null, bool updateLayout = true)
+    {
+        return DrawElement((pos) =>
+        {
+            return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
+            {
+                Label label = new((int)pos.X, (int)pos.Y, dataModel.Get(), fontSize, textColor, defaultParent);
+                RLLabelUI newUIBindable = new(label);
+                return (label, newUIBindable);
+            });
+        }, updateLayout);
     }
 
     public Button Button(Button button, bool updateLayout = true) => DrawElement(button, updateLayout);
@@ -892,7 +924,7 @@ public class LayoutEngine
         if (defaultParent != null)
             svc.RelativePosition -= defaultParent.Position;
 
-        Rectangle scissorRect = svc.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+        Core.Rectangle scissorRect = svc.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
 
         float scissorEndX = scissorRect.X + scissorRect.Width;
         float scissorEndY = scissorRect.Y + scissorRect.Height;
@@ -904,7 +936,7 @@ public class LayoutEngine
         if (defaultParent != null)
         {
             // TODO: Using interactable rect's width/height instead of visual's! For now it works.
-            Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+            Core.Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
             defaultParentEndX = defaultParent.Position.X + defaultParentIntrRect.Width;
             defaultParentEndY = defaultParent.Position.Y + defaultParentIntrRect.Height;
         }
@@ -961,7 +993,7 @@ public class LayoutEngine
         // Re-apply the parent's scissor rect to prevent leaking out of bounds
         if (defaultParent != null)
         {
-            Rectangle pRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+            Core.Rectangle pRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
             Raylib_cs.Raylib.BeginScissorMode((int)pRect.X, (int)pRect.Y, (int)pRect.Width, (int)pRect.Height);
         }
 

@@ -13,6 +13,7 @@ public class DemoPanel : UILayoutBase
     
     private int inputFieldId;
     private string fieldText;
+    private int nameFieldLabelId;
 
     private int passwordFieldId;
     private string passwordText;
@@ -46,6 +47,8 @@ public class DemoPanel : UILayoutBase
         
         inputFieldId = IdGen.GetNewID();
         fieldText = "";
+
+        nameFieldLabelId = IdGen.GetNewID();
 
         passwordFieldId = IdGen.GetNewID();
         passwordText = "SecretPass123";
@@ -184,7 +187,7 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
             
             // --- A simple text element ---
-            layout.Text("Welcome to the Extended UI Demo Panel!", Raylib_cs.Color.Gold);
+            layout.Text("Welcome to the Extended UI Demo Panel!", 15, Raylib_cs.Color.Gold);
             
             layout.AddSpace(5);
 
@@ -202,7 +205,7 @@ public class DemoPanel : UILayoutBase
             // --- Cycle Selector ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Theme Mode: ", Raylib_cs.Color.White);
+                layout.Text("Theme Mode: ", 15, Raylib_cs.Color.White);
                 layout.AddSpace(15);
                 layout.CycleSelector(cycleSelectorId, ["Dark Mode", "Light Mode", "High Contrast", "Cyberpunk"], cycleSelectedIdx, 160, 24, (cs) => {
                     cycleSelectedIdx = cs.SelectedIndex;
@@ -213,11 +216,15 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Form Inputs (Standard & Masked Password) ---
-            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            layout.BeginHorizontalEx(0, (int)Position.X + 10);
             {
-                layout.Text("User Name: ", Raylib_cs.Color.White);
-                layout.AddSpace(10);
-                layout.InputField(inputFieldId, "Type name...", fieldText, 140, 24, (inpf) => fieldText = inpf.InputFieldText);
+                layout.Text("User Name: ", 15, Raylib_cs.Color.White);
+                layout.AddSpace(60);
+                string nameField = layout.InputField(inputFieldId, "Type name...", fieldText, 140, 24, (inpf) => fieldText = inpf.InputFieldText).InputFieldText;
+
+                layout.AddSpace(5);
+
+                layout.Label(nameFieldLabelId, nameField, 15, Raylib_cs.Color.White);
             }
             layout.EndHorizontal(25);
 
@@ -225,7 +232,7 @@ public class DemoPanel : UILayoutBase
 
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Password:  ", Raylib_cs.Color.White);
+                layout.Text("Password:  ", 15, Raylib_cs.Color.White);
                 layout.AddSpace(10);
                 layout.InputField(passwordFieldId, "Password...", passwordText, 140, 24, (inpf) => passwordText = inpf.InputFieldText, isMasked: true);
             }
@@ -236,7 +243,7 @@ public class DemoPanel : UILayoutBase
             // --- Slider Demonstration ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Volume:    ", Raylib_cs.Color.White);
+                layout.Text("Volume:    ", 15, Raylib_cs.Color.White);
                 layout.AddSpace(10);
                 layout.Slider(sliderId, sliderValue, 0f, 100f, 140, 20, (sl) => sliderValue = sl.Value, format: "{0:0}%", step: 1f);
             }
@@ -247,7 +254,7 @@ public class DemoPanel : UILayoutBase
             // --- Text Truncation Demonstration ---
             layout.BeginHorizontalEx(50, (int)Position.X + 10);
             {
-                layout.Text("Long Title: ", Raylib_cs.Color.Gray);
+                layout.Text("Long Title: ", 15, Raylib_cs.Color.Gray);
                 layout.AddSpace(5);
                 layout.TextTruncated("This is a very long text string that will truncate nicely when exceeding width limit", 240, Raylib_cs.Color.LightGray);
             }
@@ -263,7 +270,7 @@ public class DemoPanel : UILayoutBase
             int height = 0;
             layout.BeginHorizontalEx(10, (int)Position.X + 10);
             {
-                layout.Text("Resolution: ", Raylib_cs.Color.White);
+                layout.Text("Resolution: ", 15, Raylib_cs.Color.White);
                 layout.AddSpace(50);
                 height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 24, (dd) =>
                 {

@@ -25,8 +25,10 @@ public class StatusBadge : UIBase
 
     public StatusBadge(int posX, int posY, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, int fontSize = 13, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 0, 0, parent, parentBasis)
     {
-        int w = LayoutEngine.MeasureTextW(text, fontSize) + 24;
-        int h = fontSize + 8;
+        Vector2 textSize = LayoutEngine.MeasureText(text, fontSize);
+
+        int w = (int)textSize.X + 24;
+        int h = (int)textSize.Y;
 
         Size = new Vector2(w, h);
 

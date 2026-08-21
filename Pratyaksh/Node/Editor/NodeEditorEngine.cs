@@ -108,7 +108,7 @@ public class NodeEditorEngine : BaseRaylibEngine
             if (v != null)
             {
                 NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name], 
-                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
+                    [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
                 NodeRegistry.RegisterNode(t);
             }
         }
@@ -269,7 +269,7 @@ public class NodeEditorEngine : BaseRaylibEngine
             
             NodeRegistry.UnregisterNodeByPayload(varId);
             NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name],
-                [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
+                [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
             
             NodeRegistry.RegisterNode(t);
 
@@ -277,7 +277,7 @@ public class NodeEditorEngine : BaseRaylibEngine
             {
                 for (int i = 0; i<nodeVisList.Count; i++)
                 {
-                    nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
+                    nodeVisList[i].ChangeUIElement(0, new TextDesc($"{newName} ({v.VarType.Name}):", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
                     nodeVisList[i].UpdateTitle($"Get {v.VarName}");
                     
                     Node? n = graph.GetNode(nodeVisList[i].NodeId);
@@ -299,7 +299,7 @@ public class NodeEditorEngine : BaseRaylibEngine
 
         NodeRegistry.UnregisterNodeByPayload(varId);
         NodeTemplate t = new($"Get {v.VarName}", "Variables", [], [v.VarType.Name],
-            [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
+            [(UIElementType.Text, new TextDesc($"{v.VarName} ({v.VarType.Name}):", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)))], varId);
         NodeRegistry.RegisterNode(t);
 
         if (varToNodeUIsDict.TryGetValue(varId, out List<NodeVisual>? nodeVisList))
@@ -307,7 +307,7 @@ public class NodeEditorEngine : BaseRaylibEngine
             for (int i = 0; i < nodeVisList.Count; i++)
             {
                 NodeVisual nui = nodeVisList[i];
-                nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
+                nui.ChangeUIElement(0, new TextDesc($"{v.VarName} ({v.VarType.Name}):", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f)));
 
                 Node? n = graph.GetNode(nui.NodeId);
                 if (n != null)
@@ -468,7 +468,7 @@ public class NodeEditorEngine : BaseRaylibEngine
         NodeRegistry = new NodeRegistry();
 
         NodeRegistry.RegisterNode(new NodeTemplate("Empty Node", "Basic", [], [], [
-            (UIElementType.Text, new TextDesc("Test Empty!", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
+            (UIElementType.Text, new TextDesc("Test Empty!", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
             (UIElementType.InputField, new InputFieldDesc("Enter!", "", 150, 25)),
             (UIElementType.Button, new ButtonDesc("PRESS!", 150, 25, (btn) => { Console.WriteLine("CLICKED!"); })),
             (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
@@ -477,19 +477,19 @@ public class NodeEditorEngine : BaseRaylibEngine
         NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
             ["Execution", "String", "Int", "Number"], 
             ["Execution", "Int", "String"], [
-            (UIElementType.Text, new TextDesc("Enter Text:", Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
+            (UIElementType.Text, new TextDesc("Enter Text:", 15, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.65f))),
             (UIElementType.InputField, new InputFieldDesc("", "", 150, 25)),
             (UIElementType.Selectable, new SelectableDesc("Red", false, 150, 25, (sel) => { })),
             (UIElementType.Selectable, new SelectableDesc("Blue", false, 150, 25, (sel) => { })),
             (UIElementType.Group, new HorizontalGroupDesc("", 50,
-                [(UIElementType.Text, new TextDesc("Enter: ", Raylib_cs.Color.Red)),
+                [(UIElementType.Text, new TextDesc("Enter: ", 15, Raylib_cs.Color.Red)),
                 (UIElementType.InputField, new InputFieldDesc("edit...", "", null, null))], 150, 25)),
             (UIElementType.Button, new ButtonDesc("TTEESSTT", 150, 25, (b) => Console.WriteLine("CLICKED! " + b)))
         ]));
 
         NodeRegistry.RegisterNode(new NodeTemplate("Math Add", "Math",
             ["Float", "Float"], ["Float"], [
-            (UIElementType.Text, new TextDesc("A + B", Raylib_cs.Color.White))
+            (UIElementType.Text, new TextDesc("A + B", 15, Raylib_cs.Color.White))
         ]));
 
         canvas = new Canvas((int)ScreenWidth, (int)ScreenHeight, OnCanvasContextClick);
