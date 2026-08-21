@@ -983,8 +983,8 @@ public class LayoutEngine
 
         svc.SetContentSize(new Vector2(Math.Max(svc.Size.X, contentWidth), Math.Max(svc.Size.Y, contentHeight)));
 
-        EndVertical(contentWidth);
-        EndHorizontal(contentHeight);
+        EndVertical(svc.Width);
+        EndHorizontal(svc.Height);
 
         Raylib_cs.Raylib.EndScissorMode();
 
