@@ -27,24 +27,24 @@ public class InspectorPanel : UILayoutBase
         DataType varType = v.VarType;
         List<(UIElementType, UIElementDescription)> list =
             [
-                (UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Var Name", v.VarNameBindable))
+                (UIElementType.InputField, new InputFieldDesc("Var Name", v.VarNameBindable))
             ];
 
         if (varType.Name == "Bool" && v.BoolValueBindable != null)
         {
-            list.Add((UIElementType.BindableToggle, new BindableToggleDesc("Value", v.BoolValueBindable)));
+            list.Add((UIElementType.Toggle, new ToggleDesc("Value", v.BoolValueBindable)));
         }
         else if (varType.Name == "Int" && v.IntValueBindable != null)
         {
-            list.Add((UIElementType.BindableInputField_Int, new BindableInputFieldIntDesc("0", v.IntValueBindable)));
+            list.Add((UIElementType.InputField, new InputFieldDesc("0", v.IntValueBindable)));
         }
         else if (varType.Name == "Float" && v.FloatValueBindable != null)
         {
-            list.Add((UIElementType.BindableInputField_Float, new BindableInputFieldFloatDesc("0.0", v.FloatValueBindable)));
+            list.Add((UIElementType.InputField, new InputFieldDesc("0.0", v.FloatValueBindable)));
         }
         else if (varType.Name == "String" && v.StringValueBindable != null)
         {
-            list.Add((UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Text", v.StringValueBindable)));
+            list.Add((UIElementType.InputField, new InputFieldDesc("Text", v.StringValueBindable)));
         }
 
         return list;
@@ -102,7 +102,7 @@ public class InspectorPanel : UILayoutBase
                     // Render Value generic bindables from descriptors
                     foreach (var item in descriptors)
                     {
-                        if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc strDesc && strDesc.dataModel == v.VarNameBindable)
+                        if (item.desc is InputFieldDesc ifDesc && ifDesc.StringDataModel == v.VarNameBindable)
                         {
                             // Already drew VarName
                             continue;
@@ -113,21 +113,17 @@ public class InspectorPanel : UILayoutBase
                             layout.Text("Value:", Color.White);
                             layout.AddSpace(40);
 
-                            if (item.type == UIElementType.BindableToggle && item.desc is BindableToggleDesc togDesc)
+                            if (item.desc is ToggleDesc togDesc)
                             {
-                                layout.BindableToggle(v.Id + 4000000, togDesc.dataModel, 50, 20);
+                                togDesc.Width = 50;
+                                togDesc.Height = 20;
+                                layout.Toggle(v.Id + 4000000, togDesc);
                             }
-                            else if (item.type == UIElementType.BindableInputField_Int && item.desc is BindableInputFieldIntDesc intDesc)
+                            else if (item.desc is InputFieldDesc inputDesc)
                             {
-                                layout.BindableInputFieldInt(v.Id + 5000000, "0", intDesc.dataModel, Width - 60, 25);
-                            }
-                            else if (item.type == UIElementType.BindableInputField_Float && item.desc is BindableInputFieldFloatDesc fltDesc)
-                            {
-                                layout.BindableInputFieldFloat(v.Id + 6000000, "0.0", fltDesc.dataModel, Width - 60, 25);
-                            }
-                            else if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc valStrDesc)
-                            {
-                                layout.BindableInputFieldString(v.Id + 7000000, "Text", valStrDesc.dataModel, Width - 60, 25);
+                                inputDesc.Width = Width - 60;
+                                inputDesc.Height = 25;
+                                layout.InputField(v.Id + 5000000, inputDesc);
                             }
                         }
                         layout.EndHorizontal(25);

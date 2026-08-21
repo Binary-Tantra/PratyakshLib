@@ -113,90 +113,54 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
         var saveData = new UIElementSaveData
         {
             ElementType = (int)elemType,
-            Text = elemDesc.text ?? string.Empty
+            Text = elemDesc.Text ?? string.Empty
         };
 
         if (elemDesc is TextDesc textDesc)
         {
-            saveData.ColorR = textDesc.color.R;
-            saveData.ColorG = textDesc.color.G;
-            saveData.ColorB = textDesc.color.B;
-            saveData.ColorA = textDesc.color.A;
+            saveData.ColorR = textDesc.Color.R;
+            saveData.ColorG = textDesc.Color.G;
+            saveData.ColorB = textDesc.Color.B;
+            saveData.ColorA = textDesc.Color.A;
         }
         else if (elemDesc is RectUIEDescription rectDesc)
         {
-            saveData.Width = rectDesc.width;
-            saveData.Height = rectDesc.height;
+            saveData.Width = rectDesc.Width;
+            saveData.Height = rectDesc.Height;
 
             if (rectDesc is InputFieldDesc inputDesc)
             {
-                saveData.PlaceholderText = inputDesc.placeholderText ?? string.Empty;
+                saveData.PlaceholderText = inputDesc.PlaceholderText ?? string.Empty;
+                saveData.Text = inputDesc.Text ?? string.Empty;
             }
             else if (rectDesc is SelectableDesc selectableDesc)
             {
-                saveData.StartingState = selectableDesc.startingSelected;
+                saveData.StartingState = selectableDesc.IsSelected;
             }
             else if (rectDesc is ToggleDesc toggleDesc)
             {
-                saveData.StartingState = toggleDesc.startingState;
+                saveData.StartingState = toggleDesc.Value;
             }
             else if (rectDesc is DropdownDesc dropDesc)
             {
-                saveData.Options = dropDesc.options != null ? [.. dropDesc.options] : [];
-                saveData.SelectedIndex = dropDesc.selectedIndex;
-            }
-            else if (rectDesc is BindableToggleDesc bTogDesc)
-            {
-                saveData.StartingState = bTogDesc.dataModel.Get();
-            }
-            else if (rectDesc is BindableInputFieldStringDesc bStrDesc)
-            {
-                saveData.PlaceholderText = bStrDesc.placeholderText ?? string.Empty;
-                saveData.Text = bStrDesc.dataModel.Get() ?? string.Empty;
-            }
-            else if (rectDesc is BindableInputFieldIntDesc bIntDesc)
-            {
-                saveData.PlaceholderText = bIntDesc.placeholderText ?? string.Empty;
-                saveData.Text = bIntDesc.dataModel.Get().ToString();
-            }
-            else if (rectDesc is BindableInputFieldFloatDesc bFltDesc)
-            {
-                saveData.PlaceholderText = bFltDesc.placeholderText ?? string.Empty;
-                saveData.Text = bFltDesc.dataModel.Get().ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-            else if (rectDesc is BindableSelectableDesc bSelDesc)
-            {
-                saveData.StartingState = bSelDesc.dataModel.Get();
-            }
-            else if (rectDesc is BindableDropdownDesc bDdDesc)
-            {
-                saveData.Options = bDdDesc.options != null ? [.. bDdDesc.options] : [];
-                saveData.SelectedIndex = bDdDesc.dataModel.Get();
+                saveData.Options = dropDesc.Options != null ? [.. dropDesc.Options] : [];
+                saveData.SelectedIndex = dropDesc.SelectedIndex;
             }
             else if (rectDesc is SliderDesc sliderDesc)
             {
-                saveData.Value = sliderDesc.value;
-                saveData.MinValue = sliderDesc.minValue;
-                saveData.MaxValue = sliderDesc.maxValue;
-                saveData.Step = sliderDesc.step;
-                saveData.ShowValue = sliderDesc.showValue;
-                saveData.Format = sliderDesc.format;
-            }
-            else if (rectDesc is BindableSliderDesc bSliderDesc)
-            {
-                saveData.Value = bSliderDesc.dataModel.Get();
-                saveData.MinValue = bSliderDesc.minValue;
-                saveData.MaxValue = bSliderDesc.maxValue;
-                saveData.Step = bSliderDesc.step;
-                saveData.ShowValue = bSliderDesc.showValue;
-                saveData.Format = bSliderDesc.format;
+                saveData.Value = sliderDesc.Value;
+                saveData.MinValue = sliderDesc.MinValue;
+                saveData.MaxValue = sliderDesc.MaxValue;
+                saveData.Step = sliderDesc.Step;
+                saveData.ShowValue = sliderDesc.ShowValue;
+                saveData.Format = sliderDesc.Format;
             }
             else if (rectDesc is HorizontalGroupDesc groupDesc)
             {
-                saveData.Spacing = groupDesc.spacing;
-                if (groupDesc.uiElements != null)
+                saveData.Spacing = groupDesc.Spacing;
+                if (groupDesc.UIElements != null)
                 {
-                    foreach (var child in groupDesc.uiElements)
+                    foreach (var child in groupDesc.UIElements)
                     {
                         saveData.Children.Add(SerializeUIElement(child.elemType, child.elemDesc));
                     }
@@ -244,31 +208,31 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
                 break;
 
             case UIElementType.BindableToggle:
-                elemDesc = new BindableToggleDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
+                elemDesc = new ToggleDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableInputField_String:
-                elemDesc = new BindableInputFieldStringDesc(data.PlaceholderText, new BindableString(data.Text), data.Width, data.Height);
+                elemDesc = new InputFieldDesc(data.PlaceholderText, new BindableString(data.Text), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableInputField_Int:
-                elemDesc = new BindableInputFieldIntDesc(data.PlaceholderText, new BindableInt(int.TryParse(data.Text, out int iVal) ? iVal : 0), data.Width, data.Height);
+                elemDesc = new InputFieldDesc(data.PlaceholderText, new BindableInt(int.TryParse(data.Text, out int iVal) ? iVal : 0), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableInputField_Float:
-                elemDesc = new BindableInputFieldFloatDesc(data.PlaceholderText, new BindableFloat(float.TryParse(data.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fVal) ? fVal : 0f), data.Width, data.Height);
+                elemDesc = new InputFieldDesc(data.PlaceholderText, new BindableFloat(float.TryParse(data.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float fVal) ? fVal : 0f), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableSelectable:
-                elemDesc = new BindableSelectableDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
+                elemDesc = new SelectableDesc(data.Text, new BindableBool(data.StartingState), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableDropdown:
-                elemDesc = new BindableDropdownDesc([.. data.Options], new BindableInt(data.SelectedIndex), data.Width, data.Height);
+                elemDesc = new DropdownDesc([.. data.Options], new BindableInt(data.SelectedIndex), data.Width, data.Height);
                 break;
 
             case UIElementType.BindableSlider:
-                elemDesc = new BindableSliderDesc(data.Text, new BindableFloat(data.Value), data.MinValue, data.MaxValue, data.Width, data.Height, data.ShowValue, data.Format, data.Step);
+                elemDesc = new SliderDesc(data.Text, new BindableFloat(data.Value), data.MinValue, data.MaxValue, data.Width, data.Height, data.ShowValue, data.Format, data.Step);
                 break;
 
             case UIElementType.Group:

@@ -112,13 +112,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         {
             if (bodyUIElements[i].elemDesc is RectUIEDescription ruid)
             {
-                if (ruid.width == null && ruid is HorizontalGroupDesc gDesc)
+                if (ruid.Width == null && ruid is HorizontalGroupDesc gDesc)
                 {
-                    uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, (150 * gDesc.uiElements.Count) + (gDesc.uiElements.Count - 1) * gDesc.spacing);
+                    uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, (150 * gDesc.UIElements.Count) + (gDesc.UIElements.Count - 1) * gDesc.Spacing);
                 }
-                else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.width ?? 150);
+                else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, ruid.Width ?? 150);
             }
-            else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib_cs.Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
+            else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib_cs.Raylib.MeasureText(bodyUIElements[i].elemDesc.Text, 15));
         }
 
         int maxPortTSize = -1;

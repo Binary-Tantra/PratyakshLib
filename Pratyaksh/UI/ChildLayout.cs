@@ -26,7 +26,7 @@ public class ChildLayout : UILayoutBase
                 HorizontalGroupDesc gd = (HorizontalGroupDesc)uiElements[i].desc;
                 List<(int, object?)> gdIds = [];
 
-                for (int j = 0; j < gd.uiElements.Count; j++)
+                for (int j = 0; j < gd.UIElements.Count; j++)
                     gdIds.Add((IdGen.GetNewID(), null));
 
                 ids.Add(gdIds);
@@ -45,84 +45,98 @@ public class ChildLayout : UILayoutBase
             {
                 case UIElementType.Text:
                     TextDesc textDesc = (TextDesc)desc;
-                    layout.Text(textDesc.text, textDesc.color);
+                    layout.Text(textDesc.Text, textDesc.Color);
                     break;
                 case UIElementType.Button:
                     ButtonDesc buttonDesc = (ButtonDesc)desc;
-                    layout.Button(id, buttonDesc.text, buttonDesc.width ?? maxWidthCoverage, buttonDesc.height ?? 25, buttonDesc.onClick, id);
+                    layout.Button(id, buttonDesc.Text, buttonDesc.Width ?? maxWidthCoverage, buttonDesc.Height ?? 25, buttonDesc.OnClick, id);
                     break;
                 case UIElementType.InputField:
+                case UIElementType.BindableInputField_String:
+                case UIElementType.BindableInputField_Int:
+                case UIElementType.BindableInputField_Float:
                     InputFieldDesc ifDesc = (InputFieldDesc)desc;
-                    payload = ids[i][j].payload ?? ifDesc.text;
-                    layout.InputField(id, ifDesc.placeholderText, (string)payload, ifDesc.width ?? maxWidthCoverage, ifDesc.height ?? 25, (ifld) =>
+                    if (ifDesc.IsBindable)
                     {
-                        ids[i][j] = (ids[i][j].id, ifld.InputFieldText);
-                        ifDesc.onTextChanged?.Invoke(ifld);
-                    }, ifDesc.onFocusEnd);
+                        layout.InputField(id, ifDesc);
+                    }
+                    else
+                    {
+                        payload = ids[i][j].payload ?? ifDesc.Text;
+                        layout.InputField(id, ifDesc.PlaceholderText, (string)payload, ifDesc.Width ?? maxWidthCoverage, ifDesc.Height ?? 25, (ifld) =>
+                        {
+                            ids[i][j] = (ids[i][j].id, ifld.InputFieldText);
+                            ifDesc.OnTextChanged?.Invoke(ifld);
+                        }, ifDesc.OnFocusEnd);
+                    }
                     break;
                 case UIElementType.Selectable:
+                case UIElementType.BindableSelectable:
                     SelectableDesc selDesc = (SelectableDesc)desc;
-                    payload = ids[i][j].payload ?? selDesc.startingSelected;
-                    layout.Selectable(id, (bool)payload, selDesc.text, selDesc.width ?? maxWidthCoverage, selDesc.height ?? 25, (sel) =>
+                    if (selDesc.IsBindable)
                     {
-                        ids[i][j] = (ids[i][j].id, sel.IsSelected);
-                        selDesc.onSelect?.Invoke(sel);
-                    }, id);
+                        layout.Selectable(id, selDesc);
+                    }
+                    else
+                    {
+                        payload = ids[i][j].payload ?? selDesc.StartingSelected;
+                        layout.Selectable(id, (bool)payload, selDesc.Text, selDesc.Width ?? maxWidthCoverage, selDesc.Height ?? 25, (sel) =>
+                        {
+                            ids[i][j] = (ids[i][j].id, sel.IsSelected);
+                            selDesc.OnSelect?.Invoke(sel);
+                        }, id);
+                    }
                     break;
                 case UIElementType.Toggle:
+                case UIElementType.BindableToggle:
                     ToggleDesc togDesc = (ToggleDesc)desc;
-                    payload = ids[i][j].payload ?? togDesc.startingState;
-                    layout.Toggle(id, (bool)payload, togDesc.width ?? maxWidthCoverage, togDesc.height ?? 20, (tog) =>
+                    if (togDesc.IsBindable)
                     {
-                        ids[i][j] = (ids[i][j].id, tog.Value);
-                        togDesc.onToggle?.Invoke(tog);
-                    }, id);
+                        layout.Toggle(id, togDesc);
+                    }
+                    else
+                    {
+                        payload = ids[i][j].payload ?? togDesc.StartingState;
+                        layout.Toggle(id, (bool)payload, togDesc.Width ?? maxWidthCoverage, togDesc.Height ?? 20, (tog) =>
+                        {
+                            ids[i][j] = (ids[i][j].id, tog.Value);
+                            togDesc.OnToggle?.Invoke(tog);
+                        }, id);
+                    }
                     break;
                 case UIElementType.Dropdown:
-                    DropdownDesc ddDesc = (DropdownDesc)desc;
-                    payload = ids[i][j].payload ?? ddDesc.selectedIndex;
-                    layout.Dropdown(id, ddDesc.options, (int)payload, ddDesc.width ?? maxWidthCoverage, ddDesc.height ?? 25, (dd) =>
-                    {
-                        ids[i][j] = (ids[i][j].id, dd.SelectedIndex);
-                        ddDesc.onSelectionChanged?.Invoke(dd);
-                    }, id);
-                    break;
-                case UIElementType.BindableToggle:
-                    BindableToggleDesc bTogDesc = (BindableToggleDesc)desc;
-                    layout.BindableToggle(id, bTogDesc.dataModel, bTogDesc.width ?? maxWidthCoverage, bTogDesc.height ?? 20);
-                    break;
-                case UIElementType.BindableInputField_String:
-                    BindableInputFieldStringDesc bIfStrDesc = (BindableInputFieldStringDesc)desc;
-                    layout.BindableInputFieldString(id, bIfStrDesc.placeholderText, bIfStrDesc.dataModel, bIfStrDesc.width ?? maxWidthCoverage, bIfStrDesc.height ?? 25);
-                    break;
-                case UIElementType.BindableInputField_Int:
-                    BindableInputFieldIntDesc bIfIntDesc = (BindableInputFieldIntDesc)desc;
-                    layout.BindableInputFieldInt(id, bIfIntDesc.placeholderText, bIfIntDesc.dataModel, bIfIntDesc.width ?? maxWidthCoverage, bIfIntDesc.height ?? 25);
-                    break;
-                case UIElementType.BindableInputField_Float:
-                    BindableInputFieldFloatDesc bIfFltDesc = (BindableInputFieldFloatDesc)desc;
-                    layout.BindableInputFieldFloat(id, bIfFltDesc.placeholderText, bIfFltDesc.dataModel, bIfFltDesc.width ?? maxWidthCoverage, bIfFltDesc.height ?? 25);
-                    break;
-                case UIElementType.BindableSelectable:
-                    BindableSelectableDesc bSelDesc = (BindableSelectableDesc)desc;
-                    layout.BindableSelectable(id, bSelDesc.dataModel, bSelDesc.text, bSelDesc.width ?? maxWidthCoverage, bSelDesc.height ?? 25);
-                    break;
                 case UIElementType.BindableDropdown:
-                    BindableDropdownDesc bDdDesc = (BindableDropdownDesc)desc;
-                    layout.BindableDropdown(id, bDdDesc.options, bDdDesc.dataModel, bDdDesc.width ?? maxWidthCoverage, bDdDesc.height ?? 25);
+                    DropdownDesc ddDesc = (DropdownDesc)desc;
+                    if (ddDesc.IsBindable)
+                    {
+                        layout.Dropdown(id, ddDesc);
+                    }
+                    else
+                    {
+                        payload = ids[i][j].payload ?? ddDesc.SelectedIndex;
+                        layout.Dropdown(id, ddDesc.Options, (int)payload, ddDesc.Width ?? maxWidthCoverage, ddDesc.Height ?? 25, (dd) =>
+                        {
+                            ids[i][j] = (ids[i][j].id, dd.SelectedIndex);
+                            ddDesc.OnSelectionChanged?.Invoke(dd);
+                        }, id);
+                    }
                     break;
                 case UIElementType.Slider:
-                    SliderDesc slDesc = (SliderDesc)desc;
-                    payload = ids[i][j].payload ?? slDesc.value;
-                    layout.Slider(id, Convert.ToSingle(payload), slDesc.minValue, slDesc.maxValue, slDesc.width ?? maxWidthCoverage, slDesc.height ?? 20, (sl) =>
-                    {
-                        ids[i][j] = (ids[i][j].id, sl.Value);
-                        slDesc.onValueChanged?.Invoke(sl);
-                    }, id, slDesc.showValue, slDesc.format, slDesc.step);
-                    break;
                 case UIElementType.BindableSlider:
-                    BindableSliderDesc bSlDesc = (BindableSliderDesc)desc;
-                    layout.BindableSlider(id, bSlDesc.dataModel, bSlDesc.minValue, bSlDesc.maxValue, bSlDesc.width ?? maxWidthCoverage, bSlDesc.height ?? 20, bSlDesc.showValue, bSlDesc.format, bSlDesc.step);
+                    SliderDesc slDesc = (SliderDesc)desc;
+                    if (slDesc.IsBindable)
+                    {
+                        layout.Slider(id, slDesc);
+                    }
+                    else
+                    {
+                        payload = ids[i][j].payload ?? slDesc.Value;
+                        layout.Slider(id, Convert.ToSingle(payload), slDesc.MinValue, slDesc.MaxValue, slDesc.Width ?? maxWidthCoverage, slDesc.Height ?? 20, (sl) =>
+                        {
+                            ids[i][j] = (ids[i][j].id, sl.Value);
+                            slDesc.OnValueChanged?.Invoke(sl);
+                        }, id, slDesc.ShowValue, slDesc.Format, slDesc.Step);
+                    }
                     break;
             }
         }
@@ -132,16 +146,16 @@ public class ChildLayout : UILayoutBase
             if (uiElements[i].elemType == UIElementType.Group)
             {
                 HorizontalGroupDesc gDesc = (HorizontalGroupDesc)uiElements[i].elemDesc;
-                maxWidthCoverage = (int)((float)Width / gDesc.uiElements.Count);
+                maxWidthCoverage = (int)((float)Width / gDesc.UIElements.Count);
 
-                layout.BeginHorizontal(gDesc.spacing);
+                layout.BeginHorizontal(gDesc.Spacing);
                 {
-                    for (int j = 0; j < gDesc.uiElements.Count; j++)
+                    for (int j = 0; j < gDesc.UIElements.Count; j++)
                     {
-                        maxWidthCoverage = (int)((float)(Width - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
+                        maxWidthCoverage = (int)((float)(Width - layout.CurrentWidth()) / (gDesc.UIElements.Count - j));
 
                         (int id, object? payload) = ids[i][j];
-                        DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, i, j);
+                        DrawAccType(id, gDesc.UIElements[j].elemType, gDesc.UIElements[j].elemDesc, i, j);
                         ids[i][j] = (id, payload);
                     }
                 }
