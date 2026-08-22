@@ -101,6 +101,9 @@ public abstract class BaseRaylibEngine : Engine
 
     protected override void Setup()
     {
+        Raylib.SetConfigFlags(ConfigFlags.HighDpiWindow);
+        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
+
         Raylib.InitWindow((int)camera.GetWidth(), (int)camera.GetHeight(), windowName);
         editorObjects.Add(camera);
 
