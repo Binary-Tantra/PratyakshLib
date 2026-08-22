@@ -36,13 +36,13 @@ public class Button : UIBase, IPointerInteractable
     {
         selfInteractable = true;
 
-        float sizeX = Raylib_cs.Raylib.MeasureText(buttonText, fontSize);
+        /*float sizeX = Raylib_cs.Raylib.MeasureText(buttonText, fontSize);
         if (width > sizeX) sizeX = width;
 
         float sizeY = fontSize + 5;
         if (height > sizeY) sizeY = height;
 
-        Size = new Vector2(sizeX, sizeY);
+        Size = new Vector2(sizeX, sizeY);*/
 
         this.onButtonPressed = onButtonPressed;
         this.payload = payload;
@@ -87,9 +87,9 @@ public class Button : UIBase, IPointerInteractable
             Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y, Size.X, Size.Y), 1f, currentBorder);
 
         // Text (centered)
-        int textW = Raylib_cs.Raylib.MeasureText(buttonText, fontSize);
-        int textX = (int)(Position.X + (Size.X - textW) / 2f);
-        int textY = (int)(Position.Y + (Size.Y - fontSize) / 2f);
+        Vector2 textSize = LayoutEngine.MeasureText(buttonText, fontSize);
+        int textX = (int)(Position.X + (Size.X - textSize.X) / 2);
+        int textY = (int)(Position.Y + (Size.Y - textSize.Y) / 2);
 
         LayoutEngine.DrawTextAbsolute(buttonText, textX, textY, labelColor, fontSize, Vector2.Zero);
     }

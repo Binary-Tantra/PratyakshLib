@@ -75,6 +75,8 @@ public class DemoPanel : UILayoutBase
         statusBadgeId2 = IdGen.GetNewID();
         alertBannerId = IdGen.GetNewID();
         sliderId = IdGen.GetNewID();
+
+        horizontalPadding = 10;
     }
 
     public override Dictionary<string, object?> GetSaveData()
@@ -159,27 +161,20 @@ public class DemoPanel : UILayoutBase
     public override void OnDrawLayout()
     {
         // 1. Draw the main Section background and header
-        layout.SectionEx("Layout Engine Showcase", Width, Height,
-            Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.7f),
-            Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f),
-            Raylib_cs.Color.White, 0.08f, false);
+        (verticalBgOffset, verticalDrawStopOffset) = layout.DrawParentBG(Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f), 0.08f, "Layout Engine Showcase", Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.7f), Raylib_cs.Color.White);
 
-        layout.BeginScrollView(scrollViewId, Width, 440, 40, 10);
+        layout.BeginScrollView(scrollViewId, ContentWidth, RemainingHeight - 10);
         {
-            layout.AddSpace(5);
-            
             // --- Alert Banner Demonstration ---
-            layout.AlertBanner(alertBannerId, "System Status: All services operational", AlertType.Success, Width - 30, 28);
+            layout.AlertBanner(alertBannerId, "System Status: All services operational", AlertType.Success, ContentWidth - 20, 28);
             
             layout.AddSpace(10);
 
             // --- Status Badges ---
-            layout.BeginHorizontalEx(10, (int)Position.X + 10);
+            layout.BeginHorizontal(35);
             {
                 layout.StatusBadge(statusBadgeId1, "Active", StatusType.Active);
-                layout.AddSpace(15);
                 layout.StatusBadge(statusBadgeId2, "Processing", StatusType.Processing);
-                layout.AddSpace(15);
                 layout.LinkButton(linkBtnId, "Open GitHub Repo", "https://github.com/Binary-Tantra/PratyakshLib");
             }
             layout.EndHorizontal(24);
@@ -187,12 +182,12 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
             
             // --- A simple text element ---
-            layout.Text("Welcome to the Extended UI Demo Panel!", 15, Raylib_cs.Color.Gold);
+            layout.Text("Welcome to the UI Demo Panel!", 15, Raylib_cs.Color.Gold);
             
-            layout.AddSpace(5);
+            layout.AddSpace(25);
 
             // Colored Custom Buttons Demonstration
-            layout.BeginHorizontalEx(10, (int)Position.X + 10);
+            layout.BeginHorizontal(10);
             {
                 layout.Button(customBtnId1, "Primary", 85, 25, OnDemoButtonPressed, 0, fillColor: new Raylib_cs.Color((byte)28, (byte)100, (byte)200, (byte)255), borderColor: Raylib_cs.Color.SkyBlue, textColor: Raylib_cs.Color.White);
                 layout.Button(customBtnId2, "Danger", 85, 25, OnDemoButtonPressed, 30, fillColor: new Raylib_cs.Color((byte)180, (byte)40, (byte)40, (byte)255), borderColor: Raylib_cs.Color.Red, textColor: Raylib_cs.Color.White);
@@ -201,12 +196,14 @@ public class DemoPanel : UILayoutBase
             layout.EndHorizontal(25);
             
             layout.AddSpace(10);
-
+            
             // --- Cycle Selector ---
-            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            layout.BeginHorizontal(0);
             {
                 layout.Text("Theme Mode: ", 15, Raylib_cs.Color.White);
-                layout.AddSpace(15);
+
+                layout.AddSpace(RemainingWidth - 290);
+
                 layout.CycleSelector(cycleSelectorId, ["Dark Mode", "Light Mode", "High Contrast", "Cyberpunk"], cycleSelectedIdx, 160, 24, (cs) => {
                     cycleSelectedIdx = cs.SelectedIndex;
                 });
@@ -216,10 +213,12 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Form Inputs (Standard & Masked Password) ---
-            layout.BeginHorizontalEx(0, (int)Position.X + 10);
+            layout.BeginHorizontal(0);
             {
                 layout.Text("User Name: ", 15, Raylib_cs.Color.White);
-                layout.AddSpace(60);
+
+                layout.AddSpace(RemainingWidth - 310);
+
                 string nameField = layout.InputField(inputFieldId, "Type name...", fieldText, 140, 24, (inpf) => fieldText = inpf.InputFieldText).InputFieldText;
 
                 layout.AddSpace(5);
@@ -230,10 +229,12 @@ public class DemoPanel : UILayoutBase
 
             layout.AddSpace(5);
 
-            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            layout.BeginHorizontal(0);
             {
                 layout.Text("Password:  ", 15, Raylib_cs.Color.White);
-                layout.AddSpace(10);
+
+                layout.AddSpace(RemainingWidth - 310);
+
                 layout.InputField(passwordFieldId, "Password...", passwordText, 140, 24, (inpf) => passwordText = inpf.InputFieldText, isMasked: true);
             }
             layout.EndHorizontal(25);
@@ -241,10 +242,9 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Slider Demonstration ---
-            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            layout.BeginHorizontal(60);
             {
                 layout.Text("Volume:    ", 15, Raylib_cs.Color.White);
-                layout.AddSpace(10);
                 layout.Slider(sliderId, sliderValue, 0f, 100f, 140, 20, (sl) => sliderValue = sl.Value, format: "{0:0}%", step: 1f);
             }
             layout.EndHorizontal(22);
@@ -252,10 +252,9 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Text Truncation Demonstration ---
-            layout.BeginHorizontalEx(50, (int)Position.X + 10);
+            layout.BeginHorizontal(55);
             {
-                layout.Text("Long Title: ", 15, Raylib_cs.Color.Gray);
-                layout.AddSpace(5);
+                layout.Text("Long Title: ", 15, Raylib_cs.Color.White);
                 layout.TextTruncated("This is a very long text string that will truncate nicely when exceeding width limit", 240, Raylib_cs.Color.LightGray);
             }
             layout.EndHorizontal(20);
@@ -268,10 +267,10 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             int height = 0;
-            layout.BeginHorizontalEx(10, (int)Position.X + 10);
+            layout.BeginHorizontal(60);
             {
                 layout.Text("Resolution: ", 15, Raylib_cs.Color.White);
-                layout.AddSpace(50);
+                
                 height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 24, (dd) =>
                 {
                     dropdownSelectedIdx = dd.SelectedIndex;
@@ -281,25 +280,31 @@ public class DemoPanel : UILayoutBase
 
             layout.AddSpace(15);
 
-            layout.BeginHorizontalEx(15, (int)Position.X + 10);
+            layout.BeginHorizontal(0);
             {
-                layout.BeginScrollView(scrollView2Id, 135, 110, 0, 5);
+                layout.BeginVertical(0);
                 {
-                    layout.Selectable(selectableIds[0].id, selectableIds[0].isSelected, "Red", 120, 20, OnDemoSelectablePressed, 0);
-                    layout.Selectable(selectableIds[1].id, selectableIds[1].isSelected, "Sky Blue", 120, 20, OnDemoSelectablePressed, 1);
-                    layout.Selectable(selectableIds[2].id, selectableIds[2].isSelected, "Orange", 120, 20, OnDemoSelectablePressed, 2);
-                    layout.Selectable(selectableIds[3].id, selectableIds[3].isSelected, "Green", 120, 20, OnDemoSelectablePressed, 3);
-                    layout.Selectable(selectableIds[4].id, selectableIds[4].isSelected, "Magenta", 120, 20, OnDemoSelectablePressed, 4);
-                    layout.Selectable(selectableIds[5].id, selectableIds[5].isSelected, "Yellow", 120, 20, OnDemoSelectablePressed, 5);
+                    layout.BeginScrollView(scrollView2Id, 135, 100, 5);
+                    {
+                        layout.DrawParentBG(Raylib_cs.Color.DarkGray);
+
+                        layout.Selectable(selectableIds[0].id, selectableIds[0].isSelected, "Red", 120, 20, OnDemoSelectablePressed, 0);
+                        layout.Selectable(selectableIds[1].id, selectableIds[1].isSelected, "Sky Blue", 120, 20, OnDemoSelectablePressed, 1);
+                        layout.Selectable(selectableIds[2].id, selectableIds[2].isSelected, "Orange", 120, 20, OnDemoSelectablePressed, 2);
+                        layout.Selectable(selectableIds[3].id, selectableIds[3].isSelected, "Green", 120, 20, OnDemoSelectablePressed, 3);
+                        layout.Selectable(selectableIds[4].id, selectableIds[4].isSelected, "Magenta", 120, 20, OnDemoSelectablePressed, 4);
+                        layout.Selectable(selectableIds[5].id, selectableIds[5].isSelected, "Yellow", 120, 20, OnDemoSelectablePressed, 5);
+                    }
+                    layout.EndScrollView();
                 }
-                layout.EndScrollView();
+                layout.EndVertical(135);
 
                 layout.AddSpace(20);
 
                 // Right Column: Panel displaying selected color
-                layout.Panel(175, 60, currentSelectedColor);
+                layout.Panel(RemainingWidth - 20, 100, currentSelectedColor);
             }
-            layout.EndHorizontal(110);
+            layout.EndHorizontal(100);
         }
         layout.EndScrollView();
     }

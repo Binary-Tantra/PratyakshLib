@@ -193,7 +193,7 @@ public class LayoutEngine
         layoutOps[idx].PosModifiedCount++;
     }
 
-    public int PosX()
+    public int PosXAbsolute()
     {
         if (lastHorizontalIdx == -1)
             return 0;
@@ -201,12 +201,22 @@ public class LayoutEngine
             return LYOGetPos(lastHorizontalIdx);
     }
 
-    public int PosY()
+    public int PosXRelative()
+    {
+        return PosXAbsolute() - (int)(defaultParent?.Position.X ?? 0);
+    }
+
+    public int PosYAbsolute()
     {
         if (lastVerticalIdx == -1)
             return 0;
         else
             return LYOGetPos(lastVerticalIdx);
+    }
+
+    public int PosYRelative()
+    {
+        return PosYAbsolute() - (int)(defaultParent?.Position.Y ?? 0);
     }
 
     public int CurrentWidth()
@@ -224,10 +234,10 @@ public class LayoutEngine
         if (idx == -1)
             return 0;
 
-        return PosX() - LYOGetPos(idx);
+        return PosXAbsolute() - LYOGetPos(idx);
     }
 
-    public int PosX_Dynamic()
+    private int PosXAbs_Dynamic()
     {
         if (lastHorizontalIdx == -1)
             return 0;
@@ -239,7 +249,7 @@ public class LayoutEngine
         }
     }
 
-    public int PosY_Dynamic()
+    private int PosYAbs_Dynamic()
     {
         if (lastVerticalIdx == -1)
             return 0;
@@ -307,7 +317,7 @@ public class LayoutEngine
         }
     }
 
-    public void DrawAny(int width, int height)
+    public void NotifyDraw(int width, int height)
     {
         if (lastHorizontalIdx == lastVerticalIdx)
             return;
@@ -370,9 +380,9 @@ public class LayoutEngine
 
     public void Text(string text, float fontSize = 15, Raylib_cs.Color? fontColor = null, Vector2? offset = null, bool updateLayout = true)
     {
-        DrawTextAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), fontColor ?? Raylib_cs.Color.DarkGray, fontSize, offset ?? Vector2.Zero);
+        DrawTextAbsolute(text, PosXAbs_Dynamic(), PosYAbs_Dynamic(), fontColor ?? Raylib_cs.Color.DarkGray, fontSize, offset ?? Vector2.Zero);
         Vector2 textSize = MeasureText(text, fontSize);
-        if (updateLayout) DrawAny((int)textSize.X, (int)textSize.Y);
+        if (updateLayout) NotifyDraw((int)textSize.X, (int)textSize.Y);
     }
 
     public void TextTruncated(string text, int maxWidth, Raylib_cs.Color fontColor, int fontSize = 15, bool updateLayout = true)
@@ -400,53 +410,86 @@ public class LayoutEngine
             }
         }
 
-        DrawTextAbsolute(truncatedStr, PosX_Dynamic(), PosY_Dynamic(), fontColor, fontSize, Vector2.Zero);
-        if (updateLayout) DrawAny(Math.Min(measuredW, maxWidth), fontSize + 4);
+        DrawTextAbsolute(truncatedStr, PosXAbs_Dynamic(), PosYAbs_Dynamic(), fontColor, fontSize, Vector2.Zero);
+        if (updateLayout) NotifyDraw(Math.Min(measuredW, maxWidth), fontSize + 4);
     }
 
     public void Panel(int width, int height, Raylib_cs.Color panelColor, bool updateLayout = true)
     {
-        DrawPanelAbsolute(PosX_Dynamic(), PosY_Dynamic(), width, height, panelColor);
-        if (updateLayout) DrawAny(width, height);
+        DrawPanelAbsolute(PosXAbs_Dynamic(), PosYAbs_Dynamic(), width, height, panelColor);
+        if (updateLayout) NotifyDraw(width, height);
     }
 
     public void TextPanelFixed(string text, int x, int y, int panelWidth, int panelHeight, Raylib_cs.Color panelColor, Raylib_cs.Color textColor, bool updateLayout = true)
     {
-        PosX_Dynamic();
-        PosY_Dynamic();
+        PosXAbs_Dynamic();
+        PosYAbs_Dynamic();
 
         DrawTextPanelAbsolute(text, x, y, panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
-        if (updateLayout) DrawAny(panelWidth, panelHeight);
+        if (updateLayout) NotifyDraw(panelWidth, panelHeight);
     }
 
     public void TextPanelPro(string text, int panelWidth, int panelHeight, Raylib_cs.Color panelColor, Raylib_cs.Color textColor, bool updateLayout = true)
     {
-        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
-        if (updateLayout) DrawAny(panelWidth, panelHeight);
+        DrawTextPanelAbsolute(text, PosXAbs_Dynamic(), PosYAbs_Dynamic(), panelWidth, panelHeight, 15, panelColor, textColor, new Vector2(5, 0));
+        if (updateLayout) NotifyDraw(panelWidth, panelHeight);
     }
 
     public void TextPanelEx(string text, int panelWidth, int panelHeight, Vector2 panelOffset, bool updateLayout = true)
     {
-        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray, panelOffset);
-        if (updateLayout) DrawAny(panelWidth, panelHeight);
+        DrawTextPanelAbsolute(text, PosXAbs_Dynamic(), PosYAbs_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray, panelOffset);
+        if (updateLayout) NotifyDraw(panelWidth, panelHeight);
     }
 
     public void TextPanel(string text, int panelWidth, int panelHeight, bool updateLayout = true)
     {
-        DrawTextPanelAbsolute(text, PosX_Dynamic(), PosY_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.LightGray, Raylib_cs.Color.DarkGray, new Vector2(5, 0));
-        if (updateLayout) DrawAny(panelWidth, panelHeight);
+        DrawTextPanelAbsolute(text, PosXAbs_Dynamic(), PosYAbs_Dynamic(), panelWidth, panelHeight, 15, Raylib_cs.Color.LightGray, Raylib_cs.Color.DarkGray, new Vector2(5, 0));
+        if (updateLayout) NotifyDraw(panelWidth, panelHeight);
     }
 
     public void SectionEx(string heading, int width, int height, Raylib_cs.Color headingBgColor, Raylib_cs.Color bodyBgColor, Raylib_cs.Color fontColor, float headerPerc, bool updateLayout = true)
     {
-        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, height, headerPerc, 20, headingBgColor, bodyBgColor, fontColor);
-        if (updateLayout) DrawAny(width, height);
+        DrawSectionAbsolute(heading, PosXAbs_Dynamic(), PosYAbs_Dynamic(), width, height, headerPerc, 20, headingBgColor, bodyBgColor, fontColor);
+        if (updateLayout) NotifyDraw(width, height);
     }
 
-    public void Section(string heading, int width, int heigth, float headerPerc, bool updateLayout = true)
+    public void Section(string heading, int width, int height, float headerPerc, bool updateLayout = true)
     {
-        DrawSectionAbsolute(heading, PosX_Dynamic(), PosY_Dynamic(), width, heigth, headerPerc, 20, Raylib_cs.Color.DarkGray, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray);
-        if (updateLayout) DrawAny(width, heigth);
+        DrawSectionAbsolute(heading, PosXAbs_Dynamic(), PosYAbs_Dynamic(), width, height, headerPerc, 20, Raylib_cs.Color.DarkGray, Raylib_cs.Color.Gray, Raylib_cs.Color.LightGray);
+        if (updateLayout) NotifyDraw(width, height);
+    }
+
+    public (int heightOffset, int drawStopOffset) DrawParentBG(Raylib_cs.Color bodyColor, float headerPerc = 0, string panelHeading = "", Raylib_cs.Color? headingColor = null, Raylib_cs.Color? textColor = null, bool updateLayoutAccHeader = true, int spaceAfterHeader = 10, int negativeDrawStopY = 0)
+    {
+        int x, y, width, height, heightOffset = 0;
+        if (defaultParent is UIBase uib)
+        {
+            x = (int)uib.Position.X;
+            y = (int)uib.Position.Y;
+            width = uib.Width;
+            height = uib.Height;
+
+            int modifiedW = width;
+            int modifiedH = height + negativeDrawStopY;
+            float modifiedHeaderPer;
+
+            if (modifiedH != height) modifiedHeaderPer = (headerPerc / height) * (modifiedH);
+            else modifiedHeaderPer = headerPerc;
+
+            DrawSectionAbsolute(panelHeading, x, y, modifiedW, modifiedH, modifiedHeaderPer, 20, headingColor ?? Raylib_cs.Color.DarkGray, bodyColor, textColor ?? Raylib_cs.Color.White);
+            
+            if (updateLayoutAccHeader)
+            {
+                if (modifiedHeaderPer > 0)
+                {
+                    heightOffset = (int)(modifiedH * modifiedHeaderPer) + spaceAfterHeader;
+                    NotifyDraw(width, heightOffset);
+                }
+            }
+        }
+        else Console.WriteLine("WARN: Cannot draw background of non UI parent. Skipping.");
+
+        return (heightOffset, -negativeDrawStopY); // This is total vertical 'excess space'.
     }
 
     public T DrawElementAbsolute<T>(int id, Func<(T, BinderBase?)> factory, Action<(T, BinderBase?)> storedReflect, int posX, int posY) where T : UIBase
@@ -512,25 +555,25 @@ public class LayoutEngine
 
     public T DrawElement<T>(T element, bool updateLayout = true) where T : UIBase
     {
-        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
         T drawnElem = DrawElementAbsolute(element.Id, () => element, (stored) => { }, (int)pos.X, (int)pos.Y);
-        if (updateLayout) DrawAny((int)drawnElem.Width, (int)drawnElem.Height);
+        if (updateLayout) NotifyDraw((int)drawnElem.Width, (int)drawnElem.Height);
         return drawnElem;
     }
 
     public T DrawElement<T>(Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
     {
-        Vector2 pos = new(PosX_Dynamic(), PosY_Dynamic());
+        Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         if (defaultParent != null) // then make relative.
             pos -= defaultParent.Position;
 
         T drawnElem = drawAbsoluteCaller.Invoke(pos);
-        if (updateLayout) DrawAny(drawnElem.Width, drawnElem.Height);
+        if (updateLayout) NotifyDraw(drawnElem.Width, drawnElem.Height);
         return drawnElem;
     }
 
@@ -872,40 +915,57 @@ public class LayoutEngine
         }, updateLayout);
     }
 
+    private string GetParentStackStr()
+    {
+        return string.Join("->", parentStack) + (parentStack.Count > 0 ? "->" : "") + defaultParent;
+    }
+
     public void BeginHorizontal(int spacingDist)
     {
-        AddNewLayoutOp(PosX_Dynamic(), spacingDist, LayoutOpType.Horizontal);
+        if (lastHorizontalIdx > lastVerticalIdx)
+            Console.WriteLine("WARN: Adding horizontal layout inside horizontal layout. No need. (and it's not supported): " + GetParentStackStr());
+
+        AddNewLayoutOp(PosXAbs_Dynamic(), spacingDist, LayoutOpType.Horizontal);
     }
 
     public void BeginHorizontalEx(int spacingDist, int posXOverride)
     {
+        if (lastHorizontalIdx > lastVerticalIdx)
+            Console.WriteLine("WARN: Adding horizontal layout inside horizontal layout. No need. (and it's not supported): " + GetParentStackStr());
+
         AddNewLayoutOp(posXOverride, spacingDist, LayoutOpType.Horizontal);
     }
 
     public void EndHorizontal(int endHeight)
     {
         RemoveLastLayoutOp();
-        DrawAny(0, endHeight);
+        NotifyDraw(0, endHeight);
     }
 
     public void BeginVertical(int spacingDist)
     {
-        AddNewLayoutOp(PosY_Dynamic(), spacingDist, LayoutOpType.Vertical);
+        if (lastVerticalIdx > lastHorizontalIdx)
+            Console.WriteLine("WARN: Adding vertical layout inside vertical layout. No need. (and it's not supported): " + GetParentStackStr());
+
+        AddNewLayoutOp(PosYAbs_Dynamic(), spacingDist, LayoutOpType.Vertical);
     }
 
     public void BeginVerticalEx(int spacingDist, int posYOverride)
     {
+        if (lastVerticalIdx > lastHorizontalIdx)
+            Console.WriteLine("WARN: Adding horizontal layout inside horizontal layout. No need. (and it's not supported): " + GetParentStackStr());
+
         AddNewLayoutOp(posYOverride, spacingDist, LayoutOpType.Vertical);
     }
 
     public void EndVertical(int endWidth)
     {
         RemoveLastLayoutOp();
-        DrawAny(endWidth, 0);
+        NotifyDraw(endWidth, 0);
     }
 
     // Add the spacing parameter to the method signature
-    public ScrollView BeginScrollView(int id, int viewWidth, int viewHeight, int startYOffset = 0, int spacing = 0)
+    public ScrollView BeginScrollView(int id, int viewWidth, int viewHeight, int verticalSpacing = 0, int startXOffset = 0, int startYOffset = 0)
     {
         bool found = layoutElements.ContainsKey(id);
         if (!found)
@@ -919,7 +979,7 @@ public class LayoutEngine
         ScrollView svc = layoutElements[id].Get<ScrollView>();
 
         svc.Size = new Vector2(viewWidth, viewHeight);
-        svc.RelativePosition = new Vector2(PosX_Dynamic(), PosY_Dynamic() + startYOffset);
+        svc.RelativePosition = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         if (defaultParent != null)
             svc.RelativePosition -= defaultParent.Position;
@@ -935,10 +995,11 @@ public class LayoutEngine
 
         if (defaultParent != null)
         {
-            // TODO: Using interactable rect's width/height instead of visual's! For now it works.
-            Core.Rectangle defaultParentIntrRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
-            defaultParentEndX = defaultParent.Position.X + defaultParentIntrRect.Width;
-            defaultParentEndY = defaultParent.Position.Y + defaultParentIntrRect.Height;
+            // Note: We are using interactable rect's width/height instead of visual width height. They are same for both UI and actors right now so this works.
+            // Also: This is using GetInteractableRect, which handles WS/SS shenanigans. If we change it, we would have to handle then!
+            Core.Rectangle parentRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+            defaultParentEndX = defaultParent.Position.X + parentRect.Width;
+            defaultParentEndY = defaultParent.Position.Y + parentRect.Height;
         }
         else defaultParentEndX = defaultParentEndY = float.PositiveInfinity;
 
@@ -962,11 +1023,14 @@ public class LayoutEngine
 
         // Pass the spacing to the internal vertical layout!
         BeginHorizontalEx(0, startX + (int)svc.ScrollOffset.X);
-        BeginVerticalEx(spacing, startY + (int)svc.ScrollOffset.Y);
-
+        AddSpace(startXOffset + 1);
+        BeginVerticalEx(verticalSpacing, startY + (int)svc.ScrollOffset.Y);
+        AddSpace(startYOffset);
+        
         parentStack.Push(defaultParent);
         defaultParent = svc;
         activeScrollViews.Push(id);
+
         return svc;
     }
 
@@ -978,8 +1042,8 @@ public class LayoutEngine
         int svId = activeScrollViews.Pop();
         ScrollView svc = layoutElements[svId].Get<ScrollView>();
 
-        int contentWidth = PosX() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
-        int contentHeight = PosY() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
+        int contentWidth = PosXAbsolute() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
+        int contentHeight = PosYAbsolute() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
 
         svc.SetContentSize(new Vector2(Math.Max(svc.Size.X, contentWidth), Math.Max(svc.Size.Y, contentHeight)));
 
@@ -998,17 +1062,11 @@ public class LayoutEngine
         }
 
         svc.Render();
-        DrawAny((int)svc.Size.X, (int)svc.Size.Y);
     }
 
     public void AddSpace(int space)
     {
-        DrawAny(space, space);
-    }
-
-    public void NotifyDraw(int width, int height)
-    {
-        DrawAny(width, height);
+        NotifyDraw(space, space);
     }
 
     public void DrawOverlays()

@@ -1,5 +1,5 @@
-using System.Numerics;
 using Pratyaksh.Core;
+using System.Numerics;
 
 namespace Pratyaksh.UI;
 
@@ -17,10 +17,17 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
 
     protected int mainVerticalSpacing = 0;
     protected int horizontalPadding = 0;
+    protected int verticalBgOffset = 0;
+    protected int verticalDrawStopOffset = 0;
 
     public string PanelSaveName => PanelName;
 
     protected abstract string PanelName { get; }
+
+    protected int ContentWidth { get => Width - horizontalPadding; }
+    protected int ContentHeight { get => Height - verticalBgOffset - verticalDrawStopOffset; }
+    protected int RemainingWidth { get => Math.Clamp(ContentWidth - layout.PosXRelative(), 0, ContentWidth); }
+    protected int RemainingHeight { get => Math.Clamp(ContentHeight - layout.PosYRelative() + verticalBgOffset, 0, Height); }
 
     public UILayoutBase(int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {

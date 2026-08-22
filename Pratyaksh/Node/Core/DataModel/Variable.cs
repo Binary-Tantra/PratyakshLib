@@ -27,6 +27,7 @@ public class Variable : DataObject
             if (varType.Name == "Bool" && BoolValueBindable != null) return BoolValueBindable.Get();
             if (varType.Name == "Int" && IntValueBindable != null) return IntValueBindable.Get();
             if (varType.Name == "Float" && FloatValueBindable != null) return FloatValueBindable.Get();
+            if (varType.Name == "Number" && FloatValueBindable != null) return FloatValueBindable.Get();
             if (varType.Name == "String" && StringValueBindable != null) return StringValueBindable.Get();
             return 0;
         }
@@ -58,6 +59,8 @@ public class Variable : DataObject
             IntValueBindable = new BindableInt(val is int i ? i : (val is long l ? (int)l : 0));
         else if (varType.Name == "Float")
             FloatValueBindable = new BindableFloat(val is float f ? f : (val is double d ? (float)d : 0f));
+        else if (varType.Name == "Number")
+            FloatValueBindable = new BindableFloat(val is float f ? f : (val is double d ? (float)d : 0f));
         else if (varType.Name == "String")
             StringValueBindable = new BindableString(val?.ToString() ?? "");
     }
@@ -69,6 +72,8 @@ public class Variable : DataObject
         else if (varType.Name == "Int" && IntValueBindable != null)
             IntValueBindable.Set(val is int i ? i : (val is long l ? (int)l : 0), true);
         else if (varType.Name == "Float" && FloatValueBindable != null)
+            FloatValueBindable.Set(val is float f ? f : (val is double d ? (float)d : 0f), true);
+        else if (varType.Name == "Number" && FloatValueBindable != null)
             FloatValueBindable.Set(val is float f ? f : (val is double d ? (float)d : 0f), true);
         else if (varType.Name == "String" && StringValueBindable != null)
             StringValueBindable.Set(val?.ToString() ?? "", true);

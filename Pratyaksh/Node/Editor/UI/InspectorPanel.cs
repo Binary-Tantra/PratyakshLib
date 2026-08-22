@@ -20,6 +20,8 @@ public class InspectorPanel : UILayoutBase
         this.onChangeVariableType = onChangeVariableType;
         this.onChangeVariableValue = onChangeVariableValue;
         this.requestSearchMenu = requestSearchMenu;
+
+        horizontalPadding = 10;
     }
 
     public List<(UIElementType type, UIElementDescription desc)> GetInspectorUIDescriptors(Variable v)
@@ -46,97 +48,86 @@ public class InspectorPanel : UILayoutBase
         {
             list.Add((UIElementType.BindableInputField_String, new BindableInputFieldStringDesc("Text", v.StringValueBindable)));
         }
+        else if (varType.Name == "Number" && v.FloatValueBindable != null)
+        {
+            list.Add((UIElementType.BindableInputField_Float, new BindableInputFieldFloatDesc("0.0", v.FloatValueBindable)));
+        }
 
         return list;
     }
 
     public override void OnDrawLayout()
     {
-        layout.SectionEx("Inspector", Width, Height - 50, Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.Gray, 0.65f), Raylib.Fade(Color.White, 0.7f), 0.1f, false);
+        (verticalBgOffset, verticalDrawStopOffset) = layout.DrawParentBG(Raylib.Fade(Color.Gray, 0.65f), 0.1f, "Inspector", Raylib.Fade(Color.DarkGray, 0.65f), Raylib.Fade(Color.White, 0.7f), negativeDrawStopY: -50);
 
         if (NodeEditorEngine.CurrentlySelectedObjectId != null && NodeEditorEngine.Graph.Variables.TryGetValue((int)NodeEditorEngine.CurrentlySelectedObjectId, out Variable? v))
         {
             var descriptors = GetInspectorUIDescriptors(v);
 
-            layout.AddSpace(10);
-
+            // Render Name (Bindable InputField)
             layout.BeginHorizontal(10);
             {
-                layout.AddSpace(5);
-                layout.BeginVerticalEx(5, (int)Position.Y + 35);
+                layout.Text("Name:", 15, Color.White);
+                layout.BindableInputFieldString(v.Id + 2000000, "Var Name", v.VarNameBindable, RemainingWidth, 25);
+            }
+            layout.EndHorizontal(25);
+
+            layout.AddSpace(5);
+
+            // Render Type (Button selector)
+            layout.BeginHorizontal(10);
+            {
+                layout.Text("Type:", 15, Color.White);
+
+                List<DataType> dataTypes = [.. NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
+                layout.Button(v.Id + 3000000, v.VarType.Name, RemainingWidth, 25, (btn) =>
                 {
-                    // Render Name (Bindable InputField)
-                    layout.BeginHorizontal(0);
+                    System.Numerics.Vector2 mp = Raylib.GetMousePosition();
+                    List<(string name, object payload)> typeItems = [.. dataTypes.Select(dt => (dt.Name, (object)dt))];
+
+                    requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
                     {
-                        layout.Text("Name:", 15, Color.White);
-                        layout.AddSpace(40);
-                        layout.BindableInputFieldString(v.Id + 2000000, "Var Name", v.VarNameBindable, Width - 60, 25);
+                        onChangeVariableType?.Invoke(v.Id, (DataType)payload);
+                    });
+
+                }, v.Id);
+            }
+            layout.EndHorizontal(25);
+
+            layout.AddSpace(5);
+
+            // Render Value generic bindables from descriptors
+            foreach (var item in descriptors)
+            {
+                if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc strDesc && strDesc.dataModel == v.VarNameBindable)
+                {
+                    // Already drew VarName
+                    continue;
+                }
+
+                layout.BeginHorizontal(10);
+                {
+                    layout.Text("Value:", 15, Color.White);
+
+                    if (item.type == UIElementType.BindableToggle && item.desc is BindableToggleDesc togDesc)
+                    {
+                        layout.BindableToggle(v.Id + 4000000, togDesc.dataModel, 50, 20);
                     }
-                    layout.EndHorizontal(25);
-
-                    layout.AddSpace(5);
-
-                    // Render Type (Button selector)
-                    layout.BeginHorizontal(0);
+                    else if (item.type == UIElementType.BindableInputField_Int && item.desc is BindableInputFieldIntDesc intDesc)
                     {
-                        layout.Text("Type:", 15, Color.White);
-                        layout.AddSpace(40);
-
-                        List<DataType> dataTypes = [.. NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
-                        layout.Button(v.Id + 3000000, v.VarType.Name, Width - 60, 25, (btn) =>
-                        {
-                            System.Numerics.Vector2 mp = Raylib.GetMousePosition();
-                            List<(string name, object payload)> typeItems = [.. dataTypes.Select(dt => (dt.Name, (object)dt))];
-
-                            requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
-                            {
-                                onChangeVariableType?.Invoke(v.Id, (DataType)payload);
-                            });
-
-                        }, v.Id);
+                        layout.BindableInputFieldInt(v.Id + 5000000, "0", intDesc.dataModel, RemainingWidth, 25);
                     }
-                    layout.EndHorizontal(25);
-
-                    layout.AddSpace(5);
-
-                    // Render Value generic bindables from descriptors
-                    foreach (var item in descriptors)
+                    else if (item.type == UIElementType.BindableInputField_Float && item.desc is BindableInputFieldFloatDesc fltDesc)
                     {
-                        if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc strDesc && strDesc.dataModel == v.VarNameBindable)
-                        {
-                            // Already drew VarName
-                            continue;
-                        }
-
-                        layout.BeginHorizontal(0);
-                        {
-                            layout.Text("Value:", 15, Color.White);
-                            layout.AddSpace(40);
-
-                            if (item.type == UIElementType.BindableToggle && item.desc is BindableToggleDesc togDesc)
-                            {
-                                layout.BindableToggle(v.Id + 4000000, togDesc.dataModel, 50, 20);
-                            }
-                            else if (item.type == UIElementType.BindableInputField_Int && item.desc is BindableInputFieldIntDesc intDesc)
-                            {
-                                layout.BindableInputFieldInt(v.Id + 5000000, "0", intDesc.dataModel, Width - 60, 25);
-                            }
-                            else if (item.type == UIElementType.BindableInputField_Float && item.desc is BindableInputFieldFloatDesc fltDesc)
-                            {
-                                layout.BindableInputFieldFloat(v.Id + 6000000, "0.0", fltDesc.dataModel, Width - 60, 25);
-                            }
-                            else if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc valStrDesc)
-                            {
-                                layout.BindableInputFieldString(v.Id + 7000000, "Text", valStrDesc.dataModel, Width - 60, 25);
-                            }
-                        }
-                        layout.EndHorizontal(25);
-                        layout.AddSpace(5);
+                        layout.BindableInputFieldFloat(v.Id + 6000000, "0.0", fltDesc.dataModel, RemainingWidth, 25);
+                    }
+                    else if (item.type == UIElementType.BindableInputField_String && item.desc is BindableInputFieldStringDesc valStrDesc)
+                    {
+                        layout.BindableInputFieldString(v.Id + 7000000, "Text", valStrDesc.dataModel, RemainingWidth, 25);
                     }
                 }
-                layout.EndVertical(Width - 20);
+                layout.EndHorizontal(25);
             }
-            layout.EndHorizontal(Height - 50);
         }
     }
 }

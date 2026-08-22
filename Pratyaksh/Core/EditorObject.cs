@@ -102,12 +102,12 @@ public abstract class EditorObject : Drawable, IInteractable
     {
         Rectangle finalRect = InteractionRect;
 
-        if (!InteractionUseWorldPos()) // Only check if self doesn't use world space. If self does use world space...dont check in that case, as that would be wrong.
+        if (!InteractionUseWorldPos()) // Condition: Only if we are screen space, execute if.
         {
-            bool worldSpace = CheckAncestorsForInteractWorldPos(); // Just check ancestors if they are in world space...don't need to check self in world space, as that happens in the HitTest function already.
+            bool worldSpace = CheckAncestorsForInteractWorldPos(); // Checking if we (a screen space obj) are attached to a world space object.
 
             if (worldSpace)
-                finalRect = transformer.WorldToScreen(finalRect);
+                finalRect = transformer.WorldToScreen(finalRect); // We are a SS object...but because we are attached to a WS obj, we are actually WS! Our pos and size need to be converted to SS.
         }
 
         return finalRect;

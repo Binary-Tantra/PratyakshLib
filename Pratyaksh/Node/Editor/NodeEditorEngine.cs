@@ -493,13 +493,29 @@ public class NodeEditorEngine : BaseRaylibEngine
         ]));
 
         canvas = new Canvas((int)ScreenWidth, (int)ScreenHeight, OnCanvasContextClick);
-        searchMenuIdx = canvas.AddPanel(null, false, true);
-        contextMenuIdx = canvas.AddPanel(null, false, true);
 
-        VariablePanel varPan = new(10, 20, OnSelectVar, OnAddVar, OnRemoveVar, OnRenameVariable, OnChangeVarType, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas);
+        VariablePanel varPan = new(10, 20, OnSelectVar, OnAddVar, OnRemoveVar, OnRenameVariable, OnChangeVarType,
+        (x, y, items, selectItemAction) =>
+        {
+            OpenSearchMenu(x, y, items, (payload) =>
+            {
+                selectItemAction.Invoke(payload);
+                canvas.CloseTransPanel(searchMenuIdx);
+            });
+        }, canvas);
+
         canvas.AddPanel(varPan, false, false);
 
-        InspectorPanel inPan = new(-10, 20, OnRenameVariable, OnChangeVarType, OnChangeVarValue, (x, y, items, payload) => OpenSearchMenu(x, y, items, payload), canvas, ParentBasis.TopRight);
+        InspectorPanel inPan = new(-10, 20, OnRenameVariable, OnChangeVarType, OnChangeVarValue,
+        (x, y, items, selectItemAction) =>
+        {
+            OpenSearchMenu(x, y, items, (payload) =>
+            {
+                selectItemAction.Invoke(payload);
+                canvas.CloseTransPanel(searchMenuIdx);
+            });
+        }, canvas, ParentBasis.TopRight);
+        
         canvas.AddPanel(inPan, false, false);
 
         DemoPanel demoPanel = new(60, 70, canvas);
@@ -509,6 +525,9 @@ public class NodeEditorEngine : BaseRaylibEngine
 
         actors.Add(new GraphBG(15000, 15000, new Vector2(-7500, -7500)));
         actors.Add(connectionUIManager);
+
+        searchMenuIdx = canvas.AddPanel(null, false, true);
+        contextMenuIdx = canvas.AddPanel(null, false, true);
     }
 
     protected override void OnUpdateScreen(int newW, int newH)

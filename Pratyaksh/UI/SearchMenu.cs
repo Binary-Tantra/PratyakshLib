@@ -27,8 +27,8 @@ public class SearchMenu : UILayoutBase
 
     public override void OnDrawLayout()
     {
-        layout.SectionEx("", Width, Height, new Raylib_cs.Color(), new Raylib_cs.Color((byte)45, (byte)45, (byte)45, (byte)255), new Raylib_cs.Color(), 0.0f, false);
-
+        (verticalBgOffset, verticalDrawStopOffset) = layout.DrawParentBG(new Raylib_cs.Color((byte)45, (byte)45, (byte)45, (byte)255));
+        
         // Search Input Field
         InputField inputField = layout.InputField(searchInputId, "Search...", searchQuery, Width, 30, (field) =>
         {
@@ -44,9 +44,10 @@ public class SearchMenu : UILayoutBase
         layout.BeginHorizontal(0);
         {
             layout.AddSpace(10);
+
             layout.BeginVertical(5);
             {
-                layout.BeginScrollView(scrollId, Width - 10, Height - 50, 10, 0);
+                layout.BeginScrollView(scrollId, Width - 10, Height - 50, 5, 0, 10);
                 {
                     string lowerQuery = searchQuery.ToLower();
 

@@ -55,6 +55,8 @@ public class VariablePanel : UILayoutBase
 
         Engine.Instance.InteractionManager.AnyPointerEvent += OnAnyPointerInput;
         Engine.Instance.OnHandleInputComplete += OnHandleInputComplete;
+
+        horizontalPadding = 10;
     }
 
     private void Deselect()
@@ -126,47 +128,41 @@ public class VariablePanel : UILayoutBase
         Dictionary<int, Variable> variables = NodeEditorEngine.Graph.Variables;
         List<int> varIds = [.. variables.Keys];
 
-        layout.SectionEx("Variables", Width, Height - 50, Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkGray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.7f), 0.1f, false);
+        (verticalBgOffset, verticalDrawStopOffset) = layout.DrawParentBG(Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkGray, 0.65f), 0.1f, "Variables", Raylib_cs.Raylib.Fade(Raylib_cs.Color.Gray, 0.65f), Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.7f), negativeDrawStopY: -50);
 
-        layout.BeginHorizontal(0);
+        layout.BeginScrollView(scrollId, ContentWidth - 10, ContentHeight - 10, 5);
         {
-            layout.AddSpace(10);
+            List<DataType> dataTypes = [.. NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data)];
+            string[] dataTypeNames = [.. dataTypes.Select(t => t.Name)];
 
-            layout.BeginScrollView(scrollId, Width - 10, Height - 50 - 40, 40, 5);
+            for (int i = 0; i < varIds.Count; i++)
             {
-                List<DataType> dataTypes = NodeEditorEngine.Graph.Types.AllTypes.Where(t => t.Category == DataCategory.Data).ToList();
-                string[] dataTypeNames = dataTypes.Select(t => t.Name).ToArray();
-
-                for (int i = 0; i < varIds.Count; i++)
+                layout.BeginHorizontal(0);
                 {
-                    layout.BeginHorizontal(0);
+                    Variable v = variables[varIds[i]];
+                    string selectableText = v.VarName;
+                    bool isSelected = currentSelected != null && currentSelected.Payload is int selectedId && selectedId == v.Id;
+
+                    layout.Selectable(v.Id, isSelected, selectableText, Width - 120, 24, OnVarUISelected, v.Id);
+
+                    layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                     {
-                        Variable v = variables[varIds[i]];
-                        string selectableText = v.VarName;
-                        bool isSelected = currentSelected != null && currentSelected.Payload is int selectedId && selectedId == v.Id;
+                        System.Numerics.Vector2 mp = Raylib_cs.Raylib.GetMousePosition();
+                        List<(string name, object payload)> typeItems = dataTypes.Select(dt => (dt.Name, (object)dt)).ToList();
 
-                        layout.Selectable(v.Id, isSelected, selectableText, Width - 120, 24, OnVarUISelected, v.Id);
-
-                        layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
+                        requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
                         {
-                            System.Numerics.Vector2 mp = Raylib_cs.Raylib.GetMousePosition();
-                            List<(string name, object payload)> typeItems = dataTypes.Select(dt => (dt.Name, (object)dt)).ToList();
+                            onChangeVariableType?.Invoke(v.Id, (DataType)payload);
+                        });
 
-                            requestSearchMenu?.Invoke((int)mp.X, (int)mp.Y, typeItems, (payload) =>
-                            {
-                                onChangeVariableType?.Invoke(v.Id, (DataType)payload);
-                            });
-
-                        }, v.Id);
-                    }
-                    layout.EndHorizontal(24);
+                    }, v.Id);
                 }
+                layout.EndHorizontal(24);
             }
-            layout.EndScrollView();
         }
-        layout.EndHorizontal(Height - 50);
+        layout.EndScrollView();
 
-        layout.AddSpace(10);
+        layout.AddSpace(RemainingHeight + 10);
 
         layout.BeginHorizontal(10);
         {
