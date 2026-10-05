@@ -23,14 +23,14 @@ public class StatusBadge : UIBase
     public StatusType Type { get => statusType; set => statusType = value; }
     public Raylib_cs.Color CustomColor { get => customColor; set => customColor = value; }
 
-    public StatusBadge(int posX, int posY, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, int fontSize = 13, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 0, 0, parent, parentBasis)
+    public StatusBadge(int posX, int posY, string text, StatusType statusType = StatusType.Idle, Raylib_cs.Color? customColor = null, int fontSize = 13, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 0, 0, parentBasis, parent)
     {
         Vector2 textSize = LayoutEngine.MeasureText(text, fontSize);
 
         int w = (int)textSize.X + 24;
         int h = (int)textSize.Y;
 
-        Size = new Vector2(w, h);
+        UITransform.Size = new Vector2(w, h);
 
         this.text = text;
         this.statusType = statusType;
@@ -52,21 +52,21 @@ public class StatusBadge : UIBase
 
         // Draw pill background (semi-transparent)
         Raylib_cs.Color bgPill = new(badgeColor.R, badgeColor.G, badgeColor.B, (byte)40);
-        Raylib_cs.Rectangle rect = new(Position.X, Position.Y, Width, Height);
+        Raylib_cs.Rectangle rect = new(UITransform.X, UITransform.Y, UITransform.Width, UITransform.Height);
 
         Raylib_cs.Raylib.DrawRectangleRounded(rect, 0.5f, 6, bgPill);
         Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(rect, 0.5f, 6, 1f, badgeColor);
 
         // Draw status dot
         int dotRadius = 4;
-        int dotX = (int)Position.X + 8;
-        int dotY = (int)Position.Y + Height / 2;
+        int dotX = (int)UITransform.X + 8;
+        int dotY = (int)UITransform.Y + UITransform.Height / 2;
 
         Raylib_cs.Raylib.DrawCircle(dotX, dotY, dotRadius, badgeColor);
 
         // Draw text
         int textX = dotX + 8;
-        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
+        int textY = (int)(UITransform.Y + (UITransform.Height - fontSize) / 2f);
         LayoutEngine.DrawTextAbsolute(text, textX, textY, Raylib_cs.Color.White, fontSize, Vector2.Zero);
     }
 }

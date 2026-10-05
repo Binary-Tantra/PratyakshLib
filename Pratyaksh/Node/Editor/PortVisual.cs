@@ -40,7 +40,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public int PortTSize { get => portTSize; }
 
-    public override Rectangle InteractionRect => new Rectangle(Position.X + portInteractionRelativeRect.X, Position.Y + portInteractionRelativeRect.Y, portInteractionRelativeRect.Width, portInteractionRelativeRect.Height);
+    public override Rectangle InteractionRect => new Rectangle(Transform.X + portInteractionRelativeRect.X, Transform.Y + portInteractionRelativeRect.Y, portInteractionRelativeRect.Width, portInteractionRelativeRect.Height);
 
     public static int GetPortTSize(string name)
     {
@@ -85,8 +85,8 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
     public void UpdateInteractionRect()
     {
-        if (Parent != null && parentNodeUI == null)
-            parentNodeUI = Parent as NodeVisual;
+        if (Transform.Parent != null && parentNodeUI == null)
+            parentNodeUI = Transform.Parent.Owner as NodeVisual;
 
         if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
         {
@@ -104,25 +104,25 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         }
     }
 
-    public Vector2 GetBezierTangent(float offset)
+    public Vector3 GetBezierTangent(float offset)
     {
         if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
         {
             if (portFlowType == PortFlowType.Input)
-                return new Vector2(0, -offset);
+                return new Vector3(0, -offset, 0);
             else
-                return new Vector2(0, offset);
+                return new Vector3(0, offset, 0);
         }
         else
         {
             if (portFlowType == PortFlowType.Input)
-                return new Vector2(-offset, 0);
+                return new Vector3(-offset, 0, 0);
             else
-                return new Vector2(offset, 0);
+                return new Vector3(offset, 0, 0);
         }
     }
 
-    public PortVisual(int portId, PortFlowType portFlowType, Vector2 portRelativeLocation, string portName, int dataTypeId, Drawable? parent = null) : base(parent)
+    public PortVisual(int portId, PortFlowType portFlowType, Vector3 portRelativeLocation, string portName, int dataTypeId, Transform? parent = null) : base(parent)
     {
         this.portId = portId;
 
@@ -138,14 +138,14 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
 
         selfInteractable = true;
 
-        RelativePosition = portRelativeLocation;
+        Transform.RelativePosition = portRelativeLocation;
         
         this.portName = portName;
 
         portTSize = GetPortTSize(portName);
 
-        if (Parent != null)
-            parentNodeUI = Parent as NodeVisual;
+        if (Transform.Parent != null)
+            parentNodeUI = Transform.Parent.Owner as NodeVisual;
 
         UpdateInteractionRect();
     }
@@ -153,7 +153,7 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
     protected override void OnDraw()
     {
         if (isHovered)
-            Raylib_cs.Raylib.DrawRectangle((int)(Position.X + portInteractionRelativeRect.X), (int)(Position.Y + portInteractionRelativeRect.Y), (int)portInteractionRelativeRect.Width, (int)portInteractionRelativeRect.Height, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.4f));
+            Raylib_cs.Raylib.DrawRectangle((int)(Transform.X + portInteractionRelativeRect.X), (int)(Transform.Y + portInteractionRelativeRect.Y), (int)portInteractionRelativeRect.Width, (int)portInteractionRelativeRect.Height, Raylib_cs.Raylib.Fade(Raylib_cs.Color.White, 0.4f));
 
         bool isConnected = IsConnected;
         Raylib_cs.Color fillColor = Raylib_cs.Raylib.Fade(portColor, 0.4f);
@@ -163,15 +163,15 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
             Vector2 p1, p2, p3;
             if (parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
             {
-                p1 = new Vector2(Position.X - portSize, Position.Y - portSize);
-                p2 = new Vector2(Position.X, Position.Y + portSize);
-                p3 = new Vector2(Position.X + portSize, Position.Y - portSize);
+                p1 = new Vector2(Transform.X - portSize, Transform.Y - portSize);
+                p2 = new Vector2(Transform.X, Transform.Y + portSize);
+                p3 = new Vector2(Transform.X + portSize, Transform.Y - portSize);
             }
             else
             {
-                p1 = new Vector2(Position.X - portSize, Position.Y - portSize);
-                p2 = new Vector2(Position.X - portSize, Position.Y + portSize);
-                p3 = new Vector2(Position.X + portSize, Position.Y);
+                p1 = new Vector2(Transform.X - portSize, Transform.Y - portSize);
+                p2 = new Vector2(Transform.X - portSize, Transform.Y + portSize);
+                p3 = new Vector2(Transform.X + portSize, Transform.Y);
             }
             
             if (isConnected)
@@ -182,32 +182,32 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         else
         {
             if (isConnected)
-                Raylib_cs.Raylib.DrawCircle((int)Position.X, (int)Position.Y, portSize, fillColor);
+                Raylib_cs.Raylib.DrawCircle((int)Transform.X, (int)Transform.Y, portSize, fillColor);
 
-            Raylib_cs.Raylib.DrawCircleLines((int)Position.X, (int)Position.Y, portSize, portColor);
+            Raylib_cs.Raylib.DrawCircleLines((int)Transform.X, (int)Transform.Y, portSize, portColor);
         }
 
         if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
         {
             if (portFlowType == PortFlowType.Input)
             {
-                int textX = (int)(Position.X - portTSize / 2f);
-                int textY = (int)(Position.Y + portSize + 3);
+                int textX = (int)(Transform.X - portTSize / 2f);
+                int textY = (int)(Transform.Y + portSize + 3);
                 LayoutEngine.DrawTextAbsolute(portName, textX, textY, portTextColor, portTFontSize, Vector2.Zero);
             }
             else
             {
-                int textX = (int)(Position.X - portTSize / 2f);
-                int textY = (int)(Position.Y - portSize - portTFontSize - 3);
+                int textX = (int)(Transform.X - portTSize / 2f);
+                int textY = (int)(Transform.Y - portSize - portTFontSize - 3);
                 LayoutEngine.DrawTextAbsolute(portName, textX, textY, portTextColor, portTFontSize, Vector2.Zero);
             }
         }
         else
         {
             if (portFlowType == PortFlowType.Input)
-                LayoutEngine.DrawTextAbsolute(portName, (int)Position.X + 10, (int)Position.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
+                LayoutEngine.DrawTextAbsolute(portName, (int)Transform.X + 10, (int)Transform.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
             else if (portFlowType == PortFlowType.Output)
-                LayoutEngine.DrawTextAbsolute(portName, (int)Position.X - portTSize - 10, (int)Position.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
+                LayoutEngine.DrawTextAbsolute(portName, (int)Transform.X - portTSize - 10, (int)Transform.Y - 5, portTextColor, portTFontSize, Vector2.Zero);
         }
     }
 
@@ -246,8 +246,8 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         if (Engine.Instance.InteractionManager.CurrentlyHovered is PortVisual portUI)
         {
             if (portUI != this &&
-                portUI.Parent != null &&
-                portUI.Parent != Parent &&
+                portUI.Transform.Parent != null &&
+                portUI.Transform.Parent != Transform.Parent &&
                 portUI.portFlowType != portFlowType)
             {
                 if (portFlowType == PortFlowType.Output)

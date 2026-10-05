@@ -4,20 +4,20 @@ using Raylib_cs;
 
 namespace Pratyaksh.Node.Editor;
 
-public class ObjectOrPosition(bool isPosition, Vector2 position, EditorObject? editorObject)
+public class ObjectOrPosition(bool isPosition, Vector3 position, EditorObject? editorObject)
 {
     private bool isPosition = isPosition;
-    private Vector2 position = position;
+    private Vector3 position = position;
     private EditorObject? editorObject = editorObject;
 
     public bool IsPosition { get => isPosition; }
     public EditorObject? EditorObject { get => editorObject; }
 
-    public Vector2 GetPos()
+    public Vector3 GetPos()
     {
         if (isPosition)
             return position;
-        else return editorObject == null ? Vector2.Zero : editorObject.Position;
+        else return editorObject == null ? Vector3.Zero : editorObject.Transform.Position;
     }
 
     public void SetPos(EditorObject editorObject)
@@ -26,7 +26,7 @@ public class ObjectOrPosition(bool isPosition, Vector2 position, EditorObject? e
         isPosition = false;
     }
 
-    public void SetPos(Vector2 position)
+    public void SetPos(Vector3 position)
     {
         this.position = position;
         isPosition = true;
@@ -52,27 +52,27 @@ public class WireVisual : Actor
         wireThickness = thickness;
     }
 
-    public Vector2 WireStart { get => wireStart.GetPos(); }
-    public Vector2 WireEnd { get => wireEnd.GetPos(); }
+    public Vector3 WireStart { get => wireStart.GetPos(); }
+    public Vector3 WireEnd { get => wireEnd.GetPos(); }
 
-    public WireVisual(Drawable parent) : base(parent)
+    public WireVisual(Pratyaksh.Core.Transform parent) : base(parent)
     {
         ResetWire();
     }
 
     public void ResetWire()
     {
-        wireStart = new ObjectOrPosition(true, Vector2.Zero, null);
-        wireEnd = new ObjectOrPosition(true, Vector2.Zero, null);
-        Hide();
+        wireStart = new ObjectOrPosition(true, Vector3.Zero, null);
+        wireEnd = new ObjectOrPosition(true, Vector3.Zero, null);
+        renderingComponent.Hide();
     }
 
-    public void SetStartPos(Vector2 newStartPos)
+    public void SetStartPos(Vector3 newStartPos)
     {
         wireStart.SetPos(newStartPos);
     }
 
-    public void SetEndPos(Vector2 newEndPos)
+    public void SetEndPos(Vector3 newEndPos)
     {
         wireEnd.SetPos(newEndPos);
     }
@@ -89,13 +89,13 @@ public class WireVisual : Actor
 
     protected override void OnDraw()
     {
-        Vector2 p0 = wireStart.GetPos();
-        Vector2 p3 = wireEnd.GetPos();
-        float dist = Vector2.Distance(p0, p3);
+        Vector3 p0 = wireStart.GetPos();
+        Vector3 p3 = wireEnd.GetPos();
+        float dist = Vector3.Distance(p0, p3);
         float offset = Math.Max(dist * 0.5f, 35.0f);
 
-        Vector2 t0;
-        Vector2 t3;
+        Vector3 t0;
+        Vector3 t3;
 
         PortVisual? sp = wireStart.EditorObject as PortVisual;
         PortVisual? ep = wireEnd.EditorObject as PortVisual;
@@ -117,14 +117,14 @@ public class WireVisual : Actor
         }
         else
         {
-            t0 = new Vector2(offset, 0);
-            t3 = new Vector2(-offset, 0);
+            t0 = new Vector3(offset, 0, 0);
+            t3 = new Vector3(-offset, 0, 0);
         }
 
-        Vector2 p1 = p0 + t0;
-        Vector2 p2 = p3 + t3;
+        Vector3 p1 = p0 + t0;
+        Vector3 p2 = p3 + t3;
 
-        Raylib.DrawSplineSegmentBezierCubic(p0, p1, p2, p3, wireThickness, wireColor);
+        Raylib.DrawSplineSegmentBezierCubic(p0.AsVector2(), p1.AsVector2(), p2.AsVector2(), p3.AsVector2(), wireThickness, wireColor);
     }
 
     public void NotifyDeleted(PortVisual portUI)

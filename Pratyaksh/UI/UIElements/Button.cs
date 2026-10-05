@@ -32,7 +32,7 @@ public class Button : UIBase, IPointerInteractable
     public Raylib_cs.Color? BorderColor { get => customBorderColor; set => customBorderColor = value; }
     public Raylib_cs.Color? TextColor { get => customTextColor; set => customTextColor = value; }
 
-    public Button(int posX, int posY, int width, int height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public Button(int posX, int posY, int width, int height, string buttonText, Action<Button> onButtonPressed, object payload, int fontSize = 15, bool hasBorder = true, Raylib_cs.Color? fillColor = null, Raylib_cs.Color? borderColor = null, Raylib_cs.Color? textColor = null, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -80,16 +80,16 @@ public class Button : UIBase, IPointerInteractable
         Raylib_cs.Color currentBorder = hovered ? borderHover : borderNorm;
 
         // BG
-        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)Size.X, (int)Size.Y, currentFill);
+        Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, (int)UITransform.Size.X, (int)UITransform.Size.Y, currentFill);
 
         // Border
         if (hasBorder)
-            Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y, Size.X, Size.Y), 1f, currentBorder);
+            Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(UITransform.X, UITransform.Y, UITransform.Size.X, UITransform.Size.Y), 1f, currentBorder);
 
         // Text (centered)
         Vector2 textSize = LayoutEngine.MeasureText(buttonText, fontSize);
-        int textX = (int)(Position.X + (Size.X - textSize.X) / 2);
-        int textY = (int)(Position.Y + (Size.Y - textSize.Y) / 2);
+        int textX = (int)(UITransform.X + (UITransform.Size.X - textSize.X) / 2);
+        int textY = (int)(UITransform.Y + (UITransform.Size.Y - textSize.Y) / 2);
 
         LayoutEngine.DrawTextAbsolute(buttonText, textX, textY, labelColor, fontSize, Vector2.Zero);
     }

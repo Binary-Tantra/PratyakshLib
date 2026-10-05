@@ -63,8 +63,8 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
 
             if (nodeVisuals.TryGetValue(n.Id, out NodeVisual? vis) && vis != null)
             {
-                nd.PositionX = vis.RelativePosition.X;
-                nd.PositionY = vis.RelativePosition.Y;
+                nd.PositionX = vis.Transform.RelX;
+                nd.PositionY = vis.Transform.RelY;
                 nd.Flow = (int)vis.Flow;
                 nd.ShowHeader = vis.ShowHeader;
                 var payloads = vis.GetUIStatePayloads();

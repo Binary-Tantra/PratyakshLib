@@ -42,7 +42,7 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
     public bool IsFocused => isFocused;
 
-    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, bool isMasked = false, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public InputField(string placeholderText, string inputFieldText, int posX, int posY, int width, int height, Action<InputField>? onTextEdited, Action<InputField>? onFocusEnd, int fontSize = 15, bool isMasked = false, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -81,10 +81,10 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
         Raylib_cs.Color cursorCol = new((byte)190, (byte)190, (byte)190, (byte)255);
 
         const int textPadX = 6;
-        int textY = (int)(Position.Y + (Height - fontSize) / 2f);   // vertically center the text
+        int textY = (int)(UITransform.Y + (UITransform.Height - fontSize) / 2f);   // vertically center the text
 
         // BG
-        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fillColor);
+        Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, UITransform.Width, UITransform.Height, fillColor);
 
         // Border
         Raylib_cs.Rectangle borderRect = new(InteractionRect.X, InteractionRect.Y, InteractionRect.Width, InteractionRect.Height);
@@ -101,9 +101,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
 
         // Placeholder Text or Normal Text
         if (isShowingPlaceholder)
-            LayoutEngine.DrawTextAbsolute(placeholderText, (int)Position.X + textPadX, textY, placeholderCol, fontSize, Vector2.Zero);
+            LayoutEngine.DrawTextAbsolute(placeholderText, (int)UITransform.X + textPadX, textY, placeholderCol, fontSize, Vector2.Zero);
         else
-            LayoutEngine.DrawTextAbsolute(displayText, (int)Position.X + textPadX, textY, inputTextCol, fontSize, Vector2.Zero);
+            LayoutEngine.DrawTextAbsolute(displayText, (int)UITransform.X + textPadX, textY, inputTextCol, fontSize, Vector2.Zero);
 
         // Blinking Cursor
         if (isFocused)
@@ -113,9 +113,9 @@ public class InputField : UIBase, IPointerInteractable, IKeyInteractable
             if (showCursorTime)
             {
                 int textW = isShowingPlaceholder ? 0 : LayoutEngine.MeasureTextW(displayText, fontSize);
-                int cursorX = (int)Position.X + textPadX + textW + 1;
+                int cursorX = (int)UITransform.X + textPadX + textW + 1;
 
-                Raylib_cs.Raylib.DrawLine(cursorX, (int)Position.Y + 5, cursorX, (int)Position.Y + Height - 7, cursorCol);
+                Raylib_cs.Raylib.DrawLine(cursorX, (int)UITransform.Y + 5, cursorX, (int)UITransform.Y + UITransform.Height - 7, cursorCol);
             }
         }
     }

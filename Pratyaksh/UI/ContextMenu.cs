@@ -14,7 +14,7 @@ public class ContextMenu : UILayoutBase
 
     protected override string PanelName => throw new NotImplementedException();
 
-    public ContextMenu(int posX, int posY, List<(string name, object payload)> menuItems, Action<Button> onButtonPressed, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, buttonWidth, buttonHeight * menuItems.Count, parent, parentBasis)
+    public ContextMenu(int posX, int posY, List<(string name, object payload)> menuItems, Action<Button> onButtonPressed, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, buttonWidth, buttonHeight * menuItems.Count, parent, parentBasis)
     {
         this.menuItems = menuItems;
         menuButtons = [];
@@ -22,7 +22,7 @@ public class ContextMenu : UILayoutBase
         for (int i = 0; i < menuItems.Count; i++)
         {
 
-            menuButtons.Add(new Button(0, i * buttonHeight, buttonWidth, buttonHeight, menuItems[i].name, (button) => onButtonPressed?.Invoke(button), menuItems[i].payload, parent: this));
+            menuButtons.Add(new Button(0, i * buttonHeight, buttonWidth, buttonHeight, menuItems[i].name, (button) => onButtonPressed?.Invoke(button), menuItems[i].payload, parent: Transform));
         }
     }
 
@@ -32,7 +32,7 @@ public class ContextMenu : UILayoutBase
             menuButtons[i].Render();
     }
 
-    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override PratyakshObject? OnChildrenHitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         for (int i = menuButtons.Count - 1; i >= 0; i--)
         {

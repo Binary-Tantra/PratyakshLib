@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Pratyaksh.Core;
@@ -112,7 +111,7 @@ public class LayoutEngine
         }
     }
 
-    private static Drawable? HitTestActiveElements(Dictionary<int, ElementInfo> targetDict, IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    private static PratyakshObject? HitTestActiveElements(Dictionary<int, ElementInfo> targetDict, IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         var keys = targetDict.Keys.ToArray();
         for (int i = keys.Length - 1; i >= 0; i--)
@@ -172,9 +171,9 @@ public class LayoutEngine
 
     public void RemoveLayoutElement(int id) => DeleteElement(id, layoutElements);
 
-    public Drawable? HitTestElements(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    public PratyakshObject? HitTestElements(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
-        Drawable? hit = HitTestActiveElements(layoutElements, transformer, mouseScreenPosition, mouseWorldPosition);
+        PratyakshObject? hit = HitTestActiveElements(layoutElements, transformer, mouseScreenPosition, mouseWorldPosition);
         if (hit != null) return hit;
 
         return null;
@@ -210,7 +209,7 @@ public class LayoutEngine
 
     public int PosXRelative()
     {
-        return PosXAbsolute() - (int)(defaultParent?.Position.X ?? 0);
+        return PosXAbsolute() - (int)(defaultParent?.Transform.X ?? 0);
     }
 
     public int PosYAbsolute()
@@ -223,7 +222,7 @@ public class LayoutEngine
 
     public int PosYRelative()
     {
-        return PosYAbsolute() - (int)(defaultParent?.Position.Y ?? 0);
+        return PosYAbsolute() - (int)(defaultParent?.Transform.Y ?? 0);
     }
 
     public int CurrentWidth()
@@ -471,10 +470,10 @@ public class LayoutEngine
         int x, y, width, height, heightOffset = 0;
         if (defaultParent is UIBase uib)
         {
-            x = (int)uib.Position.X;
-            y = (int)uib.Position.Y;
-            width = uib.Width;
-            height = uib.Height;
+            x = (int)uib.UITransform.X;
+            y = (int)uib.UITransform.Y;
+            width = uib.UITransform.Width;
+            height = uib.UITransform.Height;
 
             int modifiedW = width;
             int modifiedH = height + negativeDrawStopY;
@@ -513,7 +512,7 @@ public class LayoutEngine
 
         layoutElements[id] = layoutElements[id].Activate();
 
-        layoutElements[id].UIElement.Position = new Vector2(posX, posY);
+        layoutElements[id].UIElement.UITransform.Position = new Vector3(posX, posY, 0);
         layoutElements[id].UIElement.Render();
 
         return layoutElements[id].Get<T>();
@@ -533,7 +532,7 @@ public class LayoutEngine
         posX, posY);
     }
 
-    public ElemType DrawBindableElementAbsolute<ElemType, ValType, RLUIType>(int id, BindableValueBase<ValType> dataModel, int posX, int posY, Func<(ElemType, RLUIType)> factory, Action<ElemType> storedReflect = null) where ElemType : UIBase where RLUIType : BindableUIBase<ValType>
+    public ElemType DrawBindableElementAbsolute<ElemType, ValType, RLUIType>(int id, BindableValueBase<ValType> dataModel, int posX, int posY, Func<(ElemType, RLUIType)> factory, Action<ElemType>? storedReflect = null) where ElemType : UIBase where RLUIType : BindableUIBase<ValType>
     {
         return DrawElementAbsolute(id, () =>
         {
@@ -565,7 +564,7 @@ public class LayoutEngine
         Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         T drawnElem = DrawElementAbsolute(element.Id, () => element, (stored) => { }, (int)pos.X, (int)pos.Y);
-        if (updateLayout) NotifyDraw((int)drawnElem.Width, (int)drawnElem.Height);
+        if (updateLayout) NotifyDraw((int)drawnElem.UITransform.Width, (int)drawnElem.UITransform.Height);
         return drawnElem;
     }
 
@@ -574,7 +573,7 @@ public class LayoutEngine
         Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         T drawnElem = drawAbsoluteCaller.Invoke(pos);
-        if (updateLayout) NotifyDraw(drawnElem.Width, drawnElem.Height);
+        if (updateLayout) NotifyDraw(drawnElem.UITransform.Width, drawnElem.UITransform.Height);
         return drawnElem;
     }
 
@@ -586,7 +585,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Label((int)pos.X, (int)pos.Y, label, fontSize, textColor, defaultParent);
+                return new Label((int)pos.X, (int)pos.Y, label, fontSize, textColor, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.Text = label;
@@ -601,7 +600,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                Label label = new((int)pos.X, (int)pos.Y, dataModel.Get(), fontSize, textColor, defaultParent);
+                Label label = new((int)pos.X, (int)pos.Y, dataModel.Get(), fontSize, textColor, defaultParent?.Transform);
                 RLLabelUI newUIBindable = new(label);
                 return (label, newUIBindable);
             });
@@ -616,7 +615,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Button((int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent);
+                return new Button((int)pos.X, (int)pos.Y, buttonWidth, buttonHeight, buttonText, onButtonPressed, payload, fontSize, hasBorder, fillColor, borderColor, textColor, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.ButtonText = buttonText;
@@ -645,7 +644,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Selectable(selectableText, isSelected, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent);
+                return new Selectable(selectableText, isSelected, (int)pos.X, (int)pos.Y, selectableWidth, selectableHeight, onSelectableSelect, payload, fontSize, bgColor, bgSelectionColor, textColor, defaultParent?.Transform);
             }, (stored) =>
             {
                 if (isSelected != stored.IsSelected)
@@ -665,7 +664,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                Selectable selectable = new(selectableText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, (sel) => { }, id, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.Blue, Raylib_cs.Color.White, defaultParent);
+                Selectable selectable = new(selectableText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, (sel) => { }, id, 15, Raylib_cs.Color.Gray, Raylib_cs.Color.Blue, Raylib_cs.Color.White, defaultParent?.Transform);
                 RLSelectableUI newUIBindable = new(selectable);
                 return (selectable, newUIBindable);
             });
@@ -680,7 +679,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new InputField(placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent);
+                return new InputField(placeholderText, fieldText, (int)pos.X, (int)pos.Y, inputFieldWidth, inputFieldHeight, onTextEdited, onFocusEnd, fontSize, isMasked, defaultParent?.Transform);
             }, (stored) =>
             {
                 if (!stored.IsFocused)
@@ -701,7 +700,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                InputField newInputField = new(placeholderText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                InputField newInputField = new(placeholderText, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent?.Transform);
                 RLInputFieldUI_String newUIBindable = new(newInputField);
                 return (newInputField, newUIBindable);
             });
@@ -714,7 +713,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                InputField newInputField = new(placeholderText, dataModel.Get().ToString(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                InputField newInputField = new(placeholderText, dataModel.Get().ToString(), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent?.Transform);
                 RLInputFieldUI_Int newUIBindable = new(newInputField);
                 return (newInputField, newUIBindable);
             });
@@ -727,7 +726,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                InputField newInputField = new(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent);
+                InputField newInputField = new(placeholderText, dataModel.Get().ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture), (int)pos.X, (int)pos.Y, width, height, null, null, 15, false, defaultParent?.Transform);
                 RLInputFieldUI_Float newUIBindable = new(newInputField);
                 return (newInputField, newUIBindable);
             });
@@ -742,7 +741,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Toggle((int)pos.X, (int)pos.Y, toggleValue, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent);
+                return new Toggle((int)pos.X, (int)pos.Y, toggleValue, toggleWidth, toggleHeight, onToggleChanged, payload, 15, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.Value = toggleValue;
@@ -757,7 +756,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                Toggle newToggle = new((int)pos.X, (int)pos.Y, dataModel.Get(), width, height, null, id, 15, defaultParent);
+                Toggle newToggle = new((int)pos.X, (int)pos.Y, dataModel.Get(), width, height, null, id, 15, defaultParent?.Transform);
                 RLToggleUI newUIBindable = new(newToggle);
                 return (newToggle, newUIBindable);
             });
@@ -772,7 +771,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Dropdown(options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent);
+                return new Dropdown(options, selectedIndex, (int)pos.X, (int)pos.Y, width, itemHeight, onSelectionChanged, payload, fontSize, defaultParent?.Transform);
             }, (stored) =>
             {
                 if (stored.Options.Length != options.Length)
@@ -792,7 +791,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                Dropdown dropdown = new(options, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, id, 15, defaultParent);
+                Dropdown dropdown = new(options, dataModel.Get(), (int)pos.X, (int)pos.Y, width, height, null, id, 15, defaultParent?.Transform);
                 RLDropdownUI newUIBindable = new(dropdown);
                 return (dropdown, newUIBindable);
             });
@@ -807,7 +806,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new CycleSelector(options, selectedIndex, (int)pos.X, (int)pos.Y, width, height, onSelectionChanged, payload, fontSize, defaultParent);
+                return new CycleSelector(options, selectedIndex, (int)pos.X, (int)pos.Y, width, height, onSelectionChanged, payload, fontSize, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.SelectedIndex = selectedIndex;
@@ -825,7 +824,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new LinkButton((int)pos.X, (int)pos.Y, text, url, onClick, fontSize, defaultParent);
+                return new LinkButton((int)pos.X, (int)pos.Y, text, url, onClick, fontSize, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.Text = text;
@@ -842,7 +841,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new StatusBadge((int)pos.X, (int)pos.Y, text, statusType, customColor, fontSize, defaultParent);
+                return new StatusBadge((int)pos.X, (int)pos.Y, text, statusType, customColor, fontSize, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.Text = text;
@@ -861,7 +860,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new AlertBanner((int)pos.X, (int)pos.Y, message, alertType, width, height, isDismissible, fontSize, defaultParent);
+                return new AlertBanner((int)pos.X, (int)pos.Y, message, alertType, width, height, isDismissible, fontSize, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.Message = message;
@@ -878,7 +877,7 @@ public class LayoutEngine
         {
             return DrawElementAbsolute(id, () =>
             {
-                return new Slider((int)pos.X, (int)pos.Y, value, minValue, maxValue, width, height, onValueChanged, payload, showValue, format, fontSize, step, defaultParent);
+                return new Slider((int)pos.X, (int)pos.Y, value, minValue, maxValue, width, height, onValueChanged, payload, showValue, format, fontSize, step, defaultParent?.Transform);
             }, (stored) =>
             {
                 stored.MinValue = minValue;
@@ -901,7 +900,7 @@ public class LayoutEngine
         {
             return DrawBindableElementAbsolute(id, dataModel, (int)pos.X, (int)pos.Y, () =>
             {
-                Slider slider = new((int)pos.X, (int)pos.Y, dataModel.Get(), minValue, maxValue, width, height, null, id, showValue, format, fontSize, step, defaultParent);
+                Slider slider = new((int)pos.X, (int)pos.Y, dataModel.Get(), minValue, maxValue, width, height, null, id, showValue, format, fontSize, step, defaultParent?.Transform);
                 RLSliderUI newUIBindable = new(slider);
                 return (slider, newUIBindable);
             }, (stored) =>
@@ -1004,7 +1003,7 @@ public class LayoutEngine
         bool found = layoutElements.ContainsKey(id);
         if (!found)
         {
-            Panel newPanel = new(width, height, defaultParent);
+            Panel newPanel = new(width, height, defaultParent?.Transform);
             ElementInfo elem = new(newPanel, null);
             layoutElements.Add(id, elem);
         }
@@ -1012,14 +1011,14 @@ public class LayoutEngine
         layoutElements[id] = layoutElements[id].Activate();
         Panel pnl = layoutElements[id].Get<Panel>();
 
-        pnl.Size = new Vector2(width, height);
-        pnl.Position = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
+        pnl.UITransform.Size = new Vector2(width, height);
+        pnl.UITransform.Position = new Vector3(PosXAbs_Dynamic(), PosYAbs_Dynamic(), 0);
 
         Core.Rectangle scissorRect = pnl.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
         PushScissor(scissorRect);
 
-        int startX = (int)pnl.Position.X;
-        int startY = (int)pnl.Position.Y;
+        int startX = (int)pnl.UITransform.X;
+        int startY = (int)pnl.UITransform.Y;
 
         bool hasExtraLayout = (layoutOpsIdx == -1) || (layoutOps[layoutOpsIdx].OpType == layoutFlowDirection);
 
@@ -1057,24 +1056,24 @@ public class LayoutEngine
         {
             if (opType == LayoutOpType.Vertical)
             {
-                EndVertical(pnl.Width);
-                EndHorizontal(pnl.Height);
+                EndVertical(pnl.UITransform.Width);
+                EndHorizontal(pnl.UITransform.Height);
             }
             else
             {
-                EndHorizontal(pnl.Height);
-                EndVertical(pnl.Width);
+                EndHorizontal(pnl.UITransform.Height);
+                EndVertical(pnl.UITransform.Width);
             }
         }
         else
         {
             if (opType == LayoutOpType.Vertical)
             {
-                EndVertical(pnl.Width);
+                EndVertical(pnl.UITransform.Width);
             }
             else
             {
-                EndHorizontal(pnl.Height);
+                EndHorizontal(pnl.UITransform.Height);
             }
         }
 
@@ -1091,7 +1090,7 @@ public class LayoutEngine
         bool found = layoutElements.ContainsKey(id);
         if (!found)
         {
-            ScrollView newSvc = new(viewWidth, viewHeight, defaultParent);
+            ScrollView newSvc = new(viewWidth, viewHeight, defaultParent?.Transform);
             ElementInfo elem = new(newSvc, null);
             layoutElements.Add(id, elem);
         }
@@ -1099,14 +1098,14 @@ public class LayoutEngine
         layoutElements[id] = layoutElements[id].Activate();
         ScrollView svc = layoutElements[id].Get<ScrollView>();
 
-        svc.Size = new Vector2(viewWidth, viewHeight);
-        svc.Position = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
+        svc.UITransform.Size = new Vector2(viewWidth, viewHeight);
+        svc.UITransform.Position = new Vector3(PosXAbs_Dynamic(), PosYAbs_Dynamic(), 0);
 
         Core.Rectangle scissorRect = svc.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
         PushScissor(scissorRect);
 
-        int startX = (int)svc.Position.X;
-        int startY = (int)svc.Position.Y;
+        int startX = (int)svc.UITransform.X;
+        int startY = (int)svc.UITransform.Y;
 
         // Pass the spacing to the internal vertical layout!
         BeginHorizontalEx(0, startX + (int)svc.ScrollOffset.X);
@@ -1129,13 +1128,13 @@ public class LayoutEngine
         int svId = activeScrollViews.Pop();
         ScrollView svc = layoutElements[svId].Get<ScrollView>();
 
-        int contentWidth = PosXAbsolute() - ((int)svc.Position.X + (int)svc.ScrollOffset.X);
-        int contentHeight = PosYAbsolute() - ((int)svc.Position.Y + (int)svc.ScrollOffset.Y);
+        int contentWidth = PosXAbsolute() - ((int)svc.UITransform.X + (int)svc.ScrollOffset.X);
+        int contentHeight = PosYAbsolute() - ((int)svc.UITransform.Y + (int)svc.ScrollOffset.Y);
 
-        svc.SetContentSize(new Vector2(Math.Max(svc.Size.X, contentWidth), Math.Max(svc.Size.Y, contentHeight)));
+        svc.SetContentSize(new Vector2(Math.Max(svc.UITransform.Size.X, contentWidth), Math.Max(svc.UITransform.Size.Y, contentHeight)));
 
-        EndVertical(svc.Width);
-        EndHorizontal(svc.Height);
+        EndVertical(svc.UITransform.Width);
+        EndHorizontal(svc.UITransform.Height);
 
         PopScissor();
 

@@ -36,7 +36,7 @@ public class Canvas : UIBase, IPointerInteractable
         }
     }
 
-    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override PratyakshObject? OnChildrenHitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         for (int i = panels.Count - 1; i >= 0; i--)
         {
@@ -66,7 +66,7 @@ public class Canvas : UIBase, IPointerInteractable
         {
             if (panels[i].transient && panels[i].panelRef != null)
             {
-                bool clickedInsidePanel = target.IsAncestor(panels[i].panelRef!);
+                bool clickedInsidePanel = target.Transform.IsAncestor(panels[i].panelRef?.Transform!);
 
                 if (panels[i].panelRef != null && !clickedInsidePanel && (evt.MouseButton == MouseButton.Left || evt.MouseButton == MouseButton.Right))
                     CloseTransPanel(i);

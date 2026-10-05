@@ -9,9 +9,9 @@ public class ChildLayout : UILayoutBase
 
     private int maxWidthCoverage;
 
-    protected override string PanelName => parent?.GetType().Name + "ChildLayout";
+    protected override string PanelName => Transform.Parent?.GetType().Name + "ChildLayout";
 
-    public ChildLayout(List<(UIElementType type, UIElementDescription desc)> uiElements, int posX, int posY, int layoutWidth, int layoutHeight, Drawable? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
+    public ChildLayout(List<(UIElementType type, UIElementDescription desc)> uiElements, int posX, int posY, int layoutWidth, int layoutHeight, Transform? parent, ParentBasis? parentBasis = null) : base(posX, posY, layoutWidth, layoutHeight, parent, parentBasis)
     {
         selfInteractable = false;
         this.uiElements = uiElements;
@@ -138,13 +138,13 @@ public class ChildLayout : UILayoutBase
             if (uiElements[i].elemType == UIElementType.Group)
             {
                 HorizontalGroupDesc gDesc = (HorizontalGroupDesc)uiElements[i].elemDesc;
-                maxWidthCoverage = (int)((float)Width / gDesc.uiElements.Count);
+                maxWidthCoverage = (int)((float)UITransform.Width / gDesc.uiElements.Count);
 
                 layout.BeginHorizontal(gDesc.spacing);
                 {
                     for (int j = 0; j < gDesc.uiElements.Count; j++)
                     {
-                        maxWidthCoverage = (int)((float)(Width - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
+                        maxWidthCoverage = (int)((float)(UITransform.Width - layout.CurrentWidth()) / (gDesc.uiElements.Count - j));
 
                         (int id, object? payload) = ids[i][j];
                         DrawAccType(id, gDesc.uiElements[j].elemType, gDesc.uiElements[j].elemDesc, i, j);
@@ -155,7 +155,7 @@ public class ChildLayout : UILayoutBase
             }
             else
             {
-                maxWidthCoverage = Width;
+                maxWidthCoverage = UITransform.Width;
                 DrawAccType(ids[i][0].id, uiElements[i].elemType, uiElements[i].elemDesc, i, 0);
             }
         }

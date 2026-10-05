@@ -23,7 +23,7 @@ public class Toggle : UIBase, IPointerInteractable
         }
     }
 
-    public Toggle(int posX, int posY, bool toggleValue, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, trackWidth, trackHeight, parent, parentBasis)
+    public Toggle(int posX, int posY, bool toggleValue, int trackWidth, int trackHeight, Action<Toggle>? onToggleChanged, object? payload, int fontSize = 15, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, trackWidth, trackHeight, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -69,24 +69,24 @@ public class Toggle : UIBase, IPointerInteractable
         Raylib_cs.Color knobColor = new((byte)220, (byte)220, (byte)220, (byte)255);
         Raylib_cs.Color labelColor = new((byte)185, (byte)185, (byte)185, (byte)255);
 
-        int tx = (int)Position.X;
-        int ty = (int)Position.Y;
+        int tx = (int)UITransform.X;
+        int ty = (int)UITransform.Y;
 
         // Track
         Raylib_cs.Color trackFill = isOn ? (hovered ? trackOnHover : trackOn)
                                           : (hovered ? trackOffHover : trackOff);
         Raylib_cs.Color trackBorder = isOn ? borderOn : borderOff;
 
-        var trackRect = new Raylib_cs.Rectangle(tx, ty, Width, Height);
+        var trackRect = new Raylib_cs.Rectangle(tx, ty, UITransform.Width, UITransform.Height);
         Raylib_cs.Raylib.DrawRectangleRounded(trackRect, 1.0f, 8, trackFill);
         Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(trackRect, 1.0f, 8, 1f, trackBorder);
 
         // Knob
-        int knobRadius = Height / 2 - 3;
+        int knobRadius = UITransform.Height / 2 - 3;
         int knobMinCX = tx + 3 + knobRadius;            // fully-left centre
-        int knobMaxCX = tx + Width - 3 - knobRadius;    // fully-right centre
+        int knobMaxCX = tx + UITransform.Width - 3 - knobRadius;    // fully-right centre
         int knobCX = (int)(knobMinCX + (knobMaxCX - knobMinCX) * knobT);
-        int knobCY = ty + Height / 2;
+        int knobCY = ty + UITransform.Height / 2;
 
         Raylib_cs.Raylib.DrawCircle(knobCX, knobCY, knobRadius, knobColor);
     }

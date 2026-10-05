@@ -4,7 +4,7 @@ using Pratyaksh.UI;
 
 namespace Pratyaksh.Node.Editor;
 
-public class EditorCamera2D : BaseRaylibCam, IPointerInteractable, IDragable, IScrollable
+public class EditorCamera2D : BaseRaylibCam2D, IPointerInteractable, IDragable, IScrollable
 {
     private float camZoomSpeed = 0.10f;
     private Vector2 camZoomBounds = new(0.5f, 1.5f);
@@ -14,7 +14,7 @@ public class EditorCamera2D : BaseRaylibCam, IPointerInteractable, IDragable, IS
 
     private bool panning;
 
-    public EditorCamera2D(float screenWidth, float screenHeight, Drawable? parent = null) : base(screenWidth, screenHeight, parent)
+    public EditorCamera2D(float screenWidth, float screenHeight, Transform? parent = null) : base(screenWidth, screenHeight, parent)
     {
         selfInteractable = true; // For camera drag
     }

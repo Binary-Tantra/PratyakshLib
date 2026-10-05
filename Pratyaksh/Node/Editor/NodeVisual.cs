@@ -78,7 +78,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
                       string title, float posX, float posY,
                       NodeFlow nodeExecFlow = NodeFlow.Horizontal,
                       bool showHeader = true,
-                      Drawable? parent = null) : base(parent)
+                      Transform? parent = null) : base(parent)
     {
         this.nodeId = nodeId;
         this.nodeExecFlow = nodeExecFlow;
@@ -90,7 +90,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         this.title = title;
 
-        RelativePosition = new Vector2(posX, posY);
+        Transform.RelativePosition = new Vector3(posX, posY, 0);
         
         this.bodyUIElements = bodyUIElements;
 
@@ -216,7 +216,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             if (execIn.Count == 1)
             {
                 Port p = n.InputPorts[execIn[0].id];
-                PortVisual pv = new(execIn[0].id, PortFlowType.Input, new Vector2(width / 2f, 0), execIn[0].name, p.DataType.Id, this);
+                PortVisual pv = new(execIn[0].id, PortFlowType.Input, new Vector3(width / 2f, 0, 0), execIn[0].name, p.DataType.Id, Transform);
                 inputPorts.Add(pv);
             }
             else if (execIn.Count > 1)
@@ -225,7 +225,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
                 for (int i = 0; i < execIn.Count; i++)
                 {
                     Port p = n.InputPorts[execIn[i].id];
-                    PortVisual pv = new(execIn[i].id, PortFlowType.Input, new Vector2(portsPadding + i * step, 0), execIn[i].name, p.DataType.Id, this);
+                    PortVisual pv = new(execIn[i].id, PortFlowType.Input, new Vector3(portsPadding + i * step, 0, 0), execIn[i].name, p.DataType.Id, Transform);
                     inputPorts.Add(pv);
                 }
             }
@@ -233,7 +233,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             if (execOut.Count == 1)
             {
                 Port p = n.OutputPorts[execOut[0].id];
-                PortVisual pv = new(execOut[0].id, PortFlowType.Output, new Vector2(width / 2f, height), execOut[0].name, p.DataType.Id, this);
+                PortVisual pv = new(execOut[0].id, PortFlowType.Output, new Vector3(width / 2f, height, 0), execOut[0].name, p.DataType.Id, Transform);
                 outputPorts.Add(pv);
             }
             else if (execOut.Count > 1)
@@ -242,7 +242,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
                 for (int i = 0; i < execOut.Count; i++)
                 {
                     Port p = n.OutputPorts[execOut[i].id];
-                    PortVisual pv = new(execOut[i].id, PortFlowType.Output, new Vector2(portsPadding + i * step, height), execOut[i].name, p.DataType.Id, this);
+                    PortVisual pv = new(execOut[i].id, PortFlowType.Output, new Vector3(portsPadding + i * step, height, 0), execOut[i].name, p.DataType.Id, Transform);
                     outputPorts.Add(pv);
                 }
             }
@@ -250,25 +250,25 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             for (int i = 0; i < dataIn.Count; i++)
             {
                 Port p = n.InputPorts[dataIn[i].id];
-                PortVisual pv = new(dataIn[i].id, PortFlowType.Input, new Vector2(portsPadding, topMargin + i * portsSpacing), dataIn[i].name, p.DataType.Id, this);
+                PortVisual pv = new(dataIn[i].id, PortFlowType.Input, new Vector3(portsPadding, topMargin + i * portsSpacing, 0), dataIn[i].name, p.DataType.Id, Transform);
                 inputPorts.Add(pv);
             }
 
             for (int i = 0; i < dataOut.Count; i++)
             {
                 Port p = n.OutputPorts[dataOut[i].id];
-                PortVisual pv = new(dataOut[i].id, PortFlowType.Output, new Vector2(width - portsPadding, topMargin + i * portsSpacing), dataOut[i].name, p.DataType.Id, this);
+                PortVisual pv = new(dataOut[i].id, PortFlowType.Output, new Vector3(width - portsPadding, topMargin + i * portsSpacing, 0), dataOut[i].name, p.DataType.Id, Transform);
                 outputPorts.Add(pv);
             }
 
-            rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
-            headerRect = showHeader ? new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
+            rect = new Raylib_cs.Rectangle(Transform.RelX, Transform.RelY, width, height);
+            headerRect = showHeader ? new Raylib_cs.Rectangle(Transform.RelX, Transform.RelY, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
 
             nodeBodyLayout = new ChildLayout(bodyUIElements,
                                                 bodyHPaddingInputSide,
                                                 (int)topMargin,
                                                 bodyWidth,
-                                                (int)(height - topMargin - bottomMargin), this);
+                                                (int)(height - topMargin - bottomMargin), Transform);
         }
         else
         {
@@ -311,29 +311,29 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             for (int i = 0; i < inputPortIdNames.Count; i++)
             {
                 Port p = n.InputPorts[inputPortIdNames[i].id];
-                PortVisual pv = new(inputPortIdNames[i].id, PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
+                PortVisual pv = new(inputPortIdNames[i].id, PortFlowType.Input, new Vector3(portsPadding, portsInitialYOffset + i * portsSpacing, 0), inputPortIdNames[i].name, p.DataType.Id, Transform);
                 inputPorts.Add(pv);
             }
 
             for (int i = 0; i < outputPortIdNames.Count; i++)
             {
                 Port p = n.OutputPorts[outputPortIdNames[i].id];
-                PortVisual pv = new(outputPortIdNames[i].id, PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
+                PortVisual pv = new(outputPortIdNames[i].id, PortFlowType.Output, new Vector3(width - portsPadding, portsInitialYOffset + i * portsSpacing, 0), outputPortIdNames[i].name, p.DataType.Id, Transform);
                 outputPorts.Add(pv);
             }
 
-            rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
-            headerRect = showHeader ? new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
+            rect = new Raylib_cs.Rectangle(Transform.RelX, Transform.RelY, width, height);
+            headerRect = showHeader ? new Raylib_cs.Rectangle(Transform.RelX, Transform.RelY, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
 
             nodeBodyLayout = new ChildLayout(bodyUIElements,
                                                 bodyHPaddingInputSide,
                                                 portsInitialYOffset,
                                                 bodyWidth,
-                                                (int)(height - portsInitialYOffset), this);
+                                                (int)(height - portsInitialYOffset), Transform);
         }
     }
 
-    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override PratyakshObject? OnChildrenHitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         for (int i = inputPorts.Count - 1; i >= 0; i--)
         {
@@ -365,10 +365,10 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     protected override void OnDraw()
     {
-        rect.X = Position.X;
-        rect.Y = Position.Y;
-        headerRect.X = Position.X;
-        headerRect.Y = Position.Y;
+        rect.X = Transform.X;
+        rect.Y = Transform.Y;
+        headerRect.X = Transform.X;
+        headerRect.Y = Transform.Y;
 
         Raylib_cs.Raylib.DrawRectangleRounded(rect, bgRectRoundness, (int)bgRectSegments, bgRectFillColor);
         Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(rect, bgRectRoundness, (int)bgRectSegments, bgRectOutlineThickness, bgRectBorderColor);
@@ -419,7 +419,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         Engine.Instance.InteractionManager.CapturePointer(this);
 
         isDragging = true;
-        dragOffset = new Vector2(evt.WorldPosition.X - RelativePosition.X, evt.WorldPosition.Y - RelativePosition.Y);
+        dragOffset = new Vector2(evt.WorldPosition.X - Transform.RelX, evt.WorldPosition.Y - Transform.RelY);
 
         return true;
     }
@@ -427,7 +427,7 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     public void OnDrag(PointerInteractEventData evt)
     {
         if (isDragging)
-            RelativePosition = new Vector2(evt.WorldPosition.X - dragOffset.X, evt.WorldPosition.Y - dragOffset.Y);
+            Transform.RelativePosition = new Vector3(evt.WorldPosition.X - dragOffset.X, evt.WorldPosition.Y - dragOffset.Y, 0);
     }
 
     public bool OnMouseUp(PointerInteractEventData evt)
@@ -444,26 +444,26 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     private void CleanupWire()
     {
-        potConnectionWireUI?.Hide();
+        potConnectionWireUI?.RenderingComponent.Hide();
         potConnectionWireUI = null;
     }
 
     public void UIConnectionStart(PortVisual source)
     {
         potConnectionStartPortUI = source;
-        potConnectionWireUI = new WireVisual(source);
+        potConnectionWireUI = new WireVisual(source.Transform);
         potConnectionWireUI.SetColor(source.PortColor);
         potConnectionWireUI.SetThickness(source.IsExecution ? 3.0f : 1.5f);
 
-        potConnectionWireUI.SetStartPos(source.Position);
-        potConnectionWireUI.SetEndPos(source.Position);
+        potConnectionWireUI.SetStartPos(source.Transform.Position);
+        potConnectionWireUI.SetEndPos(source.Transform.Position);
 
-        potConnectionWireUI.Show();
+        potConnectionWireUI.RenderingComponent.Show();
     }
 
     public void UIConnectionMove(PointerInteractEventData evt)
     {
-        potConnectionWireUI?.SetEndPos(evt.WorldPosition);
+        potConnectionWireUI?.SetEndPos(evt.WorldPosition.AsVector3());
     }
 
     public void UIConnectionSuccess(PortVisual sourceUI, PortVisual targetUI)

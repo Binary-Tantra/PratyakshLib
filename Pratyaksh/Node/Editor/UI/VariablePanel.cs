@@ -22,7 +22,7 @@ public class VariablePanel : UILayoutBase
 
     protected override string PanelName => "VariablePanel";
 
-    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 220, 300, parent, parentBasis)
+    public VariablePanel(int posX, int posY, Action<int?> onSelectVariable, Action onAddNewVariable, Action<int> onRemoveVariable, Action<int, string> onRenameVariable, Action<int, DataType> onChangeVariableType, Action<int, int, List<(string, object)>, Action<object>> requestSearchMenu, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 220, 300, parent, parentBasis)
     {
         this.onSelectVariable = onSelectVariable;
         this.onRenameVariable = onRenameVariable;
@@ -35,7 +35,7 @@ public class VariablePanel : UILayoutBase
         {
             onAddNewVariable?.Invoke();
             Deselect();
-        }, 0, parent: this);
+        }, 0, parent: Transform);
 
         removeButton = new Button(0, 0, 50, 20, "Remove", (remBtn) =>
         {
@@ -51,7 +51,7 @@ public class VariablePanel : UILayoutBase
                     layout.RemoveLayoutElement(id);
                 }
             }
-        }, 0, parent: this);
+        }, 0, parent: Transform);
 
         Engine.Instance.InteractionManager.AnyPointerEvent += OnAnyPointerInput;
         Engine.Instance.OnHandleInputComplete += OnHandleInputComplete;
@@ -85,13 +85,13 @@ public class VariablePanel : UILayoutBase
         {
             if (target != null)
             {
-                if (target == currentSelected || target.IsAncestor(currentSelected))
+                if (target == currentSelected || target.Transform.IsAncestor(currentSelected.Transform))
                     return;
 
-                if (target == addButton || target == removeButton || target.IsAncestor(addButton) || target.IsAncestor(removeButton))
+                if (target == addButton || target == removeButton || target.Transform.IsAncestor(addButton.Transform) || target.Transform.IsAncestor(removeButton.Transform))
                     return;
 
-                if (target.HasAncestorOfType<SearchMenu>() || target.HasAncestorOfType<InspectorPanel>())
+                if (target.Transform.HasAncestorOfType<SearchMenu>() || target.Transform.HasAncestorOfType<InspectorPanel>())
                     return;
 
                 if (currentSelected.Payload is int selectedVarId && target is Button btn && btn.Payload is int btnVarId && btnVarId == selectedVarId)
@@ -143,7 +143,7 @@ public class VariablePanel : UILayoutBase
                     string selectableText = v.VarName;
                     bool isSelected = currentSelected != null && currentSelected.Payload is int selectedId && selectedId == v.Id;
 
-                    layout.Selectable(v.Id, isSelected, selectableText, Width - 120, 24, OnVarUISelected, v.Id);
+                    layout.Selectable(v.Id, isSelected, selectableText, UITransform.Width - 120, 24, OnVarUISelected, v.Id);
 
                     layout.Button(v.Id + 1000000, v.VarType.Name, 80, 24, (btn) =>
                     {

@@ -14,7 +14,7 @@ public class LinkButton : UIBase, IPointerInteractable
     public string Text { get => text; set => text = value; }
     public string Url { get => url; set => url = value; }
 
-    public LinkButton(int posX, int posY, string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, LayoutEngine.MeasureTextW(text, fontSize), LayoutEngine.MeasureTextH(text, fontSize), parent, parentBasis)
+    public LinkButton(int posX, int posY, string text, string url, Action<LinkButton>? onClick = null, int fontSize = 14, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, LayoutEngine.MeasureTextW(text, fontSize), LayoutEngine.MeasureTextH(text, fontSize), parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -30,11 +30,11 @@ public class LinkButton : UIBase, IPointerInteractable
         Raylib_cs.Color hoverColor = new((byte)120, (byte)190, (byte)255, (byte)255);
         Raylib_cs.Color drawColor = hovered ? hoverColor : normalColor;
 
-        LayoutEngine.DrawTextAbsolute(text, (int)Position.X, (int)Position.Y, drawColor, fontSize, Vector2.Zero);
+        LayoutEngine.DrawTextAbsolute(text, (int)UITransform.X, (int)UITransform.Y, drawColor, fontSize, Vector2.Zero);
 
         // Draw Underline
-        int lineY = (int)Position.Y + fontSize + 1;
-        Raylib_cs.Raylib.DrawLine((int)Position.X, lineY, (int)Position.X + Width, lineY, drawColor);
+        int lineY = (int)UITransform.Y + fontSize + 1;
+        Raylib_cs.Raylib.DrawLine((int)UITransform.X, lineY, (int)UITransform.X + UITransform.Width, lineY, drawColor);
     }
 
     public bool OnMouseDown(PointerInteractEventData evt)

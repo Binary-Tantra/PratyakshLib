@@ -23,7 +23,7 @@ public class AlertBanner : UIBase, IPointerInteractable
     public string Message { get => message; set => message = value; }
     public AlertType Type { get => alertType; set => alertType = value; }
 
-    public AlertBanner(int posX, int posY, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, int fontSize = 13, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public AlertBanner(int posX, int posY, string message, AlertType alertType = AlertType.Error, int width = 360, int height = 32, bool isDismissible = true, int fontSize = 13, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -47,24 +47,24 @@ public class AlertBanner : UIBase, IPointerInteractable
         };
 
         // Draw background box
-        Raylib_cs.Rectangle rect = new(Position.X, Position.Y, Width, Height);
+        Raylib_cs.Rectangle rect = new(UITransform.X, UITransform.Y, UITransform.Width, UITransform.Height);
         Raylib_cs.Raylib.DrawRectangleRec(rect, bgColor);
         Raylib_cs.Raylib.DrawRectangleLinesEx(rect, 1f, accentColor);
 
         // Draw left accent bar
-        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, 4, Height, accentColor);
+        Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, 4, UITransform.Height, accentColor);
 
         // Draw text
-        int textX = (int)Position.X + 12;
-        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
+        int textX = (int)UITransform.X + 12;
+        int textY = (int)(UITransform.Y + (UITransform.Height - fontSize) / 2f);
 
         LayoutEngine.DrawTextAbsolute(message, textX, textY, Raylib_cs.Color.White, fontSize, Vector2.Zero);
 
         // Draw dismiss "X" button
         if (isDismissible)
         {
-            int closeX = (int)Position.X + Width - 20;
-            int closeY = (int)Position.Y + (Height - fontSize) / 2;
+            int closeX = (int)UITransform.X + UITransform.Width - 20;
+            int closeY = (int)UITransform.Y + (UITransform.Height - fontSize) / 2;
 
             LayoutEngine.DrawTextAbsolute("x", closeX, closeY, hovered ? Raylib_cs.Color.White : Raylib_cs.Color.Gray, fontSize, Vector2.Zero);
         }
@@ -82,8 +82,8 @@ public class AlertBanner : UIBase, IPointerInteractable
 
         if (isDismissible)
         {
-            float clickX = evt.ScreenPosition.X - Position.X;
-            if (clickX >= Width - 25) OnDismiss?.Invoke(this);
+            float clickX = evt.ScreenPosition.X - UITransform.X;
+            if (clickX >= UITransform.Width - 25) OnDismiss?.Invoke(this);
         }
 
         return true;

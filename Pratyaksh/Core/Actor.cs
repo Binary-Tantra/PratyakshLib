@@ -2,10 +2,18 @@
 
 public abstract class Actor : EditorObject
 {
-    protected Actor(Drawable? parent) : base(parent) { }
+    protected Actor(Transform? parent) : base(parent) { }
 
     public override bool InteractionUseWorldPos()
     {
         return true;
     }
+
+    public override void Render()
+    {
+        base.Render();
+        OnDraw();
+    }
+
+    protected abstract void OnDraw();
 }

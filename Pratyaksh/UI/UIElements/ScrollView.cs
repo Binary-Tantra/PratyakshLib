@@ -16,7 +16,7 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     public Vector2 ScrollOffset { get => scrollOffset; }
 
-    public ScrollView(int viewWidth, int viewHeight, Drawable? parent = null, ParentBasis? parentBasis = null) : base(0, 0, viewWidth, viewHeight, parent, parentBasis)
+    public ScrollView(int viewWidth, int viewHeight, Transform? parent = null, ParentBasis? parentBasis = null) : base(0, 0, viewWidth, viewHeight, parentBasis, parent)
     {
         selfInteractable = true;
         scrollOffset = Vector2.Zero;
@@ -37,13 +37,13 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     public void ClampScroll()
     {
-        float maxScroll = Math.Max(0, contentSize.Y - Size.Y);
+        float maxScroll = Math.Max(0, contentSize.Y - UITransform.Size.Y);
         scrollOffset.Y = Math.Clamp(scrollOffset.Y, -maxScroll, 0);
     }
 
-    public Rectangle GetScissorRect(IWorldToScreenTransformer transformer)
+    public Rectangle GetScissorRect(IWorldToScreenTransformer2D transformer)
     {
-        Rectangle rect = new(Position.X, Position.Y, Size.X, Size.Y);
+        Rectangle rect = new(UITransform.X, UITransform.Y, UITransform.Size.X, UITransform.Size.Y);
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
 
         if (worldSpace)
@@ -54,18 +54,18 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     protected override void OnDraw()
     {
-        if (contentSize.Y > Size.Y)
+        if (contentSize.Y > UITransform.Size.Y)
         {
-            Raylib_cs.Rectangle track = new(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
+            Raylib_cs.Rectangle track = new(UITransform.X + UITransform.Size.X - scrollbarWidth, UITransform.Y, scrollbarWidth, UITransform.Size.Y);
             Raylib_cs.Raylib.DrawRectangleRec(track, new Raylib_cs.Color(40, 40, 40, 255));
 
-            float visibleRatio = Size.Y / contentSize.Y;
-            float thumbHeight = Math.Max(20, Size.Y * visibleRatio);
-            float maxScroll = contentSize.Y - Size.Y;
+            float visibleRatio = UITransform.Size.Y / contentSize.Y;
+            float thumbHeight = Math.Max(20, UITransform.Size.Y * visibleRatio);
+            float maxScroll = contentSize.Y - UITransform.Size.Y;
             float scrollRatio = maxScroll > 0 ? (-scrollOffset.Y / maxScroll) : 0;
-            float thumbY = Position.Y + (Size.Y - thumbHeight) * scrollRatio;
+            float thumbY = UITransform.Y + (UITransform.Size.Y - thumbHeight) * scrollRatio;
 
-            Raylib_cs.Rectangle thumb = new(Position.X + Size.X - scrollbarWidth + 2, thumbY + 2, scrollbarWidth - 4, thumbHeight - 4);
+            Raylib_cs.Rectangle thumb = new(UITransform.X + UITransform.Size.X - scrollbarWidth + 2, thumbY + 2, scrollbarWidth - 4, thumbHeight - 4);
             bool isHoveringTrack = Raylib_cs.Raylib.CheckCollisionPointRec(Engine.Instance.InteractionManager.InputContext.mouseScreenPosition, track);
             Raylib_cs.Color thumbColor = isScrollBarDragging ? new Raylib_cs.Color(120, 120, 120, 255) : ((hovered && isHoveringTrack) ? new Raylib_cs.Color(100, 100, 100, 255) : new Raylib_cs.Color(80, 80, 80, 255));
 
@@ -77,9 +77,9 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
     {
         if (evt.MouseButton != MouseButton.Left) return false;
 
-        if (contentSize.Y > Size.Y)
+        if (contentSize.Y > UITransform.Size.Y)
         {
-            Rectangle track = new(Position.X + Size.X - scrollbarWidth, Position.Y, scrollbarWidth, Size.Y);
+            Rectangle track = new(UITransform.X + UITransform.Size.X - scrollbarWidth, UITransform.Y, scrollbarWidth, UITransform.Size.Y);
             bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
             Vector2 hitPos = worldSpace ? evt.WorldPosition : evt.ScreenPosition;
 
@@ -99,7 +99,7 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
 
     public bool OnDragStart(PointerInteractEventData evt)
     {
-        if (contentSize.Y > Size.Y)
+        if (contentSize.Y > UITransform.Size.Y)
             return isScrollBarDragging;
 
         return false;
@@ -113,8 +113,8 @@ public class ScrollView : UIBase, IScrollable, IPointerInteractable, IDragable, 
             Vector2 hitPos = worldSpace ? evt.WorldPosition : evt.ScreenPosition;
             float deltaY = hitPos.Y - dragStartMouseY;
 
-            float maxScroll = contentSize.Y - Size.Y;
-            float thumbMoveRange = Size.Y - Math.Max(20, Size.Y * (Size.Y / contentSize.Y));
+            float maxScroll = contentSize.Y - UITransform.Size.Y;
+            float thumbMoveRange = UITransform.Size.Y - Math.Max(20, UITransform.Size.Y * (UITransform.Size.Y / contentSize.Y));
 
             if (thumbMoveRange > 0)
             {

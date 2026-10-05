@@ -7,7 +7,7 @@ public class InputEventData
     //public InputActionType Action; // e.g., "Jump", "Delete", "Type"
 }
 
-public interface IWorldToScreenTransformer
+public interface IWorldToScreenTransformer2D
 {
     public float GetWidth();
     public float GetHeight();
@@ -23,12 +23,12 @@ public interface IWorldToScreenTransformer
 public interface IInteractable
 {
     public bool IsSelfInteractable();
-    public Rectangle GetInteractableRect(IWorldToScreenTransformer transformer);
+    public Rectangle GetInteractableRect(IWorldToScreenTransformer2D transformer);
 }
 
 public interface IClippable
 {
-    public Rectangle GetScissorRect(IWorldToScreenTransformer transformer);
+    public Rectangle GetScissorRect(IWorldToScreenTransformer2D transformer);
 }
 
 public enum InputDevice

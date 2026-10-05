@@ -1,24 +1,24 @@
 using Pratyaksh.Core;
 namespace Pratyaksh.Node.Editor;
 
-public class ConnectionVisual : EditorObject
+public class ConnectionVisual : Actor
 {
     private PortVisual startRef;
     private PortVisual endRef;
 
     private WireVisual connectionWireUI;
 
-    public ConnectionVisual(PortVisual startRef, PortVisual endRef, Drawable? parent) : base(parent)
+    public ConnectionVisual(PortVisual startRef, PortVisual endRef, Transform? parent) : base(parent)
     {
         this.startRef = startRef;
         this.endRef = endRef;
 
-        connectionWireUI = new WireVisual(this);
+        connectionWireUI = new WireVisual(Transform);
         connectionWireUI.SetColor(startRef.PortColor);
         connectionWireUI.SetThickness(startRef.IsExecution ? 3.0f : 1.5f);
         connectionWireUI.SetStartPos(startRef);
         connectionWireUI.SetEndPos(endRef);
-        connectionWireUI.Show();
+        connectionWireUI.RenderingComponent.Show();
     }
 
     public override bool InteractionUseWorldPos()

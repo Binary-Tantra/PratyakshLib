@@ -13,7 +13,7 @@ using Pratyaksh.Node.Core.DataModel;
 using Pratyaksh.Node.Editor.UI;
 using Pratyaksh.Node.Editor.Serialization;
 
-public class NodeEditorEngine : BaseRaylibEngine
+public class NodeEditorEngine : BaseRaylibEngine2D
 {
     public override float DeltaTime => Raylib_cs.Raylib.GetFrameTime();
 
@@ -339,7 +339,7 @@ public class NodeEditorEngine : BaseRaylibEngine
 
     private bool OpenSearchMenu(int x, int y, List<(string, object)> items, Action<object> onItemSelected)
     {
-        return canvas.OpenTransPanel<SearchMenu>(searchMenuIdx, x, y, 200, 300, items, onItemSelected, canvas, null) != null;
+        return canvas.OpenTransPanel<SearchMenu>(searchMenuIdx, x, y, 200, 300, items, onItemSelected, canvas.Transform, null) != null;
     }
 
     private bool OpenContextMenu(int x, int y, EditorObject? potentialTarget)
@@ -347,7 +347,7 @@ public class NodeEditorEngine : BaseRaylibEngine
         List<(string name, object payload)> menuItems = [("Delete", 0)];
         Action<Button> onButtonPressed = (button) => OnCanvasCtxMenuItemSelected(button, potentialTarget);
 
-        return canvas.OpenTransPanel<ContextMenu>(contextMenuIdx, x, y, menuItems, onButtonPressed, canvas, null) != null;
+        return canvas.OpenTransPanel<ContextMenu>(contextMenuIdx, x, y, menuItems, onButtonPressed, canvas.Transform, null) != null;
     }
 
     private void OnCanvasSearchMenuItemSelected(object payload)
@@ -508,7 +508,7 @@ public class NodeEditorEngine : BaseRaylibEngine
                 selectItemAction.Invoke(payload);
                 canvas.CloseTransPanel(searchMenuIdx);
             });
-        }, canvas);
+        }, canvas.Transform);
 
         canvas.AddPanel(varPan, false, false);
 
@@ -520,11 +520,11 @@ public class NodeEditorEngine : BaseRaylibEngine
                 selectItemAction.Invoke(payload);
                 canvas.CloseTransPanel(searchMenuIdx);
             });
-        }, canvas, ParentBasis.TopRight);
+        }, canvas.Transform, ParentBasis.TopRight);
         
         canvas.AddPanel(inPan, false, false);
 
-        DemoPanel demoPanel = new(60, 70, canvas);
+        DemoPanel demoPanel = new(60, 70, canvas.Transform);
         canvas.AddPanel(demoPanel, true, false);
 
         uiElements.Add(canvas);
@@ -538,7 +538,7 @@ public class NodeEditorEngine : BaseRaylibEngine
 
     protected override void OnUpdateScreen(int newW, int newH)
     {
-        canvas.Size = new Vector2(newW, newH);
+        canvas.UITransform.Size = new Vector2(newW, newH);
     }
 
     protected override void OnUpdate() { }

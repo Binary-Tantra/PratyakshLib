@@ -78,7 +78,7 @@ public class InputContext
 
 public class InteractionManager
 {
-    private IWorldToScreenTransformer worldToScreenTransformer;
+    private IWorldToScreenTransformer2D worldToScreenTransformer;
     private event Action<PointerInteractEventData, PointerEventType, bool>? globalPointerEvent;
     private event Action<KeyInteractEventData>? globalKBEvent;
     private event Action<PointerInteractEventData, EditorObject?>? anyPointerEvent;
@@ -110,13 +110,13 @@ public class InteractionManager
     public EditorObject? CurrentlyHovered { get => currentlyHovered; }
     public EditorObject? CurrentlyPointerSelected { get => currentPointerHolder; }
     public EditorObject? CurrentlyFocused { get => currentlyFocused; }
-    public IWorldToScreenTransformer WorldToScreenTransformer { get => worldToScreenTransformer; }
+    public IWorldToScreenTransformer2D WorldToScreenTransformer { get => worldToScreenTransformer; }
 
     public event Action<PointerInteractEventData, PointerEventType, bool> GlobalPointerEvent { add => globalPointerEvent += value; remove => globalPointerEvent -= value; }
     public event Action<KeyInteractEventData> GlobalKBEvent { add => globalKBEvent += value; remove => globalKBEvent -= value; }
     public event Action<PointerInteractEventData, EditorObject?> AnyPointerEvent { add => anyPointerEvent += value; remove => anyPointerEvent -= value; }
 
-    public InteractionManager(IWorldToScreenTransformer spaceTransformer)
+    public InteractionManager(IWorldToScreenTransformer2D spaceTransformer)
     {
         worldToScreenTransformer = spaceTransformer;
     }
@@ -185,7 +185,7 @@ public class InteractionManager
                 visitedIt.OnMouseEnter(potentialPvevt);
                 return newHoveredInteractableEO;
             }
-            else newHoveredInteractableEO = newHoveredInteractableEO.Parent != null ? newHoveredInteractableEO.Parent as EditorObject : null;
+            else newHoveredInteractableEO = newHoveredInteractableEO.Transform.Parent?.Owner as EditorObject;
         }
 
         if (!wasCompleted)
@@ -244,18 +244,18 @@ public class InteractionManager
         }
     }
 
-    public Drawable? FindDeepestHitObject(Vector2 mouseScreenPos, Vector2 mouseWorldPos)
+    public PratyakshObject? FindDeepestHitObject(Vector2 mouseScreenPos, Vector2 mouseWorldPos)
     {
         for (int i = Engine.Instance.UIElements.Count - 1; i >= 0; i--)
         {
-            Drawable? hit = Engine.Instance.UIElements[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
+            PratyakshObject? hit = Engine.Instance.UIElements[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
             if (hit != null)
                 return hit;
         }
 
         for (int i = Engine.Instance.Actors.Count - 1; i >= 0; i--)
         {
-            Drawable? hit = Engine.Instance.Actors[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
+            PratyakshObject? hit = Engine.Instance.Actors[i].HitTest(worldToScreenTransformer, mouseScreenPos, mouseWorldPos);
             if (hit != null)
                 return hit;
         }
@@ -327,7 +327,7 @@ public class InteractionManager
             }
             else checkCompleted = false;
 
-            if (bubble) clickedEO = (clickedEO.Parent is EditorObject) ? clickedEO.Parent as EditorObject : null;
+            if (bubble) clickedEO = clickedEO.Transform.Parent?.Owner as EditorObject;
             else clickedEO = null;
         }
 
@@ -535,7 +535,7 @@ public class InteractionManager
         Vector2 screenPos = inputContext.mouseScreenPosition;
         Vector2 worldPos = inputContext.mouseWorldPosition;
 
-        Drawable? currentHitDrawable = FindDeepestHitObject(screenPos, worldPos);
+        PratyakshObject? currentHitDrawable = FindDeepestHitObject(screenPos, worldPos);
         currentlyHit = (EditorObject?)currentHitDrawable;
 
         if (currentlyHit != currentlyHovered)

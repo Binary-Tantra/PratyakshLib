@@ -19,7 +19,7 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
             {
                 isOpen = value;
                 // height expands when open so the LayoutEngine moves elements below it.
-                Size = new Vector2(Size.X, isOpen ? itemHeight + (options.Length * itemHeight) : itemHeight);
+                UITransform.Size = new Vector2(UITransform.Size.X, isOpen ? itemHeight + (options.Length * itemHeight) : itemHeight);
             }
         }
     }
@@ -43,7 +43,7 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
     public string SelectedOption => (options != null && options.Length > selectedIndex && selectedIndex >= 0) ? options[selectedIndex] : "";
     public object Payload => payload;
 
-    public Dropdown(string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown> onSelectionChanged, object payload, int fontSize = 15, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, itemHeight, parent, parentBasis)
+    public Dropdown(string[] options, int selectedIndex, int posX, int posY, int width, int itemHeight, Action<Dropdown> onSelectionChanged, object payload, int fontSize = 15, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, itemHeight, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -71,7 +71,7 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
         for (int i = 0; i < options.Length; i++)
         {
             int index = i;
-            Selectable sel = new(options[i], i == selectedIndex, 0, itemHeight + (i * itemHeight), Width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: this);
+            Selectable sel = new(options[i], i == selectedIndex, 0, itemHeight + (i * itemHeight), UITransform.Width, itemHeight, (s) => OnOptionSelected(index), null, fontSize, parent: Transform);
             optionSelectables.Add(sel);
         }
     }
@@ -114,14 +114,14 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
 
         Raylib_cs.Color fill = IsOpen ? fillOpen : (hovered ? fillHover : fillNormal);
 
-        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, itemHeight, fill);
-        Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y, Width, itemHeight), 1f, borderNorm);
+        Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, UITransform.Width, itemHeight, fill);
+        Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(UITransform.X, UITransform.Y, UITransform.Width, itemHeight), 1f, borderNorm);
 
-        int textY = (int)(Position.Y + (itemHeight - fontSize) / 2f);
-        LayoutEngine.DrawTextAbsolute(SelectedOption, (int)Position.X + 8, textY, textCol, fontSize, Vector2.Zero);
+        int textY = (int)(UITransform.Y + (itemHeight - fontSize) / 2f);
+        LayoutEngine.DrawTextAbsolute(SelectedOption, (int)UITransform.X + 8, textY, textCol, fontSize, Vector2.Zero);
 
         // Draw chevron icon
-        int iconX = (int)Position.X + Width - 15;
+        int iconX = (int)UITransform.X + UITransform.Width - 15;
         if (IsOpen)
         {
             Raylib_cs.Raylib.DrawLine(iconX, textY + 8, iconX + 4, textY + 2, textCol);
@@ -143,7 +143,7 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
         }
     }
 
-    protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    protected override PratyakshObject? OnChildrenHitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         if (IsOpen)
         {
@@ -197,11 +197,11 @@ public class Dropdown : UIBase, IPointerInteractable, IOverlayable
 
             for (int i = 0; i < optionSelectables.Count; i++)
             {
-                optionSelectables[i].RelativePosition = new Vector2(0, itemHeight + (i * itemHeight));
+                optionSelectables[i].UITransform.RelativePosition = new Vector3(0, itemHeight + (i * itemHeight), 0);
                 optionSelectables[i].Render();
             }
 
-            Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(Position.X, Position.Y + itemHeight, Width, optionSelectables.Count * itemHeight), 1f, borderNorm);
+            Raylib_cs.Raylib.DrawRectangleLinesEx(new Raylib_cs.Rectangle(UITransform.X, UITransform.Y + itemHeight, UITransform.Width, optionSelectables.Count * itemHeight), 1f, borderNorm);
         }
     }
 }

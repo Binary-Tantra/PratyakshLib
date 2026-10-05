@@ -4,9 +4,9 @@ using Raylib_cs;
 
 namespace Pratyaksh.UI;
 
-public abstract class BaseRaylibEngine : Engine
+public abstract class BaseRaylibEngine2D : Engine
 {
-    protected BaseRaylibCam camera;
+    protected BaseRaylibCam2D camera;
 
     protected string windowName;
 
@@ -21,13 +21,13 @@ public abstract class BaseRaylibEngine : Engine
 
     public override float DeltaTime => Raylib.GetFrameTime();
 
-    public virtual BaseRaylibCam Camera { get => camera; }
+    public virtual BaseRaylibCam2D Camera { get => camera; }
 
-    public BaseRaylibEngine(int width, int height, string windowName, string? defaultFontPath = null, bool clearScreen = true, Color? clearColor = null, bool drawFPS = false, bool initCamera = true, BaseRaylibCam? camera = null) : base()
+    public BaseRaylibEngine2D(int width, int height, string windowName, string? defaultFontPath = null, bool clearScreen = true, Color? clearColor = null, bool drawFPS = false, bool initCamera = true, BaseRaylibCam2D? camera = null) : base()
     {
         if (initCamera)
         {
-            this.camera = camera ?? new DefaultRaylibCam(width, height);
+            this.camera = camera ?? new DefaultRaylibCam2D(width, height);
             Init(new InteractionManager(this.camera));
         }
 

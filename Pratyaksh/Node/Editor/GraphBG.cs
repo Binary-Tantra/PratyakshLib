@@ -66,7 +66,7 @@ public class GraphBG : Actor
 
     public void DrawGraph()
     {
-        IWorldToScreenTransformer transformer = Engine.Instance.InteractionManager.WorldToScreenTransformer;
+        IWorldToScreenTransformer2D transformer = Engine.Instance.InteractionManager.WorldToScreenTransformer;
 
         if (transformer == null) return;
 

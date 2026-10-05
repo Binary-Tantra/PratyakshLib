@@ -16,7 +16,7 @@ public class SearchMenu : UILayoutBase
 
     protected override string PanelName => "SearchMenu";
 
-    public SearchMenu(int posX, int posY, int width, int height, List<(string name, object payload)> items, Action<object> onItemSelected, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public SearchMenu(int posX, int posY, int width, int height, List<(string name, object payload)> items, Action<object> onItemSelected, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
     {
         this.items = items;
         this.onItemSelected = onItemSelected;
@@ -30,7 +30,7 @@ public class SearchMenu : UILayoutBase
         (verticalBgOffset, verticalDrawStopOffset) = layout.DrawParentBG(new Raylib_cs.Color((byte)45, (byte)45, (byte)45, (byte)255));
         
         // Search Input Field
-        InputField inputField = layout.InputField(searchInputId, "Search...", searchQuery, Width, 30, (field) =>
+        InputField inputField = layout.InputField(searchInputId, "Search...", searchQuery, UITransform.Width, 30, (field) =>
         {
             searchQuery = field.InputFieldText;
         });
@@ -47,7 +47,7 @@ public class SearchMenu : UILayoutBase
 
             layout.BeginVertical(5);
             {
-                layout.BeginScrollView(scrollId, Width - 10, Height - 50, 5, 0, 10);
+                layout.BeginScrollView(scrollId, UITransform.Width - 10, UITransform.Height - 50, 5, 0, 10);
                 {
                     string lowerQuery = searchQuery.ToLower();
 
@@ -58,7 +58,7 @@ public class SearchMenu : UILayoutBase
                         {
                             layout.BeginHorizontal(0);
                             {
-                                layout.Selectable(scrollId + 1 + i, false, name, Width - 30, 24, (sel) =>
+                                layout.Selectable(scrollId + 1 + i, false, name, UITransform.Width - 30, 24, (sel) =>
                                 {
                                     onItemSelected?.Invoke(payload);
                                 }, null);
@@ -69,8 +69,8 @@ public class SearchMenu : UILayoutBase
                 }
                 layout.EndScrollView();
             }
-            layout.EndVertical(Width - 20);
+            layout.EndVertical(UITransform.Width - 20);
         }
-        layout.EndHorizontal(Height);
+        layout.EndHorizontal(UITransform.Height);
     }
 }

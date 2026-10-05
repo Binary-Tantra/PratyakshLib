@@ -88,7 +88,7 @@ public class Slider : UIBase, IPointerInteractable, IDragable
     public Color? ThumbBorderColor { get => customThumbBorderColor; set => customThumbBorderColor = value; }
     public Color? TextColor { get => customTextColor; set => customTextColor = value; }
 
-    public Slider(int posX, int posY, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged, object? payload = null, bool showValue = true, string? format = null, int fontSize = 13, float? step = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public Slider(int posX, int posY, float value, float minValue, float maxValue, int width, int height, Action<Slider>? onValueChanged, object? payload = null, bool showValue = true, string? format = null, int fontSize = 13, float? step = null, Pratyaksh.Core.Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -119,7 +119,7 @@ public class Slider : UIBase, IPointerInteractable, IDragable
             clamped = Math.Clamp(clamped, minValue, maxValue);
         }
 
-        if (Math.Abs(value - clamped) > 0.00001f)
+        if (Math.Abs(value - clamped) > 0.0001f)
         {
             value = clamped;
             onValueChanged?.Invoke(this);
@@ -151,9 +151,9 @@ public class Slider : UIBase, IPointerInteractable, IDragable
 
     private void UpdateValueFromPosition(Vector2 screenPos)
     {
-        int thumbRadius = Math.Max(4, Height / 2 - 2);
-        float trackLeft = Position.X + thumbRadius;
-        float trackRight = Position.X + Width - thumbRadius;
+        int thumbRadius = Math.Max(4, UITransform.Height / 2 - 2);
+        float trackLeft = UITransform.X + thumbRadius;
+        float trackRight = UITransform.X + UITransform.Width - thumbRadius;
         float trackWidth = trackRight - trackLeft;
 
         float t;
@@ -168,9 +168,9 @@ public class Slider : UIBase, IPointerInteractable, IDragable
 
     protected override void OnDraw()
     {
-        int thumbRadius = Math.Max(4, Height / 2 - 2);
-        int trackH = Math.Max(4, Height / 3);
-        int trackY = (int)(Position.Y + (Height - trackH) / 2);
+        int thumbRadius = Math.Max(4, UITransform.Height / 2 - 2);
+        int trackH = Math.Max(4, UITransform.Height / 3);
+        int trackY = (int)(UITransform.Y + (UITransform.Height - trackH) / 2);
 
         // Palette
         Color trackBgNormal = customTrackColor ?? new Color((byte)42, (byte)42, (byte)42, (byte)255);
@@ -192,20 +192,20 @@ public class Slider : UIBase, IPointerInteractable, IDragable
         Color currentTrackBg = (hovered || isDragging) ? trackBgHover : trackBgNormal;
 
         // 1. Draw Track Background
-        Raylib_cs.Rectangle trackRec = new(Position.X, trackY, Width, trackH);
+        Raylib_cs.Rectangle trackRec = new(UITransform.X, trackY, UITransform.Width, trackH);
         Raylib.DrawRectangleRounded(trackRec, 0.8f, 4, currentTrackBg);
         Raylib.DrawRectangleRoundedLinesEx(trackRec, 0.8f, 4, 1f, trackBorder);
 
         // 2. Draw Active/Filled Track
         float t = NormalizedValue;
-        float trackLeft = Position.X + thumbRadius;
-        float trackRight = Position.X + Width - thumbRadius;
+        float trackLeft = UITransform.X + thumbRadius;
+        float trackRight = UITransform.X + UITransform.Width - thumbRadius;
         float thumbCX = trackLeft + t * (trackRight - trackLeft);
 
-        float activeW = Math.Max(0, thumbCX - Position.X);
+        float activeW = Math.Max(0, thumbCX - UITransform.X);
         if (activeW > 2)
         {
-            Raylib_cs.Rectangle activeRec = new(Position.X, trackY, activeW, trackH);
+            Raylib_cs.Rectangle activeRec = new(UITransform.X, trackY, activeW, trackH);
             Raylib.DrawRectangleRounded(activeRec, 0.8f, 4, currentFill);
         }
 
@@ -220,7 +220,7 @@ public class Slider : UIBase, IPointerInteractable, IDragable
 
         Color thumbBorder = customThumbBorderColor ?? (isDragging ? new Color((byte)60, (byte)140, (byte)230, (byte)255) : (hovered ? new Color((byte)100, (byte)150, (byte)220, (byte)255) : new Color((byte)90, (byte)90, (byte)90, (byte)255)));
 
-        int knobCY = (int)(Position.Y + Height / 2);
+        int knobCY = (int)(UITransform.Y + UITransform.Height / 2);
         Raylib.DrawCircle((int)thumbCX, knobCY, thumbRadius, currentThumb);
         Raylib.DrawCircleLines((int)thumbCX, knobCY, thumbRadius, thumbBorder);
 
@@ -242,8 +242,8 @@ public class Slider : UIBase, IPointerInteractable, IDragable
             }
 
             int textW = LayoutEngine.MeasureTextW(valStr, fontSize);
-            int textX = (int)(Position.X + (Width - textW) / 2f);
-            int textY = (int)(Position.Y + (Height - fontSize) / 2f);
+            int textX = (int)(UITransform.X + (UITransform.Width - textW) / 2f);
+            int textY = (int)(UITransform.Y + (UITransform.Height - fontSize) / 2f);
 
             Color textCol = customTextColor ?? new Color((byte)225, (byte)225, (byte)225, (byte)255);
             // Draw text with subtle shadow for crisp readability over any background

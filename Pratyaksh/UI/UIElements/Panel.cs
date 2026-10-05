@@ -5,14 +5,14 @@ namespace Pratyaksh.UI.UIElements;
 
 public class Panel : UIBase, IClippable
 {
-    public Panel(int width, int height, Drawable? parent = null, ParentBasis? parentBasis = null) 
-        : base(0, 0, width, height, parent, parentBasis)
+    public Panel(int width, int height, Transform? parent = null, ParentBasis? parentBasis = null) 
+        : base(0, 0, width, height, parentBasis, parent)
     {
     }
 
-    public Rectangle GetScissorRect(IWorldToScreenTransformer transformer)
+    public Rectangle GetScissorRect(IWorldToScreenTransformer2D transformer)
     {
-        Rectangle rect = new(Position.X, Position.Y, Size.X, Size.Y);
+        Rectangle rect = new(UITransform.X, UITransform.Y, UITransform.Size.X, UITransform.Size.Y);
         bool worldSpace = InteractionUseWorldPos() || CheckAncestorsForInteractWorldPos();
 
         if (worldSpace)

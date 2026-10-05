@@ -41,7 +41,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
     public Action<Selectable> OnTextEdited;
 
-    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Raylib_cs.Color? bgColor = null, Raylib_cs.Color? bgSelectionColor = null, Raylib_cs.Color? textColor = null, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parent, parentBasis)
+    public Selectable(string selectableText, bool isSelected, int posX, int posY, int width, int height, Action<Selectable> onSelectableSelect, object payload, int fontSize = 15, Raylib_cs.Color? bgColor = null, Raylib_cs.Color? bgSelectionColor = null, Raylib_cs.Color? textColor = null, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, width, height, parentBasis, parent)
     {
         selfInteractable = true;
 
@@ -60,7 +60,7 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         Engine.Instance.InteractionManager.AnyPointerEvent += OnClickOff;
 
-        editIF = new InputField("", selectableText, 0, 0, Width, Height, null, null, parent: this);
+        editIF = new InputField("", selectableText, 0, 0, UITransform.Width, UITransform.Height, null, null, parent: Transform);
 
         editIF.OnTextChanged += (inpField) => this.selectableText = inpField.InputFieldText;
         editIF.OnFocusEnd += (inpField) =>
@@ -98,15 +98,16 @@ public class Selectable : UIBase, IPointerInteractable, IDoubleClickable
 
         // BG fill according to selection.
         Raylib_cs.Color fill = isSelected ? fillSelected : (hovered ? fillHover : fillNormal);
-        Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, Width, Height, fill);
+
+        Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, UITransform.Width, UITransform.Height, fill);
 
         // Left accent bar (when selected)
         if (isSelected)
-            Raylib_cs.Raylib.DrawRectangle((int)Position.X, (int)Position.Y, accentW, Height, accentBar);
+            Raylib_cs.Raylib.DrawRectangle((int)UITransform.X, (int)UITransform.Y, accentW, UITransform.Height, accentBar);
 
         // Text
-        int textY = (int)(Position.Y + (Height - fontSize) / 2f);
-        LayoutEngine.DrawTextAbsolute(selectableText, (int)Position.X + textPadX, textY, isSelected ? textSelected : textNormal, fontSize, Vector2.Zero);
+        int textY = (int)(UITransform.Y + (UITransform.Height - fontSize) / 2f);
+        LayoutEngine.DrawTextAbsolute(selectableText, (int)UITransform.X + textPadX, textY, isSelected ? textSelected : textNormal, fontSize, Vector2.Zero);
     }
 
     protected override void OnUpdate()

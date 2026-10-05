@@ -2,33 +2,36 @@ using System.Numerics;
 
 namespace Pratyaksh.Core;
 
-public abstract class EditorObject : Drawable, IInteractable
+public abstract class EditorObject : PratyakshObject, IInteractable
 {
-    private readonly int id;
     protected bool treeInteractable = true;
     protected bool selfInteractable = false;
 
-    public int Id { get => id; }
-
-    public Action OnDeleteObject;
+    protected Rendering renderingComponent;
 
     public virtual Rectangle InteractionRect
     {
-        get => new(Position.X, Position.Y, 0, 0);
+        get => new(Transform.Position.X, Transform.Position.Y, 0, 0);
     }
 
-    public EditorObject(Drawable? parent) : base(parent)
+    public Rendering RenderingComponent { get => renderingComponent; }
+
+    internal EditorObject(Transform? transform, Transform? parentTransform) : base(transform, parentTransform)
     {
-        id = IdGen.GetNewID();
-        OnDeleteObject = () => { };
+        renderingComponent = AddComponent<Rendering>();
     }
 
-    public virtual Drawable? HitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
+    public EditorObject(Transform? parentTransform) : base(parentTransform)
+    {
+        renderingComponent = AddComponent<Rendering>();
+    }
+
+    public virtual PratyakshObject? HitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
     {
         if (!treeInteractable)
             return null;
 
-        Drawable? result = OnChildrenHitTest(transformer, mouseScreenPosition, mouseWorldPosition);
+        PratyakshObject? result = OnChildrenHitTest(transformer, mouseScreenPosition, mouseWorldPosition);
 
         if (result != null)
             return result;
@@ -38,14 +41,15 @@ public abstract class EditorObject : Drawable, IInteractable
 
         Vector2 mousePos = InteractionUseWorldPos() ? mouseWorldPosition : mouseScreenPosition;
 
-        Drawable? ancestor = Parent;
+        Transform? ancestor = Transform.Parent;
         while (ancestor != null)
         {
-            if (ancestor is IClippable clippable)
+            if (ancestor.Owner is IClippable clippable)
             {
                 if (!clippable.GetScissorRect(transformer).Contains(mousePos))
                     return null;
             }
+
             ancestor = ancestor.Parent;
         }
 
@@ -55,7 +59,7 @@ public abstract class EditorObject : Drawable, IInteractable
         return result;
     }
 
-    protected virtual Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) { return null; }
+    protected virtual PratyakshObject? OnChildrenHitTest(IWorldToScreenTransformer2D transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition) { return null; }
 
     public void Update()
     {
@@ -63,6 +67,11 @@ public abstract class EditorObject : Drawable, IInteractable
     }
 
     protected virtual void OnUpdate() { }
+
+    public virtual void Render()
+    {
+        renderingComponent.Render();
+    }
 
     public override void Delete()
     {
@@ -77,12 +86,12 @@ public abstract class EditorObject : Drawable, IInteractable
     protected bool CheckAncestorsForInteractWorldPos()
     {
         bool worldSpace = false;
-        Drawable? par = Parent;
+        Transform? par = Transform.Parent;
 
         // Ooof...TODO: This should not be needed...but currently it works.
         while (par != null)
         {
-            if (par is EditorObject ob && ob.InteractionUseWorldPos())
+            if (par.Owner is EditorObject ob && ob.InteractionUseWorldPos())
             {
                 worldSpace = true;
                 break;
@@ -98,7 +107,7 @@ public abstract class EditorObject : Drawable, IInteractable
         return selfInteractable;
     }
 
-    public Rectangle GetInteractableRect(IWorldToScreenTransformer transformer)
+    public Rectangle GetInteractableRect(IWorldToScreenTransformer2D transformer)
     {
         Rectangle finalRect = InteractionRect;
 
@@ -113,42 +122,6 @@ public abstract class EditorObject : Drawable, IInteractable
         return finalRect;
     }
 
-    public bool IsAncestor(Drawable targetAncestor)
-    {
-        Drawable? curr = this;
-
-        while (curr != null)
-        {
-            if (curr == targetAncestor) return true;
-            curr = curr.Parent;
-        }
-
-        return false;
-    }
-
-    public static bool IsAncestor(Drawable? obj, Drawable targetAncestor)
-    {
-        return obj is EditorObject eo && eo.IsAncestor(targetAncestor);
-    }
-
-    public bool HasAncestorOfType<T>() where T : Drawable
-    {
-        Drawable? curr = this;
-
-        while (curr != null)
-        {
-            if (curr is T) return true;
-            curr = curr.Parent;
-        }
-        
-        return false;
-    }
-
-    public static bool HasAncestorOfType<T>(Drawable? obj) where T : Drawable
-    {
-        return obj is EditorObject eo && eo.HasAncestorOfType<T>();
-    }
-
     public static bool IsAnyChildFocused(EditorObject root)
     {
         EditorObject? cur = Engine.Instance.InteractionManager.CurrentlyFocused;
@@ -156,7 +129,7 @@ public abstract class EditorObject : Drawable, IInteractable
         while (cur != null)
         {
             if (cur == root) return true;
-            cur = cur.Parent as EditorObject;
+            cur = cur.Transform.Parent?.Owner as EditorObject;
         }
 
         return false;

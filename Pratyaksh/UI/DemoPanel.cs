@@ -41,7 +41,7 @@ public class DemoPanel : UILayoutBase
 
     protected override string PanelName => "DemoPanel";
 
-    public DemoPanel(int posX, int posY, Drawable? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 410, 480, parent, parentBasis)
+    public DemoPanel(int posX, int posY, Transform? parent = null, ParentBasis? parentBasis = null) : base(posX, posY, 410, 480, parent, parentBasis)
     {
         scrollViewId = IdGen.GetNewID();
         buttonIds = [IdGen.GetNewID(), IdGen.GetNewID(), IdGen.GetNewID()];
@@ -264,7 +264,7 @@ public class DemoPanel : UILayoutBase
             layout.AddSpace(10);
 
             // --- Nested Selectables & Dropdown ---
-            layout.TextPanelPro("Dropdown & Custom Selectables", Width - 30, 25, Raylib_cs.Color.DarkGreen, Raylib_cs.Color.White);
+            layout.TextPanelPro("Dropdown & Custom Selectables", UITransform.Width - 30, 25, Raylib_cs.Color.DarkGreen, Raylib_cs.Color.White);
 
             layout.AddSpace(10);
 
@@ -276,7 +276,7 @@ public class DemoPanel : UILayoutBase
                 height = layout.Dropdown(dropdownId, ["1920x1080", "2560x1440", "3840x2160"], dropdownSelectedIdx, 150, 24, (dd) =>
                 {
                     dropdownSelectedIdx = dd.SelectedIndex;
-                }, dropdownId).Height;
+                }, dropdownId).UITransform.Height;
             }
             layout.EndHorizontal(height);
 

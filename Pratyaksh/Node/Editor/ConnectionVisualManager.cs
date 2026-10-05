@@ -7,7 +7,7 @@ public class ConnectionVisualManager : Actor
 {
     private Dictionary<(int, int), ConnectionVisual> connectionUIs; // SourcePortUIId, TargetPortUIId
 
-    public ConnectionVisualManager(Drawable? parent) : base(parent)
+    public ConnectionVisualManager(Transform? parent) : base(parent)
     {
         connectionUIs = [];
         ResetConnectionUIs();
@@ -39,7 +39,7 @@ public class ConnectionVisualManager : Actor
                 continue;
             }
 
-            ConnectionVisual cui = new(sp, tp, this);
+            ConnectionVisual cui = new(sp, tp, Transform);
             connectionUIs.Add((sp.Id, tp.Id), cui);
         }
     }
@@ -49,7 +49,7 @@ public class ConnectionVisualManager : Actor
         if (connectionUIs.ContainsKey((outputPort.Id, inputPort.Id)))
             return;
 
-        ConnectionVisual c = new(outputPort, inputPort, this);
+        ConnectionVisual c = new(outputPort, inputPort, Transform);
         connectionUIs.Add((outputPort.Id, inputPort.Id), c);
     }
 
