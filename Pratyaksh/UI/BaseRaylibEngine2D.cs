@@ -113,6 +113,8 @@ public abstract class BaseRaylibEngine2D : Engine
         else
             defF = Raylib.GetFontDefault();
 
+        Raylib.SetTextureFilter(defF.Texture, TextureFilter.Bilinear);
+
         defaultFont = defF;
         LayoutEngine.InitSLEDefaultFont(defF);
 
