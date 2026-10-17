@@ -73,6 +73,12 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         }
     }
 
+    public Raylib_cs.Color BodyFillColor => bgRectFillColor;
+    public Raylib_cs.Color HeaderFillColor => hdRectFillColor;
+    public Raylib_cs.Color BorderColor => bgRectBorderColor;
+    public Rectangle WorldRect => new(Transform.X, Transform.Y, rect.Width, rect.Height);
+    public Rectangle HeaderWorldRect => new(Transform.X, Transform.Y, headerRect.Width, headerRect.Height);
+
     public NodeVisual(int nodeId,
                       List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
                       string title, float posX, float posY,

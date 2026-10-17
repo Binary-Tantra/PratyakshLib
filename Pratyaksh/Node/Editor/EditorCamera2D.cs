@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Pratyaksh.Core;
 using Pratyaksh.UI;
 
@@ -25,6 +25,12 @@ public class EditorCamera2D : BaseRaylibCam2D, IPointerInteractable, IDragable, 
 
         rCam2D.Target.X = Math.Clamp(rCam2D.Target.X, xBounds.X, xBounds.Y);
         rCam2D.Target.Y = Math.Clamp(rCam2D.Target.Y, yBounds.X, yBounds.Y);
+    }
+
+    public void CenterOnWorldPosition(Vector2 worldCenter)
+    {
+        Vector2 screenCenter = new Vector2(screenWidth * 0.5f, screenHeight * 0.5f);
+        SetCamTarget(worldCenter - screenCenter / rCam2D.Zoom);
     }
 
     private void UpdatePan(Vector2 mouseScreenDelta)

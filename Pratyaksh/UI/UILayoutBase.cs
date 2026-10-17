@@ -93,12 +93,12 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
         return rect;
     }
 
-    public bool OnMouseDown(PointerInteractEventData evt)
+    public virtual bool OnMouseDown(PointerInteractEventData evt)
     {
         return false;
     }
 
-    public bool OnDragStart(PointerInteractEventData evt)
+    public virtual bool OnDragStart(PointerInteractEventData evt)
     {
         if (evt.MouseButton == MouseButton.Left)
         {
@@ -113,13 +113,13 @@ public abstract class UILayoutBase : UIBase, IPointerInteractable, IDragable, IC
         return false;
     }
 
-    public void OnDrag(PointerInteractEventData evt)
+    public virtual void OnDrag(PointerInteractEventData evt)
     {
         if (isDragging)
             UITransform.RelativePosition = new Vector3(evt.ScreenPosition.X - dragOffset.X, evt.ScreenPosition.Y - dragOffset.Y, 0);
     }
 
-    public bool OnMouseUp(PointerInteractEventData evt)
+    public virtual bool OnMouseUp(PointerInteractEventData evt)
     {
         if (evt.MouseButton == MouseButton.Left)
         {

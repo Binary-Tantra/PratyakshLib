@@ -527,6 +527,9 @@ public class NodeEditorEngine : BaseRaylibEngine2D
         DemoPanel demoPanel = new(60, 70, canvas.Transform);
         canvas.AddPanel(demoPanel, true, false);
 
+        MinimapPanel minimapPanel = new(-15, -20, (EditorCamera2D)camera, canvas.Transform, ParentBasis.BottomRight);
+        canvas.AddPanel(minimapPanel, false, false);
+
         uiElements.Add(canvas);
 
         actors.Add(new GraphBG(15000, 15000, new Vector2(-7500, -7500)));
